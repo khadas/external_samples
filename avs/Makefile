@@ -14,7 +14,7 @@ $(TARGET1):$(COMM_OBJ) $(TARGET1).o
 	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
 
 install:
-	@cp -f $(TARGET1) $(RK_MEDIA_OUTPUT)/bin
+	@cp -f $(TARGET1) $(SAMPLE_OUT_DIR)/bin
 
 clean:
 	@rm -f $(TARGET1)

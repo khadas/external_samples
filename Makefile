@@ -79,10 +79,18 @@ CFLAGS += -DISP_HW_V30
 LD_FLAGS += -L$(CURRENT_DIR)/lib  -lrtsp_64bit
 endif
 
+export SAMPLE_OUT_DIR=$(CURRENT_DIR)/out
+export PKG_CONF_OPTS
+export COMM_OBJ
+export CC
+export CFLAGS
+export LD_FLAGS
+
 all: $(PKG_TARGET)
 	@echo "build $(PKG_NAME) done";
 
 sample-build: libasound librkaiq librockit
+	@mkdir -p $(SAMPLE_OUT_DIR)/bin
 	@make -C $(CURRENT_DIR)/vi;
 	@make -C $(CURRENT_DIR)/vi install;
 	@make -C $(CURRENT_DIR)/vo;
@@ -93,15 +101,16 @@ sample-build: libasound librkaiq librockit
 	@make -C $(CURRENT_DIR)/avs install;
 	@make -C $(CURRENT_DIR)/test;
 	@make -C $(CURRENT_DIR)/test install;
+	@cp -rfa $(SAMPLE_OUT_DIR)/* $(RK_MEDIA_OUTPUT)
 
 libasound:
-	@make -C $(RK_MEDIA_TOP_DIR)/alsa-lib
+	@test ! -d $(RK_MEDIA_TOP_DIR)/alsa-lib || make -C $(RK_MEDIA_TOP_DIR)/alsa-lib
 
 librkaiq:
-	@make -C $(RK_MEDIA_TOP_DIR)/isp
+	@test ! -d $(RK_MEDIA_TOP_DIR)/isp || make -C $(RK_MEDIA_TOP_DIR)/isp
 
 librockit:
-	@make -C $(RK_MEDIA_TOP_DIR)/rockit
+	@test ! -d $(RK_MEDIA_TOP_DIR)/rockit || make -C $(RK_MEDIA_TOP_DIR)/rockit
 
 clean:
 	@make -C $(CURRENT_DIR)/common clean
@@ -112,10 +121,3 @@ clean:
 	@make -C $(CURRENT_DIR)/test clean
 
 distclean: clean
-
-export CURRENT_DIR
-export PKG_CONF_OPTS
-export COMM_OBJ
-export CC
-export CFLAGS
-export LD_FLAGS
