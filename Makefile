@@ -119,5 +119,6 @@ clean:
 	@make -C $(CURRENT_DIR)/venc clean
 	@make -C $(CURRENT_DIR)/avs clean
 	@make -C $(CURRENT_DIR)/test clean
+	@rm -rf $(SAMPLE_OUT_DIR)
 
 distclean: clean
