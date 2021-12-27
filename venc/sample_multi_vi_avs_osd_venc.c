@@ -442,7 +442,7 @@ int main(int argc, char *argv[]) {
 		ctx->vpss.s32ChnId = 0;
 		ctx->vpss.stGrpVpssAttr.enPixelFormat = RK_FMT_YUV420SP;
 		ctx->vpss.stGrpVpssAttr.enCompressMode = COMPRESS_MODE_NONE; // no compress
-		ctx->vpss.s32ChnRotation = ROTATION_0;
+		ctx->vpss.s32ChnRotation[0] = ROTATION_0;
 		ctx->vpss.stVpssChnAttr[0].enChnMode = VPSS_CHN_MODE_USER;
 		ctx->vpss.stVpssChnAttr[0].enCompressMode = COMPRESS_MODE_NONE;
 		ctx->vpss.stVpssChnAttr[0].enDynamicRange = DYNAMIC_RANGE_SDR8;
@@ -452,7 +452,7 @@ int main(int argc, char *argv[]) {
 		ctx->vpss.stVpssChnAttr[0].u32Width = avs_width;
 		ctx->vpss.stVpssChnAttr[0].u32Height = avs_height;
 		if (s32DisId == 3) { // MIPI
-			ctx->vpss.s32ChnRotation = ROTATION_90;
+			ctx->vpss.s32ChnRotation[0] = ROTATION_90;
 			ctx->vpss.stVpssChnAttr[0].u32Width = avs_height;
 			ctx->vpss.stVpssChnAttr[0].u32Height = avs_width;
 		}

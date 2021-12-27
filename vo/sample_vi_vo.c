@@ -53,9 +53,11 @@ static RK_CHAR optstr[] = "?::a::w:h:d:D:I:L:M:";
 static const struct option long_options[] = {
     {"aiq", optional_argument, NULL, 'a'},
     {"device_name", required_argument, NULL, 'd'},
+    {"disp_devid", required_argument, NULL, 'D'},
     {"width", required_argument, NULL, 'w'},
     {"height", required_argument, NULL, 'h'},
     {"camid", required_argument, NULL, 'I'},
+    {"disp_layerid", required_argument, NULL, 'L'},
     {"multictx", required_argument, NULL, 'M'},
     {"fps", required_argument, NULL, 'f'},
     {"hdr_mode", required_argument, NULL, 'h' + 'm'},
@@ -81,8 +83,8 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-I | --camid: camera ctx id, Default 0\n");
 	printf("\t-w | --width: camera with, Default 1920\n");
 	printf("\t-h | --height: camera height, Default 1080\n");
-	printf("\t-D | --disp devid: display DevId, Default 0\n");
-	printf("\t-L | --disp layerid: display LayerId, Default 0\n");
+	printf("\t-D | --disp_devid: display DevId, Default 0\n");
+	printf("\t-L | --disp_layerid: display LayerId, Default 0\n");
 }
 
 /******************************************************************************
@@ -203,7 +205,7 @@ int main(int argc, char *argv[]) {
 	ctx->vpss.s32ChnId = 0;
 	ctx->vpss.stGrpVpssAttr.enPixelFormat = RK_FMT_YUV420SP;
 	ctx->vpss.stGrpVpssAttr.enCompressMode = COMPRESS_MODE_NONE; // no compress
-	ctx->vpss.s32ChnRotation = ROTATION_0;
+	ctx->vpss.s32ChnRotation[0] = ROTATION_0;
 	ctx->vpss.stVpssChnAttr[0].enChnMode = VPSS_CHN_MODE_USER;
 	ctx->vpss.stVpssChnAttr[0].enCompressMode = COMPRESS_MODE_NONE;
 	ctx->vpss.stVpssChnAttr[0].enDynamicRange = DYNAMIC_RANGE_SDR8;
@@ -213,7 +215,7 @@ int main(int argc, char *argv[]) {
 	ctx->vpss.stVpssChnAttr[0].u32Width = video_width;
 	ctx->vpss.stVpssChnAttr[0].u32Height = video_height;
 	if (s32DisId == 3) { // MIPI
-		ctx->vpss.s32ChnRotation = ROTATION_90;
+		ctx->vpss.s32ChnRotation[0] = ROTATION_90;
 		ctx->vpss.stVpssChnAttr[0].u32Width = video_height;
 		ctx->vpss.stVpssChnAttr[0].u32Height = video_width;
 	}

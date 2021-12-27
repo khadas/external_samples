@@ -41,8 +41,8 @@ typedef struct _rkMpiCtx {
 	SAMPLE_VI_CTX_S vi[6];
 	SAMPLE_VO_CTX_S vo;
 	SAMPLE_AVS_CTX_S avs;
+	SAMPLE_VPSS_CTX_S vpss;
 	SAMPLE_VENC_CTX_S venc;
-	SAMPLE_RGN_CTX_S rgn[2];
 } SAMPLE_MPI_CTX_S;
 RK_S32 s32test = 1;
 
@@ -67,9 +67,10 @@ static const struct option long_options[] = {
 static void print_usage(const RK_CHAR *name) {
 	printf("Usage : %s -n <index> -l <loop count>\n", name);
 	printf("index:\n");
-	printf("\t 0)isp stresstest...\n");
-	printf("\t 1)venc stresstest...\n");
-	printf("\t 2)vi[6]->avs->venc stresstest...\n");
+	printf("\t 0)isp stresstest(IqFileDir: /etc/iqfiles - /usr/share/iqfiles)\n");
+	printf("\t 1)venc stresstest(H264~H265)\n");
+	printf("\t 2)venc stresstest(1x-0.5x resolution)\n");
+	printf("\t 3)vi[6]->avs->venc stresstest\n");
 }
 
 /******************************************************************************
@@ -161,11 +162,11 @@ static void *venc_get_stream(void *pArgs) {
 					quit = true;
 					break;
 				}
-			}
 
-			if (fp) {
-				fwrite(pData, 1, ctx->stFrame.pstPack->u32Len, fp);
-				fflush(fp);
+				if (fp) {
+					fwrite(pData, 1, ctx->stFrame.pstPack->u32Len, fp);
+					fflush(fp);
+				}
 			}
 
 			PrintStreamDetails(ctx->s32ChnId, ctx->stFrame.pstPack->u32Len);
@@ -282,7 +283,8 @@ int SAMPLE_CAMERA_VENC_SetConfig(SAMPLE_MPI_CTX_S *ctx, MPP_CHN_S *pSrc,
 	quit = false;
 
 	printf("%s entering!\n", __func__);
-	// UnBind avs[0] and VENC[0]
+
+	// UnBind VPSS[0] and VENC[0]
 	SAMPLE_COMM_UnBind(pSrc, pDest);
 
 	// Destroy VENC[0]
@@ -291,23 +293,23 @@ int SAMPLE_CAMERA_VENC_SetConfig(SAMPLE_MPI_CTX_S *ctx, MPP_CHN_S *pSrc,
 	// Init VENC[0]
 	SAMPLE_COMM_VENC_CreateChn(&ctx->venc);
 
-	// Bind AVS[0] and VENC[0]
+	// Bind VPSS[0] and VENC[0]
 	SAMPLE_COMM_Bind(pSrc, pDest);
 
 	while (!quit) {
 		sleep(1);
 	}
 
-	printf("%s exit!\n", __func__);
-
 	if (ctx->venc.getStreamCbFunc) {
 		pthread_join(ctx->venc.getStreamThread, NULL);
 	}
 
+	printf("%s exit!\n", __func__);
+
 	return 0;
 }
 
-int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, char *pCodecName) {
+int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	RK_S32 s32Ret = RK_FAILURE;
 	int video_width = 2560;
 	int video_height = 1520;
@@ -317,6 +319,7 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, char *pCodecName) {
 	RK_CHAR *pInPathBmp = "/usr/share/image.bmp";
 	RK_CHAR *pOutPathVenc = "/data/";
 	RK_CHAR *iq_file_dir = "/etc/iqfiles";
+	RK_CHAR *pCodecName = "H264";
 	CODEC_TYPE_E enCodecType = RK_CODEC_TYPE_H265;
 	VENC_RC_MODE_E enRcMode = VENC_RC_MODE_H265CBR;
 	RK_S32 s32BitRate = 4 * 1024;
@@ -327,6 +330,10 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, char *pCodecName) {
 	RK_S32 i;
 	RK_BOOL bMultictx = RK_FALSE;
 	quit = false;
+
+	if (mode == 1) {
+		s32loopCnt = -1;
+	}
 
 	if (pCodecName == "H265") {
 		enCodecType = RK_CODEC_TYPE_H265;
@@ -408,6 +415,39 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, char *pCodecName) {
 	strcpy(ctx->avs.stAvsGrpAttr.stLUT.aFilePath, pAvsLutFilePath);
 	SAMPLE_COMM_AVS_CreateChn(&ctx->avs);
 
+	// Init VPSS[0]
+	ctx->vpss.s32GrpId = 0; // 0~85:gpu, 86~169:rga, 170~255:isp
+	ctx->vpss.s32ChnId = 0;
+	ctx->vpss.stGrpVpssAttr.enPixelFormat = RK_FMT_YUV420SP;
+	ctx->vpss.stGrpVpssAttr.enCompressMode = COMPRESS_MODE_NONE; // no compress
+
+	ctx->vpss.stCropInfo.bEnable = RK_FALSE;
+	ctx->vpss.stCropInfo.enCropCoordinate = VPSS_CROP_RATIO_COOR;
+	ctx->vpss.stCropInfo.stCropRect.s32X = 0;
+	ctx->vpss.stCropInfo.stCropRect.s32Y = 0;
+	ctx->vpss.stCropInfo.stCropRect.u32Width = 8192;
+	ctx->vpss.stCropInfo.stCropRect.u32Height = 2700;
+
+	ctx->vpss.stChnCropInfo[0].bEnable = RK_TRUE;
+	ctx->vpss.stChnCropInfo[0].enCropCoordinate = VPSS_CROP_RATIO_COOR;
+	ctx->vpss.stChnCropInfo[0].stCropRect.s32X = 0;
+	ctx->vpss.stChnCropInfo[0].stCropRect.s32Y = 0;
+	ctx->vpss.stChnCropInfo[0].stCropRect.u32Width = venc_width * 1000 / 8192;
+	ctx->vpss.stChnCropInfo[0].stCropRect.u32Height = venc_height * 1000 / 2700;
+	ctx->vpss.s32ChnRotation[0] = ROTATION_0;
+	ctx->vpss.stRotationEx[0].bEnable = RK_FALSE;
+	ctx->vpss.stRotationEx[0].stRotationEx.u32Angle = 60;
+	ctx->vpss.stVpssChnAttr[0].enChnMode = VPSS_CHN_MODE_USER;
+	ctx->vpss.stVpssChnAttr[0].enCompressMode = COMPRESS_MODE_NONE;
+	ctx->vpss.stVpssChnAttr[0].enDynamicRange = DYNAMIC_RANGE_SDR8;
+	ctx->vpss.stVpssChnAttr[0].enPixelFormat = RK_FMT_YUV420SP;
+	ctx->vpss.stVpssChnAttr[0].enCompressMode = COMPRESS_AFBC_16x16;
+	ctx->vpss.stVpssChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
+	ctx->vpss.stVpssChnAttr[0].stFrameRate.s32DstFrameRate = -1;
+	ctx->vpss.stVpssChnAttr[0].u32Width = venc_width;
+	ctx->vpss.stVpssChnAttr[0].u32Height = venc_height;
+	SAMPLE_COMM_VPSS_CreateChn(&ctx->vpss);
+
 	// Init VENC[0]
 	ctx->venc.s32ChnId = 0;
 	ctx->venc.u32Width = venc_width;
@@ -423,7 +463,7 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, char *pCodecName) {
 	// H264  66：Baseline  77：Main Profile 100：High Profile
 	// H265  0：Main Profile  1：Main 10 Profile
 	// MJPEG 0：Baseline
-	ctx->venc.stChnAttr.stVencAttr.u32Profile = 0;
+	ctx->venc.stChnAttr.stVencAttr.u32Profile = 66;
 	ctx->venc.stChnAttr.stGopAttr.enGopMode = VENC_GOPMODE_NORMALP; // VENC_GOPMODE_SMARTP
 	SAMPLE_COMM_VENC_CreateChn(&ctx->venc);
 
@@ -438,10 +478,19 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, char *pCodecName) {
 		SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
 	}
 
-	// Bind AVS[0] and VENC[0]
+	// Bind AVS[0] and VPSS[0]
 	stSrcChn.enModId = RK_ID_AVS;
 	stSrcChn.s32DevId = ctx->avs.s32GrpId;
 	stSrcChn.s32ChnId = ctx->avs.s32ChnId;
+	stDestChn.enModId = RK_ID_VPSS;
+	stDestChn.s32DevId = ctx->vpss.s32GrpId;
+	stDestChn.s32ChnId = ctx->vpss.s32ChnId;
+	SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
+
+	// Bind VPSS[0] and VENC[0]
+	stSrcChn.enModId = RK_ID_VPSS;
+	stSrcChn.s32DevId = ctx->vpss.s32GrpId;
+	stSrcChn.s32ChnId = ctx->vpss.s32ChnId;
 	stDestChn.enModId = RK_ID_VENC;
 	stDestChn.s32DevId = 0;
 	stDestChn.s32ChnId = ctx->venc.s32ChnId;
@@ -449,52 +498,86 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, char *pCodecName) {
 
 	printf("%s initial finish\n", __func__);
 
-	while (!quit) {
-		sleep(1);
-	}
+	if (mode == 0) {
+		while (!quit) {
+			sleep(1);
+		}
 
-	if (ctx->venc.getStreamCbFunc) {
-		pthread_join(ctx->venc.getStreamThread, NULL);
-	}
-
-	if (g_loopcount > 0) {
-		g_loopcount--;
-		printf("sample_camera_stresstest: g_loopcount(%d)\n", g_loopcount);
-	}
-
-	while (g_loopcount) {
-		if (g_loopcount % 2 == 0) {
-			printf("#CodecName:%s\n", "H265");
-			ctx->venc.enCodecType = RK_CODEC_TYPE_H265;
-			ctx->venc.enRcMode = VENC_RC_MODE_H265CBR;
-			s32Ret = SAMPLE_CAMERA_VENC_SetConfig(ctx, &stSrcChn, &stDestChn);
-		} else {
-			printf("#CodecName:%s\n", "H264");
-			ctx->venc.enCodecType = RK_CODEC_TYPE_H264;
-			ctx->venc.enRcMode = VENC_RC_MODE_H264CBR;
-			s32Ret = SAMPLE_CAMERA_VENC_SetConfig(ctx, &stSrcChn, &stDestChn);
+		if (ctx->venc.getStreamCbFunc) {
+			pthread_join(ctx->venc.getStreamThread, NULL);
 		}
 
 		if (g_loopcount > 0) {
 			g_loopcount--;
+			printf("sample_camera_stresstest: g_loopcount(%d)\n", g_loopcount);
+		}
+	}
+
+	while (g_loopcount) {
+		if (g_loopcount % 2 == 0) {
+			if (mode == 0) {
+				printf("Switch to h265cbr coding!\n");
+				ctx->venc.enCodecType = RK_CODEC_TYPE_H265;
+				ctx->venc.enRcMode = VENC_RC_MODE_H265CBR;
+				ctx->venc.stChnAttr.stVencAttr.u32Profile = 0;
+				s32Ret = SAMPLE_CAMERA_VENC_SetConfig(ctx, &stSrcChn, &stDestChn);
+			} else if (mode == 1) {
+				printf("Switch to %dx%d coding!\n", venc_width / 2, venc_height / 2);
+				ctx->vpss.s32GrpId = 0;
+				ctx->vpss.s32ChnId = 0;
+				ctx->vpss.stVpssChnAttr[0].u32Width = venc_width / 2;
+				ctx->vpss.stVpssChnAttr[0].u32Height = venc_height / 2;
+				SAMPLE_COMM_VPSS_SetChnAttr(&ctx->vpss);
+			}
 		} else {
+			if (mode == 0) {
+				printf("Switch to h264cbr coding!\n");
+				ctx->venc.enCodecType = RK_CODEC_TYPE_H264;
+				ctx->venc.enRcMode = VENC_RC_MODE_H264CBR;
+				ctx->venc.stChnAttr.stVencAttr.u32Profile = 66;
+				s32Ret = SAMPLE_CAMERA_VENC_SetConfig(ctx, &stSrcChn, &stDestChn);
+			} else if (mode == 1) {
+				printf("Switch to %dx%d coding!\n", venc_width, venc_height);
+				ctx->vpss.s32GrpId = 0;
+				ctx->vpss.s32ChnId = 0;
+				ctx->vpss.stVpssChnAttr[0].u32Width = venc_width;
+				ctx->vpss.stVpssChnAttr[0].u32Height = venc_height;
+				SAMPLE_COMM_VPSS_SetChnAttr(&ctx->vpss);
+			}
+		}
+
+		if (g_loopcount > 0) {
+			g_loopcount--;
+			printf("sample_camera_stresstest: g_loopcount(%d)\n", g_loopcount);
+		} else {
+			quit = true;
 			break;
 		}
 
 		sleep(2);
-		printf("sample_camera_stresstest: g_loopcount(%d)\n", g_loopcount);
 	}
 
 	printf("%s exit!\n", __func__);
 
-	// UnBind avs[0] and VENC[0]
-	stSrcChn.enModId = RK_ID_AVS;
-	stSrcChn.s32DevId = ctx->avs.s32GrpId;
-	stSrcChn.s32ChnId = ctx->avs.s32ChnId;
+	// UnBind VPSS[0] and VENC[0]
+	stSrcChn.enModId = RK_ID_VPSS;
+	stSrcChn.s32DevId = ctx->vpss.s32GrpId;
+	stSrcChn.s32ChnId = ctx->vpss.s32ChnId;
 	stDestChn.enModId = RK_ID_VENC;
 	stDestChn.s32DevId = 0;
 	stDestChn.s32ChnId = ctx->venc.s32ChnId;
 	SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
+	printf("%s Unbind VPSS[0] - VENC[0]!\n", __func__);
+
+	// UnBind AVS[0] and VPSS[0]
+	stSrcChn.enModId = RK_ID_AVS;
+	stSrcChn.s32DevId = ctx->avs.s32GrpId;
+	stSrcChn.s32ChnId = ctx->avs.s32ChnId;
+	stDestChn.enModId = RK_ID_VPSS;
+	stDestChn.s32DevId = ctx->vpss.s32GrpId;
+	stDestChn.s32ChnId = ctx->vpss.s32ChnId;
+	SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
+	printf("%s Unbind AVS[0] - VPSS[0]!\n", __func__);
 
 	// UnBind Bind VI[0]~VI[5]
 	for (i = 0; i < s32CamNum; i++) {
@@ -506,12 +589,15 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, char *pCodecName) {
 		stDestChn.s32ChnId = i;
 		SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
 	}
+	printf("%s Unbind VI - AVS !\n", __func__);
 
 	// Destroy VENC[0]
 	SAMPLE_COMM_VENC_DestroyChn(&ctx->venc);
+	// Destroy VPSS[0]
+	SAMPLE_COMM_VPSS_DestroyChn(&ctx->vpss);
 	// Destroy AVS[0]
 	SAMPLE_COMM_AVS_DestroyChn(&ctx->avs);
-	// Destroy VI[0]
+	// Destroy VI[0]~VI[5]
 	for (i = 0; i < s32CamNum; i++) {
 		SAMPLE_COMM_VI_DestroyChn(&ctx->vi[i]);
 	}
@@ -651,23 +737,6 @@ int SAMPLE_CAMERA_VI_AVS_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx) {
 	ctx->venc.stChnAttr.stGopAttr.enGopMode = VENC_GOPMODE_NORMALP; // VENC_GOPMODE_SMARTP
 	SAMPLE_COMM_VENC_CreateChn(&ctx->venc);
 
-	// Init RGN[0]
-	ctx->rgn[0].rgnHandle = 1;
-	ctx->rgn[0].stRgnAttr.enType = OVERLAY_RGN;
-	ctx->rgn[0].stMppChn.enModId = RK_ID_VENC;
-	ctx->rgn[0].stMppChn.s32ChnId = 0;
-	ctx->rgn[0].stMppChn.s32DevId = ctx->venc.s32ChnId;
-	ctx->rgn[0].stRegion.s32X = 0;        // must be 16 aligned
-	ctx->rgn[0].stRegion.s32Y = 0;        // must be 16 aligned
-	ctx->rgn[0].stRegion.u32Width = 576;  // must be 16 aligned
-	ctx->rgn[0].stRegion.u32Height = 288; // must be 16 aligned
-	ctx->rgn[0].u32BmpFormat = RK_FMT_BGRA5551;
-	ctx->rgn[0].u32BgAlpha = 128;
-	ctx->rgn[0].u32FgAlpha = 128;
-	ctx->rgn[0].u32Layer = 1;
-	ctx->rgn[0].srcFileBmpName = pInPathBmp;
-	// SAMPLE_COMM_RGN_CreateChn(&ctx->rgn[0]);
-
 	// Bind VI[0]~VI[5] and avs[0]
 	for (i = 0; i < s32CamNum; i++) {
 		stSrcChn.enModId = RK_ID_VI;
@@ -720,13 +789,11 @@ int SAMPLE_CAMERA_VI_AVS_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx) {
 		SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
 	}
 
-	// Destroy RGN[0]
-	// SAMPLE_COMM_RGN_DestroyChn(&ctx->rgn[0]);
 	// Destroy VENC[0]
 	SAMPLE_COMM_VENC_DestroyChn(&ctx->venc);
 	// Destroy AVS[0]
 	SAMPLE_COMM_AVS_DestroyChn(&ctx->avs);
-	// Destroy VI[0]
+	// Destroy VI[0]~VI[5]
 	for (i = 0; i < s32CamNum; i++) {
 		SAMPLE_COMM_VI_DestroyChn(&ctx->vi[i]);
 	}
@@ -792,10 +859,14 @@ int main(int argc, char *argv[]) {
 			}
 			break;
 		case 1:
-			s32Ret = SAMPLE_CAMERA_VENC_Stresstest(&ctx, "h265");
+			s32Ret = SAMPLE_CAMERA_VENC_Stresstest(&ctx, 0);
 			g_loopcount = 0;
 			break;
 		case 2:
+			s32Ret = SAMPLE_CAMERA_VENC_Stresstest(&ctx, 1);
+			g_loopcount = 0;
+			break;
+		case 3:
 			s32Ret = SAMPLE_CAMERA_VI_AVS_VENC_Stresstest(&ctx);
 			break;
 		default:
@@ -806,10 +877,10 @@ int main(int argc, char *argv[]) {
 
 		if (g_loopcount > 0) {
 			g_loopcount--;
+			printf("sample_camera_stresstest: g_loopcount(%d)\n", g_loopcount);
 		} else {
 			break;
 		}
-		printf("sample_camera_stresstest: g_loopcount(%d)\n", g_loopcount);
 
 		sleep(2);
 	}

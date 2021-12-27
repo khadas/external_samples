@@ -82,8 +82,8 @@ RK_S32 SAMPLE_COMM_VPSS_CreateChn(SAMPLE_VPSS_CTX_S *ctx) {
 				return s32Ret;
 			}
 
-			s32Ret = RK_MPI_VPSS_SetChnRotation(ctx->s32GrpId, chnIndex,
-			                                    (ROTATION_E)ctx->s32ChnRotation);
+			s32Ret = RK_MPI_VPSS_SetChnRotation(
+			    ctx->s32GrpId, chnIndex, (ROTATION_E)ctx->s32ChnRotation[chnIndex]);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("RK_MPI_VPSS_SetChnRotation failed with %#x!\n", s32Ret);
 				return s32Ret;
@@ -93,7 +93,8 @@ RK_S32 SAMPLE_COMM_VPSS_CreateChn(SAMPLE_VPSS_CTX_S *ctx) {
 				RK_LOGE("RK_MPI_VPSS_GetChnRotation failed with %#x!\n", s32Ret);
 				return s32Ret;
 			}
-			if (rotation != ctx->s32ChnRotation) {
+			if (rotation != ctx->s32ChnRotation[chnIndex]) {
+				RK_LOGE("RK_MPI_VPSS_SetChnRotation failed!\n");
 				s32Ret = RK_FAILURE;
 				return s32Ret;
 			}
@@ -140,6 +141,20 @@ RK_S32 SAMPLE_COMM_VPSS_CreateChn(SAMPLE_VPSS_CTX_S *ctx) {
 	s32Ret = RK_MPI_VPSS_StartGrp(ctx->s32GrpId);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_VPSS_StartGrp failed with %#x!\n", s32Ret);
+		return s32Ret;
+	}
+
+	return RK_SUCCESS;
+}
+
+RK_S32 SAMPLE_COMM_VPSS_SetChnAttr(SAMPLE_VPSS_CTX_S *ctx) {
+	RK_S32 s32Ret = RK_FAILURE;
+	RK_S32 chnIndex = ctx->s32ChnId;
+
+	s32Ret =
+	    RK_MPI_VPSS_SetChnAttr(ctx->s32GrpId, chnIndex, &ctx->stVpssChnAttr[chnIndex]);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("RK_MPI_VPSS_SetChnAttr failed with %#x!\n", s32Ret);
 		return s32Ret;
 	}
 

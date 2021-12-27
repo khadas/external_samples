@@ -55,7 +55,7 @@ static void sigterm_handler(int sig) {
 	quit = true;
 }
 
-static RK_CHAR optstr[] = "?::a::b:w:h:l:o:e:d:I:i:M:";
+static RK_CHAR optstr[] = "?::a::b:w:h:l:o:e:d:D:I:i:L:M:";
 static const struct option long_options[] = {
     {"aiq", optional_argument, NULL, 'a'},
     {"bitrate", required_argument, NULL, 'b'},
@@ -79,9 +79,8 @@ static const struct option long_options[] = {
 ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
-	printf("\t%s -w 2560 -h 1520 -d /dev/video0 -e h264cbr -b 4096 -i "
-	       "/usr/share/image.bmp -o "
-	       "/data/\n",
+	printf("\t%s -w 2560 -h 1520 -a /etc/iqfiles/ -I 0 -e h264cbr -b 4096 "
+	       "-i /usr/share/image.bmp -o /data/\n",
 	       name);
 	printf("\trtsp://xx.xx.xx.xx/live/0, Default OPEN\n");
 #ifdef RKAIQ
@@ -104,6 +103,8 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-i | --input_bmp_name: input file path of logo.bmp, Default NULL\n");
 	printf("\t-l | --loop_count: loop count, Default -1\n");
 	printf("\t-o | --output_path: encode save file path, Default /data/\n");
+	printf("\t-D | --disp devid: display DevId, Default -1\n");
+	printf("\t-L | --disp layerid: display LayerId, Default 0\n");
 }
 
 /******************************************************************************
@@ -175,6 +176,8 @@ int main(int argc, char *argv[]) {
 	int video_height = 1080;
 	int venc_width = 1920;
 	int venc_height = 1080;
+	int disp_width = 0;
+	int disp_height = 0;
 	RK_CHAR *pDeviceName = NULL;
 	RK_CHAR *pInPathBmp = NULL;
 	RK_CHAR *pOutPathVenc = NULL;
@@ -182,6 +185,8 @@ int main(int argc, char *argv[]) {
 	VENC_RC_MODE_E enRcMode = VENC_RC_MODE_H264CBR;
 	RK_CHAR *pCodecName = "H264";
 	RK_S32 s32CamId = 0;
+	RK_S32 s32DisId = -1;
+	RK_S32 s32DisLayerId = 0;
 	RK_S32 s32loopCnt = -1;
 	RK_S32 s32BitRate = 4 * 1024;
 	MPP_CHN_S stSrcChn, stDestChn;
@@ -219,6 +224,9 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'd':
 			pDeviceName = optarg;
+			break;
+		case 'D':
+			s32DisId = atoi(optarg);
 			break;
 		case 'e':
 			if (!strcmp(optarg, "h264cbr")) {
@@ -273,6 +281,9 @@ int main(int argc, char *argv[]) {
 		case 'l':
 			s32loopCnt = atoi(optarg);
 			break;
+		case 'L':
+			s32DisLayerId = atoi(optarg);
+			break;
 		case 'o':
 			pOutPathVenc = optarg;
 			break;
@@ -299,7 +310,8 @@ int main(int argc, char *argv[]) {
 #ifdef RKAIQ
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
-		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
+		// rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
+		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_ISP_HDR3;
 		int fps = 30;
 		SAMPLE_COMM_ISP_Init(s32CamId, hdr_mode, bMultictx, iq_file_dir);
 		SAMPLE_COMM_ISP_Run(s32CamId);
@@ -332,7 +344,7 @@ int main(int argc, char *argv[]) {
 	ctx->vi.s32ChnId = 1;
 	ctx->vi.stChnAttr.stIspOpt.u32BufCount = 3;
 	ctx->vi.stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
-	ctx->vi.stChnAttr.u32Depth = 2;
+	ctx->vi.stChnAttr.u32Depth = 0;
 	ctx->vi.stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
 	ctx->vi.stChnAttr.stFrameRate.s32SrcFrameRate = -1;
 	ctx->vi.stChnAttr.stFrameRate.s32DstFrameRate = -1;
@@ -360,12 +372,9 @@ int main(int argc, char *argv[]) {
 	ctx->vpss.stChnCropInfo[0].stCropRect.s32Y = 0;
 	ctx->vpss.stChnCropInfo[0].stCropRect.u32Width = venc_width * 1000 / video_width;
 	ctx->vpss.stChnCropInfo[0].stCropRect.u32Height = venc_height * 1000 / video_height;
-
-	ctx->vpss.s32ChnRotation = ROTATION_0; // ROTATION_90
-
+	ctx->vpss.s32ChnRotation[0] = ROTATION_0; // ROTATION_90
 	ctx->vpss.stRotationEx[0].bEnable = RK_FALSE;
 	ctx->vpss.stRotationEx[0].stRotationEx.u32Angle = 60;
-
 	ctx->vpss.stVpssChnAttr[0].enChnMode = VPSS_CHN_MODE_USER;
 	ctx->vpss.stVpssChnAttr[0].enCompressMode = COMPRESS_MODE_NONE;
 	ctx->vpss.stVpssChnAttr[0].enDynamicRange = DYNAMIC_RANGE_SDR8;
@@ -374,6 +383,23 @@ int main(int argc, char *argv[]) {
 	ctx->vpss.stVpssChnAttr[0].stFrameRate.s32DstFrameRate = -1;
 	ctx->vpss.stVpssChnAttr[0].u32Width = venc_width;
 	ctx->vpss.stVpssChnAttr[0].u32Height = venc_height;
+
+	if (s32DisId >= 0) {
+		ctx->vpss.s32ChnRotation[1] = ROTATION_0;
+		ctx->vpss.stVpssChnAttr[1].enChnMode = VPSS_CHN_MODE_USER;
+		ctx->vpss.stVpssChnAttr[1].enCompressMode = COMPRESS_MODE_NONE;
+		ctx->vpss.stVpssChnAttr[1].enDynamicRange = DYNAMIC_RANGE_SDR8;
+		ctx->vpss.stVpssChnAttr[1].enPixelFormat = RK_FMT_YUV420SP;
+		ctx->vpss.stVpssChnAttr[1].stFrameRate.s32SrcFrameRate = -1;
+		ctx->vpss.stVpssChnAttr[1].stFrameRate.s32DstFrameRate = -1;
+		ctx->vpss.stVpssChnAttr[1].u32Width = video_width;
+		ctx->vpss.stVpssChnAttr[1].u32Height = video_height;
+		if (s32DisId == 3) { // MIPI
+			ctx->vpss.s32ChnRotation[1] = ROTATION_90;
+			ctx->vpss.stVpssChnAttr[1].u32Width = video_height;
+			ctx->vpss.stVpssChnAttr[1].u32Height = video_width;
+		}
+	}
 	SAMPLE_COMM_VPSS_CreateChn(&ctx->vpss);
 
 	// Init VENC[0]
@@ -426,6 +452,39 @@ int main(int argc, char *argv[]) {
 	ctx->rgn[1].srcFileBmpName = pInPathBmp;
 	SAMPLE_COMM_RGN_CreateChn(&ctx->rgn[1]);
 
+	if (s32DisId >= 0) {
+		// Init VO[0]
+		ctx->vo.s32DevId = s32DisId;
+		ctx->vo.s32ChnId = 0;
+		ctx->vo.s32LayerId = s32DisLayerId;
+		ctx->vo.Volayer_mode = VO_LAYER_MODE_GRAPHIC;
+		ctx->vo.u32DispBufLen = 3;
+		ctx->vo.stVoPubAttr.enIntfType = VO_INTF_MIPI;
+		ctx->vo.stVoPubAttr.enIntfSync = VO_OUTPUT_DEFAULT;
+		ctx->vo.stLayerAttr.stDispRect.s32X = 0;
+		ctx->vo.stLayerAttr.stDispRect.s32Y = 0;
+		ctx->vo.stLayerAttr.stDispRect.u32Width = disp_width;
+		ctx->vo.stLayerAttr.stDispRect.u32Height = disp_height;
+		ctx->vo.stLayerAttr.stImageSize.u32Width = disp_width;
+		ctx->vo.stLayerAttr.stImageSize.u32Height = disp_height;
+		ctx->vo.stLayerAttr.u32DispFrmRt = 30;
+		ctx->vo.stLayerAttr.enPixFormat = RK_FMT_RGB888;
+		ctx->vo.stLayerAttr.bDoubleFrame = RK_FALSE;
+		ctx->vo.stChnAttr.stRect.s32X = 0;
+		ctx->vo.stChnAttr.stRect.s32Y = 0;
+		ctx->vo.stChnAttr.stRect.u32Width = disp_width;
+		ctx->vo.stChnAttr.stRect.u32Height = disp_height;
+		ctx->vo.stChnAttr.u32Priority = 1;
+		if (s32DisId == 3) { // MIPI
+			ctx->vo.stVoPubAttr.enIntfType = VO_INTF_MIPI;
+			ctx->vo.stVoPubAttr.enIntfSync = VO_OUTPUT_DEFAULT;
+		} else {
+			ctx->vo.stVoPubAttr.enIntfType = VO_INTF_HDMI;
+			ctx->vo.stVoPubAttr.enIntfSync = VO_OUTPUT_1080P60;
+		}
+		SAMPLE_COMM_VO_CreateChn(&ctx->vo);
+	}
+
 	// Bind VI[0] and VPSS[0]
 	stSrcChn.enModId = RK_ID_VI;
 	stSrcChn.s32DevId = ctx->vi.s32DevId;
@@ -444,6 +503,17 @@ int main(int argc, char *argv[]) {
 	stDestChn.s32ChnId = ctx->venc.s32ChnId;
 	SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
 
+	if (s32DisId >= 0) {
+		// Bind VPSS[0] and VO[0]
+		stSrcChn.enModId = RK_ID_VPSS;
+		stSrcChn.s32DevId = ctx->vpss.s32GrpId;
+		stSrcChn.s32ChnId = 1;
+		stDestChn.enModId = RK_ID_VO;
+		stDestChn.s32DevId = ctx->vo.s32LayerId;
+		stDestChn.s32ChnId = ctx->vo.s32ChnId;
+		SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
+	}
+
 	printf("%s initial finish\n", __func__);
 
 	while (!quit) {
@@ -458,6 +528,17 @@ int main(int argc, char *argv[]) {
 
 	if (g_rtsplive)
 		rtsp_del_demo(g_rtsplive);
+
+	if (s32DisId >= 0) {
+		// UnBind VPSS[0] and VO[0]
+		stSrcChn.enModId = RK_ID_VPSS;
+		stSrcChn.s32DevId = ctx->vpss.s32GrpId;
+		stSrcChn.s32ChnId = 1;
+		stDestChn.enModId = RK_ID_VO;
+		stDestChn.s32DevId = ctx->vo.s32LayerId;
+		stDestChn.s32ChnId = ctx->vo.s32ChnId;
+		SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
+	}
 
 	// UnBind VPSS[0] and VENC[0]
 	stSrcChn.enModId = RK_ID_VPSS;
@@ -477,6 +558,10 @@ int main(int argc, char *argv[]) {
 	stDestChn.s32ChnId = ctx->vpss.s32ChnId;
 	SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
 
+	if (s32DisId >= 0) {
+		// Destroy VO[0]
+		SAMPLE_COMM_VO_DestroyChn(&ctx->vo);
+	}
 	// Destroy RGN[1]
 	SAMPLE_COMM_RGN_DestroyChn(&ctx->rgn[1]);
 	// Destroy RGN[0]

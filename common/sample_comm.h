@@ -130,12 +130,12 @@ typedef struct _rkMpiRGNCtx {
 typedef struct _rkMpiVPSSCtx {
 	VPSS_GRP s32GrpId;
 	VPSS_CHN s32ChnId;
-	RK_S32 s32ChnRotation;
 	RK_S32 s32RotationEx;
 	RK_S32 s32GrpCropRatio;
 	RK_S32 s32ChnCropRatio;
 	VPSS_GRP_ATTR_S stGrpVpssAttr;
 	VPSS_CROP_INFO_S stCropInfo;
+	RK_S32 s32ChnRotation[VPSS_MAX_CHN_NUM];
 	VPSS_CROP_INFO_S stChnCropInfo[VPSS_MAX_CHN_NUM];
 	VPSS_ROTATION_EX_ATTR_S stRotationEx[VPSS_MAX_CHN_NUM];
 	VPSS_CHN_ATTR_S stVpssChnAttr[VPSS_MAX_CHN_NUM];
