@@ -47,6 +47,7 @@ typedef struct _rkMpiCtx {
 RK_S32 s32test = 1;
 
 static int g_loopcount = 1;
+static int g_framcount = 60;
 static bool quit = false;
 static void sigterm_handler(int sig) {
 	fprintf(stderr, "signal %d\n", sig);
@@ -54,10 +55,11 @@ static void sigterm_handler(int sig) {
 	quit = true;
 }
 
-static RK_CHAR optstr[] = "?::n:l:o:";
+static RK_CHAR optstr[] = "?::n:l:f:";
 static const struct option long_options[] = {
     {"index", required_argument, NULL, 'n'},
     {"loop_count", required_argument, NULL, 'l'},
+    {"frame_count", required_argument, NULL, 'f'},
     {NULL, 0, NULL, 0},
 };
 
@@ -65,7 +67,7 @@ static const struct option long_options[] = {
 * function : show usage
 ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
-	printf("Usage : %s -n <index> -l <loop count>\n", name);
+	printf("Usage : %s -n <index> -l <loop count> -f <frame count>\n", name);
 	printf("index:\n");
 	printf("\t 0)isp stresstest(IqFileDir: /etc/iqfiles - /usr/share/iqfiles)\n");
 	printf("\t 1)venc stresstest(H264~H265)\n");
@@ -194,10 +196,10 @@ int SAMPLE_CAMERA_ISP_Stresstest(SAMPLE_MPI_CTX_S *ctx, char *pIqFileDir) {
 	int video_width = 1920;
 	int video_height = 1080;
 	RK_CHAR *pDeviceName = NULL;
-	RK_CHAR *pOutPath = "/data/";
+	RK_CHAR *pOutPath = NULL;
 	char *iq_file_dir = pIqFileDir;
 	RK_S32 i, s32CamNum = 6;
-	RK_S32 s32loopCnt = 60;
+	RK_S32 s32loopCnt = g_framcount;
 	MPP_CHN_S stSrcChn, stDestChn;
 	FILE *fp = RK_NULL;
 	void *pData = RK_NULL;
@@ -316,8 +318,7 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	int venc_width = 8192;
 	int venc_height = 2700;
 	RK_CHAR *pAvsLutFilePath = "/usr/share/avs_mesh/";
-	RK_CHAR *pInPathBmp = "/usr/share/image.bmp";
-	RK_CHAR *pOutPathVenc = "/data/";
+	RK_CHAR *pOutPathVenc = NULL;
 	RK_CHAR *iq_file_dir = "/etc/iqfiles";
 	RK_CHAR *pCodecName = "H264";
 	CODEC_TYPE_E enCodecType = RK_CODEC_TYPE_H265;
@@ -326,7 +327,7 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	RK_S32 s32CamId = 0;
 	MPP_CHN_S stSrcChn, stDestChn;
 	RK_S32 s32CamNum = 6;
-	RK_S32 s32loopCnt = 200;
+	RK_S32 s32loopCnt = g_framcount;
 	RK_S32 i;
 	RK_BOOL bMultictx = RK_FALSE;
 	quit = false;
@@ -559,6 +560,13 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 
 	printf("%s exit!\n", __func__);
 
+	if (mode == 1) {
+		quit = true;
+		if (ctx->venc.getStreamCbFunc) {
+			pthread_join(ctx->venc.getStreamThread, NULL);
+		}
+	}
+
 	// UnBind VPSS[0] and VENC[0]
 	stSrcChn.enModId = RK_ID_VPSS;
 	stSrcChn.s32DevId = ctx->vpss.s32GrpId;
@@ -623,7 +631,6 @@ int SAMPLE_CAMERA_VI_AVS_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx) {
 	int venc_width = 8192;
 	int venc_height = 2700;
 	RK_CHAR *pAvsLutFilePath = "/usr/share/avs_mesh/";
-	RK_CHAR *pInPathBmp = "/usr/share/image.bmp";
 	RK_CHAR *pOutPathVenc = "/data/";
 	RK_CHAR *iq_file_dir = "/etc/iqfiles";
 	RK_CHAR *pCodecName = "H265";
@@ -633,7 +640,7 @@ int SAMPLE_CAMERA_VI_AVS_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx) {
 	RK_S32 s32CamId = 0;
 	MPP_CHN_S stSrcChn, stDestChn;
 	RK_S32 s32CamNum = 6;
-	RK_S32 s32loopCnt = 200;
+	RK_S32 s32loopCnt = g_framcount;
 	RK_S32 i;
 	RK_BOOL bMultictx = RK_FALSE;
 	quit = false;
@@ -678,7 +685,7 @@ int SAMPLE_CAMERA_VI_AVS_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx) {
 		ctx->vi[i].s32ChnId = 2; // rk3588 mainpath:0 selfpath:1 fbcpath:2
 		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 6;
 		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
-		ctx->vi[i].stChnAttr.u32Depth = 2;
+		ctx->vi[i].stChnAttr.u32Depth = 0;
 		ctx->vi[i].stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
 		ctx->vi[i].stChnAttr.enCompressMode = COMPRESS_AFBC_16x16;
 		ctx->vi[i].stChnAttr.stFrameRate.s32SrcFrameRate = -1;
@@ -839,6 +846,9 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'l':
 			g_loopcount = atoi(optarg);
+			break;
+		case 'f':
+			g_framcount = atoi(optarg);
 			break;
 		case '?':
 		default:
