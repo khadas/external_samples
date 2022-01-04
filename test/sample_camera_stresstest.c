@@ -47,7 +47,9 @@ typedef struct _rkMpiCtx {
 RK_S32 s32test = 1;
 
 static int g_loopcount = 1;
-static int g_framcount = 60;
+static int g_framcount = 200;
+static COMPRESS_MODE_E g_compressMode = COMPRESS_AFBC_16x16;
+
 static bool quit = false;
 static void sigterm_handler(int sig) {
 	fprintf(stderr, "signal %d\n", sig);
@@ -55,11 +57,12 @@ static void sigterm_handler(int sig) {
 	quit = true;
 }
 
-static RK_CHAR optstr[] = "?::n:l:f:";
+static RK_CHAR optstr[] = "?::n:l:c:f:";
 static const struct option long_options[] = {
     {"index", required_argument, NULL, 'n'},
     {"loop_count", required_argument, NULL, 'l'},
-    {"frame_count", required_argument, NULL, 'f'},
+    {"frame_count", required_argument, NULL, 'c'},
+    {"pixel_format", optional_argument, NULL, 'f'},
     {NULL, 0, NULL, 0},
 };
 
@@ -67,12 +70,16 @@ static const struct option long_options[] = {
 * function : show usage
 ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
-	printf("Usage : %s -n <index> -l <loop count> -f <frame count>\n", name);
+	printf("Usage : %s -n <index> -l <loop count> -c <frame count> -f <pixel format>\n",
+	       name);
 	printf("index:\n");
-	printf("\t 0)isp stresstest(IqFileDir: /etc/iqfiles - /usr/share/iqfiles)\n");
-	printf("\t 1)venc stresstest(H264~H265)\n");
-	printf("\t 2)venc stresstest(1x-0.5x resolution)\n");
+	printf("\t 0)isp stresstest(IqFileDir: /etc/iqfiles ~ /usr/share/iqfiles)\n");
+	printf("\t 1)venc stresstest(H264 ~ H265)\n");
+	printf("\t 2)venc stresstest(1x ~ 0.5x resolution)\n");
 	printf("\t 3)vi[6]->avs->venc stresstest\n");
+	printf("pixel format:\n");
+	printf("\t nv12) no compress\n");
+	printf("\t afbc) compress\n");
 }
 
 /******************************************************************************
@@ -193,8 +200,8 @@ static void *venc_get_stream(void *pArgs) {
 ******************************************************************************/
 int SAMPLE_CAMERA_ISP_Stresstest(SAMPLE_MPI_CTX_S *ctx, char *pIqFileDir) {
 	RK_S32 s32Ret = RK_FAILURE;
-	int video_width = 1920;
-	int video_height = 1080;
+	int video_width = 2560;
+	int video_height = 1520;
 	RK_CHAR *pDeviceName = NULL;
 	RK_CHAR *pOutPath = NULL;
 	char *iq_file_dir = pIqFileDir;
@@ -236,15 +243,19 @@ int SAMPLE_CAMERA_ISP_Stresstest(SAMPLE_MPI_CTX_S *ctx, char *pIqFileDir) {
 		ctx->vi[i].u32Height = video_height;
 		ctx->vi[i].s32DevId = i;
 		ctx->vi[i].u32PipeId = ctx->vi[i].s32DevId;
-		ctx->vi[i].s32ChnId = 0;
+		ctx->vi[i].s32ChnId = 2;
 		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 3;
 		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
 		ctx->vi[i].stChnAttr.u32Depth = 2;
 		ctx->vi[i].stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
+		ctx->vi[i].stChnAttr.enCompressMode = g_compressMode;
 		ctx->vi[i].stChnAttr.stFrameRate.s32SrcFrameRate = -1;
 		ctx->vi[i].stChnAttr.stFrameRate.s32DstFrameRate = -1;
 		ctx->vi[i].dstFilePath = pOutPath;
 		ctx->vi[i].s32loopCount = s32loopCnt;
+		if (g_compressMode == COMPRESS_MODE_NONE) {
+			ctx->vi[i].s32ChnId = 0;
+		}
 		SAMPLE_COMM_VI_CreateChn(&ctx->vi[i]);
 
 		pthread_create(&vi_thread_id[i], 0, vi_get_stream, (void *)(&ctx->vi[i]));
@@ -321,8 +332,8 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	RK_CHAR *pOutPathVenc = NULL;
 	RK_CHAR *iq_file_dir = "/etc/iqfiles";
 	RK_CHAR *pCodecName = "H264";
-	CODEC_TYPE_E enCodecType = RK_CODEC_TYPE_H265;
-	VENC_RC_MODE_E enRcMode = VENC_RC_MODE_H265CBR;
+	CODEC_TYPE_E enCodecType = RK_CODEC_TYPE_H264;
+	VENC_RC_MODE_E enRcMode = VENC_RC_MODE_H264CBR;
 	RK_S32 s32BitRate = 4 * 1024;
 	RK_S32 s32CamId = 0;
 	MPP_CHN_S stSrcChn, stDestChn;
@@ -334,14 +345,6 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 
 	if (mode == 1) {
 		s32loopCnt = -1;
-	}
-
-	if (pCodecName == "H265") {
-		enCodecType = RK_CODEC_TYPE_H265;
-		enRcMode = VENC_RC_MODE_H265CBR;
-	} else if (pCodecName == "H264") {
-		enCodecType = RK_CODEC_TYPE_H264;
-		enRcMode = VENC_RC_MODE_H264CBR;
 	}
 
 	printf("#CameraIdx: %d\n", s32CamId);
@@ -376,11 +379,14 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 		ctx->vi[i].s32ChnId = 2; // rk3588 mainpath:0 selfpath:1 fbcpath:2
 		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 6;
 		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
-		ctx->vi[i].stChnAttr.u32Depth = 2;
+		ctx->vi[i].stChnAttr.u32Depth = 0;
 		ctx->vi[i].stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
-		ctx->vi[i].stChnAttr.enCompressMode = COMPRESS_AFBC_16x16;
+		ctx->vi[i].stChnAttr.enCompressMode = g_compressMode;
 		ctx->vi[i].stChnAttr.stFrameRate.s32SrcFrameRate = -1;
 		ctx->vi[i].stChnAttr.stFrameRate.s32DstFrameRate = -1;
+		if (g_compressMode == COMPRESS_MODE_NONE) {
+			ctx->vi[i].s32ChnId = 0;
+		}
 		SAMPLE_COMM_VI_CreateChn(&ctx->vi[i]);
 	}
 
@@ -406,7 +412,7 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	ctx->avs.stAvsGrpAttr.bSyncPipe = RK_FALSE;
 	ctx->avs.stAvsGrpAttr.stFrameRate.s32SrcFrameRate = -1;
 	ctx->avs.stAvsGrpAttr.stFrameRate.s32DstFrameRate = -1;
-	ctx->avs.stAvsChnAttr[0].enCompressMode = COMPRESS_AFBC_16x16;
+	ctx->avs.stAvsChnAttr[0].enCompressMode = g_compressMode;
 	ctx->avs.stAvsChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
 	ctx->avs.stAvsChnAttr[0].stFrameRate.s32DstFrameRate = -1;
 	ctx->avs.stAvsChnAttr[0].u32Depth = 1;
@@ -420,7 +426,7 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	ctx->vpss.s32GrpId = 0; // 0~85:gpu, 86~169:rga, 170~255:isp
 	ctx->vpss.s32ChnId = 0;
 	ctx->vpss.stGrpVpssAttr.enPixelFormat = RK_FMT_YUV420SP;
-	ctx->vpss.stGrpVpssAttr.enCompressMode = COMPRESS_MODE_NONE; // no compress
+	ctx->vpss.stGrpVpssAttr.enCompressMode = g_compressMode;
 
 	ctx->vpss.stCropInfo.bEnable = RK_FALSE;
 	ctx->vpss.stCropInfo.enCropCoordinate = VPSS_CROP_RATIO_COOR;
@@ -439,10 +445,9 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	ctx->vpss.stRotationEx[0].bEnable = RK_FALSE;
 	ctx->vpss.stRotationEx[0].stRotationEx.u32Angle = 60;
 	ctx->vpss.stVpssChnAttr[0].enChnMode = VPSS_CHN_MODE_USER;
-	ctx->vpss.stVpssChnAttr[0].enCompressMode = COMPRESS_MODE_NONE;
 	ctx->vpss.stVpssChnAttr[0].enDynamicRange = DYNAMIC_RANGE_SDR8;
 	ctx->vpss.stVpssChnAttr[0].enPixelFormat = RK_FMT_YUV420SP;
-	ctx->vpss.stVpssChnAttr[0].enCompressMode = COMPRESS_AFBC_16x16;
+	ctx->vpss.stVpssChnAttr[0].enCompressMode = g_compressMode;
 	ctx->vpss.stVpssChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
 	ctx->vpss.stVpssChnAttr[0].stFrameRate.s32DstFrameRate = -1;
 	ctx->vpss.stVpssChnAttr[0].u32Width = venc_width;
@@ -645,14 +650,6 @@ int SAMPLE_CAMERA_VI_AVS_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx) {
 	RK_BOOL bMultictx = RK_FALSE;
 	quit = false;
 
-	if (pCodecName == "H265") {
-		enCodecType = RK_CODEC_TYPE_H265;
-		enRcMode = VENC_RC_MODE_H265CBR;
-	} else if (pCodecName == "H264") {
-		enCodecType = RK_CODEC_TYPE_H264;
-		enRcMode = VENC_RC_MODE_H264CBR;
-	}
-
 	printf("#CameraIdx: %d\n", s32CamId);
 	printf("#pAvsLutFilePath: %s\n", pAvsLutFilePath);
 	printf("#CodecName:%s\n", pCodecName);
@@ -687,9 +684,12 @@ int SAMPLE_CAMERA_VI_AVS_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx) {
 		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
 		ctx->vi[i].stChnAttr.u32Depth = 0;
 		ctx->vi[i].stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
-		ctx->vi[i].stChnAttr.enCompressMode = COMPRESS_AFBC_16x16;
+		ctx->vi[i].stChnAttr.enCompressMode = g_compressMode;
 		ctx->vi[i].stChnAttr.stFrameRate.s32SrcFrameRate = -1;
 		ctx->vi[i].stChnAttr.stFrameRate.s32DstFrameRate = -1;
+		if (g_compressMode == COMPRESS_MODE_NONE) {
+			ctx->vi[i].s32ChnId = 0;
+		}
 		SAMPLE_COMM_VI_CreateChn(&ctx->vi[i]);
 	}
 
@@ -715,7 +715,7 @@ int SAMPLE_CAMERA_VI_AVS_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx) {
 	ctx->avs.stAvsGrpAttr.bSyncPipe = RK_FALSE;
 	ctx->avs.stAvsGrpAttr.stFrameRate.s32SrcFrameRate = -1;
 	ctx->avs.stAvsGrpAttr.stFrameRate.s32DstFrameRate = -1;
-	ctx->avs.stAvsChnAttr[0].enCompressMode = COMPRESS_AFBC_16x16;
+	ctx->avs.stAvsChnAttr[0].enCompressMode = g_compressMode;
 	ctx->avs.stAvsChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
 	ctx->avs.stAvsChnAttr[0].stFrameRate.s32DstFrameRate = -1;
 	ctx->avs.stAvsChnAttr[0].u32Depth = 1;
@@ -847,8 +847,15 @@ int main(int argc, char *argv[]) {
 		case 'l':
 			g_loopcount = atoi(optarg);
 			break;
-		case 'f':
+		case 'c':
 			g_framcount = atoi(optarg);
+			break;
+		case 'f':
+			if (!strcmp(optarg, "nv12")) {
+				g_compressMode = COMPRESS_MODE_NONE;
+			} else if (!strcmp(optarg, "afbc")) {
+				g_compressMode = COMPRESS_AFBC_16x16;
+			}
 			break;
 		case '?':
 		default:

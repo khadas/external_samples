@@ -116,6 +116,7 @@ RK_S32 SAMPLE_COMM_VENC_CreateChn(SAMPLE_VENC_CTX_S *ctx) {
 		return s32Ret;
 	}
 
+	stRecvParam.s32RecvPicNum = -1;
 	s32Ret = RK_MPI_VENC_StartRecvFrame(ctx->s32ChnId, &stRecvParam);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("create %d ch venc failed", ctx->s32ChnId);

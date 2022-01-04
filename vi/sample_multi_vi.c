@@ -48,7 +48,7 @@ static void sigterm_handler(int sig) {
 static RK_CHAR optstr[] = "?::a::f:w:h:c:o:e:n:I:i:l:M:";
 static const struct option long_options[] = {
     {"aiq", optional_argument, NULL, 'a'},
-    {"format", optional_argument, NULL, 'f'},
+    {"pixel_format", optional_argument, NULL, 'f'},
     {"camera_num", required_argument, NULL, 'n'},
     {"width", required_argument, NULL, 'w'},
     {"height", required_argument, NULL, 'h'},
@@ -78,7 +78,8 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-n | --camera_num: camera number, Default 6\n");
 	printf("\t-w | --width: camera with, Default 1920\n");
 	printf("\t-h | --height: camera height, Default 1080\n");
-	printf("\t-f | --format: camera Format, Default nv12, Value:nv12, nv12fbc\n");
+	printf("\t-f | --pixel_format: camera Format, Default nv12, "
+	       "Value:nv12,nv16,yuyv,uyvy,afbc\n");
 	printf("\t-l | --loop_count: loop count, Default -1\n");
 	printf("\t-o | --output_path: vi output file path, Default NULL\n");
 }
@@ -192,7 +193,19 @@ int main(int argc, char *argv[]) {
 				s32ChnId = 0;
 				PixelFormat = RK_FMT_YUV420SP;
 				CompressMode = COMPRESS_MODE_NONE;
-			} else if (!strcmp(optarg, "nv12fbc")) {
+			} else if (!strcmp(optarg, "nv16")) {
+				s32ChnId = 0;
+				PixelFormat = RK_FMT_YUV422SP;
+				CompressMode = COMPRESS_MODE_NONE;
+			} else if (!strcmp(optarg, "yuyv")) {
+				s32ChnId = 0;
+				PixelFormat = RK_FMT_YUV422_YUYV;
+				CompressMode = COMPRESS_MODE_NONE;
+			} else if (!strcmp(optarg, "uyvy")) {
+				s32ChnId = 0;
+				PixelFormat = RK_FMT_YUV422_UYVY;
+				CompressMode = COMPRESS_MODE_NONE;
+			} else if (!strcmp(optarg, "afbc")) {
 				s32ChnId = 2;
 				PixelFormat = RK_FMT_YUV420SP;
 				CompressMode = COMPRESS_AFBC_16x16;
