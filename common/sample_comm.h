@@ -26,6 +26,10 @@ extern "C" {
 #include "loadbmp.h"
 #include "rk_debug.h"
 #include "rk_defines.h"
+#include "rk_mpi_adec.h"
+#include "rk_mpi_aenc.h"
+#include "rk_mpi_ai.h"
+#include "rk_mpi_ao.h"
 #include "rk_mpi_avs.h"
 #include "rk_mpi_cal.h"
 #include "rk_mpi_mb.h"
@@ -67,6 +71,23 @@ typedef enum rk_CODEC_TYPE_E {
 /*******************************************************
     structure define
 *******************************************************/
+typedef struct _rkMpiAICtx {
+	RK_S32 s32loopCount;
+	RK_CHAR *dstFilePath;
+	AUDIO_DEV s32DevId;
+	AI_CHN s32ChnId;
+	RK_S32 s32ChnSampleRate;
+	AIO_ATTR_S stAiAttr;
+	AUDIO_FRAME_S stFrame;
+} SAMPLE_AI_CTX_S;
+
+typedef struct _rkMpiAOCtx {
+	AUDIO_DEV s32DevId;
+	AO_CHN s32ChnId;
+	RK_S32 s32ChnSampleRate;
+	AIO_ATTR_S stAoAttr;
+} SAMPLE_AO_CTX_S;
+
 typedef struct _rkMpiVICtx {
 	RK_U32 u32Width;
 	RK_U32 u32Height;
@@ -111,6 +132,14 @@ typedef struct _rkMpiVENCCtx {
 	RK_CHAR *srcFilePath;
 	RK_CHAR *dstFilePath;
 } SAMPLE_VENC_CTX_S;
+
+typedef struct _rkMpiAENCCtx {
+	RK_S32 s32loopCount;
+	RK_CHAR *dstFilePath;
+	AENC_CHN s32ChnId;
+	AUDIO_STREAM_S stFrame;
+	AENC_CHN_ATTR_S stChnAttr;
+} SAMPLE_AENC_CTX_S;
 
 typedef struct _rkMpiRGNCtx {
 	const char *srcFileBmpName;
@@ -164,8 +193,16 @@ RK_S32 SAMPLE_COMM_VI_DestroyChn(SAMPLE_VI_CTX_S *ctx);
 RK_S32 SAMPLE_COMM_VI_GetChnFrame(SAMPLE_VI_CTX_S *ctx, void **pdata);
 RK_S32 SAMPLE_COMM_VI_ReleaseChnFrame(SAMPLE_VI_CTX_S *ctx);
 
+RK_S32 SAMPLE_COMM_AI_CreateChn(SAMPLE_AI_CTX_S *ctx);
+RK_S32 SAMPLE_COMM_AI_DestroyChn(SAMPLE_AI_CTX_S *ctx);
+RK_S32 SAMPLE_COMM_AI_GetFrame(SAMPLE_AI_CTX_S *ctx, void **pdata);
+RK_S32 SAMPLE_COMM_AI_ReleaseFrame(SAMPLE_AI_CTX_S *ctx);
+
 RK_S32 SAMPLE_COMM_VO_CreateChn(SAMPLE_VO_CTX_S *ctx);
 RK_S32 SAMPLE_COMM_VO_DestroyChn(SAMPLE_VO_CTX_S *ctx);
+
+RK_S32 SAMPLE_COMM_AO_CreateChn(SAMPLE_AO_CTX_S *ctx);
+RK_S32 SAMPLE_COMM_AO_DestroyChn(SAMPLE_AO_CTX_S *ctx);
 
 RK_S32 SAMPLE_COMM_VPSS_CreateChn(SAMPLE_VPSS_CTX_S *ctx);
 RK_S32 SAMPLE_COMM_VPSS_DestroyChn(SAMPLE_VPSS_CTX_S *ctx);
@@ -175,13 +212,15 @@ RK_S32 SAMPLE_COMM_AVS_DestroyChn(SAMPLE_AVS_CTX_S *ctx);
 RK_S32 SAMPLE_COMM_AVS_GetChnFrame(SAMPLE_AVS_CTX_S *ctx, void **pdata);
 RK_S32 SAMPLE_COMM_AVS_ReleaseChnFrame(SAMPLE_AVS_CTX_S *ctx);
 
-RK_S32 SAMPLE_COMM_VO_CreateChn(SAMPLE_VO_CTX_S *ctx);
-RK_S32 SAMPLE_COMM_VO_DestroyChn(SAMPLE_VO_CTX_S *ctx);
-
 RK_S32 SAMPLE_COMM_VENC_CreateChn(SAMPLE_VENC_CTX_S *ctx);
 RK_S32 SAMPLE_COMM_VENC_GetStream(SAMPLE_VENC_CTX_S *ctx, void **pdata);
 RK_S32 SAMPLE_COMM_VENC_ReleaseStream(SAMPLE_VENC_CTX_S *ctx);
 RK_S32 SAMPLE_COMM_VENC_DestroyChn(SAMPLE_VENC_CTX_S *ctx);
+
+RK_S32 SAMPLE_COMM_AENC_CreateChn(SAMPLE_AENC_CTX_S *ctx);
+RK_S32 SAMPLE_COMM_AENC_GetStream(SAMPLE_AENC_CTX_S *ctx, void **pdata);
+RK_S32 SAMPLE_COMM_AENC_ReleaseStream(SAMPLE_AENC_CTX_S *ctx);
+RK_S32 SAMPLE_COMM_AENC_DestroyChn(SAMPLE_AENC_CTX_S *ctx);
 
 RK_S32 SAMPLE_COMM_RGN_CreateChn(SAMPLE_RGN_CTX_S *ctx);
 RK_S32 SAMPLE_COMM_RGN_DestroyChn(SAMPLE_RGN_CTX_S *ctx);

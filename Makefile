@@ -91,6 +91,8 @@ all: $(PKG_TARGET)
 
 sample-build: libasound librkaiq librockit
 	@mkdir -p $(SAMPLE_OUT_DIR)/bin
+	@make -C $(CURRENT_DIR)/audio;
+	@make -C $(CURRENT_DIR)/audio install;
 	@make -C $(CURRENT_DIR)/vi;
 	@make -C $(CURRENT_DIR)/vi install;
 	@make -C $(CURRENT_DIR)/vo;
