@@ -56,7 +56,7 @@ COMM_OBJ := $(COMM_SRC:%.c=%.o)
 INC_FLAGS := -I$(COMM_DIR)
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq
-INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/uAPI
+#INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/uAPI
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/uAPI2
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/common
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/xcore
@@ -116,6 +116,7 @@ librockit:
 
 clean:
 	@make -C $(CURRENT_DIR)/common clean
+	@make -C $(CURRENT_DIR)/audio clean
 	@make -C $(CURRENT_DIR)/vi clean
 	@make -C $(CURRENT_DIR)/vo clean
 	@make -C $(CURRENT_DIR)/venc clean

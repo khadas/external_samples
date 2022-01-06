@@ -222,9 +222,10 @@ int SAMPLE_CAMERA_ISP_Stresstest(SAMPLE_MPI_CTX_S *ctx, char *pIqFileDir) {
 #ifdef RKAIQ
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
-		int fps = 30;
 		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
 		rk_aiq_camgroup_instance_cfg_t camgroup_cfg;
+
+		memset(&camgroup_cfg, 0, sizeof(camgroup_cfg));
 		camgroup_cfg.sns_num = s32CamNum;
 		camgroup_cfg.config_file_dir = iq_file_dir;
 
@@ -356,9 +357,10 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 #ifdef RKAIQ
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
-		int fps = 30;
 		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
 		rk_aiq_camgroup_instance_cfg_t camgroup_cfg;
+
+		memset(&camgroup_cfg, 0, sizeof(camgroup_cfg));
 		camgroup_cfg.sns_num = s32CamNum;
 		camgroup_cfg.config_file_dir = iq_file_dir;
 
@@ -659,9 +661,10 @@ int SAMPLE_CAMERA_VI_AVS_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx) {
 #ifdef RKAIQ
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
-		int fps = 30;
 		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
 		rk_aiq_camgroup_instance_cfg_t camgroup_cfg;
+
+		memset(&camgroup_cfg, 0, sizeof(camgroup_cfg));
 		camgroup_cfg.sns_num = s32CamNum;
 		camgroup_cfg.config_file_dir = iq_file_dir;
 

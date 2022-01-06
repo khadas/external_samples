@@ -256,9 +256,10 @@ int main(int argc, char *argv[]) {
 #ifdef RKAIQ
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
-		int fps = 30;
 		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
 		rk_aiq_camgroup_instance_cfg_t camgroup_cfg;
+
+		memset(&camgroup_cfg, 0, sizeof(camgroup_cfg));
 		camgroup_cfg.sns_num = s32CamNum;
 		camgroup_cfg.config_file_dir = iq_file_dir;
 

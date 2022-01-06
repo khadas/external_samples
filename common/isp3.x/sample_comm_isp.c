@@ -480,7 +480,7 @@ RK_S32 SAMPLE_COMM_ISP_SET_BackLight(RK_S32 CamId, RK_BOOL bEnable, RK_U32 u32St
 	pthread_mutex_unlock(&aiq_ctx_mutex[CamId]);
 	return ret;
 }
-
+#if 0
 RK_S32 SAMPLE_COMM_ISP_SET_LightInhibition(RK_S32 CamId, RK_BOOL bEnable,
                                            RK_U8 u8Strength, RK_U8 u8Level) {
 	if (CamId >= MAX_AIQ_CTX || !g_aiq_ctx[CamId]) {
@@ -505,7 +505,7 @@ RK_S32 SAMPLE_COMM_ISP_SET_LightInhibition(RK_S32 CamId, RK_BOOL bEnable,
 	pthread_mutex_unlock(&aiq_ctx_mutex[CamId]);
 	return ret;
 }
-
+#endif
 RK_S32 SAMPLE_COMM_ISP_SET_CPSL_CFG(RK_S32 CamId, rk_aiq_cpsl_cfg_t *cpsl) {
 	if (CamId >= MAX_AIQ_CTX || !g_aiq_ctx[CamId]) {
 		printf("%s : CamId is over 3 or not init\n", __FUNCTION__);
@@ -747,7 +747,7 @@ RK_S32 SAMPLE_COMM_ISP_SET_HDR(RK_S32 CamId, rk_aiq_working_mode_t mode) {
 	pthread_mutex_unlock(&aiq_ctx_mutex[CamId]);
 	return ret;
 }
-
+#if 0
 // mode 0 0ff 1 on 2 auto
 RK_S32 SAMPLE_COMM_ISP_SET_DefogEnable(RK_S32 CamId, RK_U32 u32Mode) {
 	/*
@@ -798,7 +798,7 @@ RK_S32 SAMPLE_COMM_ISP_SET_DefogStrength(RK_S32 CamId, RK_U32 u32Mode, RK_U32 u3
 	pthread_mutex_unlock(&aiq_ctx_mutex[CamId]);
 	return ret;
 }
-
+#endif
 RK_S32 SAMPLE_COMM_ISP_SET_Correction(RK_S32 CamId, RK_U32 u32Mode, RK_U32 u32Value) {
 	if (CamId >= MAX_AIQ_CTX || !g_aiq_ctx[CamId]) {
 		printf("%s : CamId is over 3 or not init\n", __FUNCTION__);
