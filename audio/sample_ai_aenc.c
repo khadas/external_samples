@@ -113,8 +113,8 @@ static void *aenc_get_stream(void *pArgs) {
 
 			if (fp) {
 				if (code_type == RK_AUDIO_ID_MP3) {
-					GetHeader(header, ctx->stChnAttr.stAencCodec.u32SampleRate,
-					          ctx->stChnAttr.stAencCodec.u32Channels,
+					GetHeader(header, ctx->stChnAttr.stCodecAttr.u32SampleRate,
+					          ctx->stChnAttr.stCodecAttr.u32Channels,
 					          ctx->stFrame.u32Len);
 					fwrite(header, 1, 7, fp);
 				}
@@ -275,12 +275,10 @@ int main(int argc, char *argv[]) {
 	ctx->aenc.s32ChnId = 0;
 	ctx->aenc.s32loopCount = s32loopCnt;
 	ctx->aenc.stChnAttr.enType = code_type;
-	ctx->aenc.stChnAttr.stAencCodec.u32Channels = s32ChnCnt;
-	ctx->aenc.stChnAttr.stAencCodec.u32SampleRate = s32SampleRate;
-	ctx->aenc.stChnAttr.stAencCodec.enBitwidth = bitWidth;
+	ctx->aenc.stChnAttr.stCodecAttr.u32Channels = s32ChnCnt;
+	ctx->aenc.stChnAttr.stCodecAttr.u32SampleRate = s32SampleRate;
+	ctx->aenc.stChnAttr.stCodecAttr.enBitwidth = bitWidth;
 	ctx->aenc.stChnAttr.u32BufCount = 4;
-	ctx->aenc.stChnAttr.extraDataSize = 0;
-	ctx->aenc.stChnAttr.extraData = RK_NULL;
 	ctx->aenc.dstFilePath = pOutPath;
 	SAMPLE_COMM_AENC_CreateChn(&ctx->aenc);
 
