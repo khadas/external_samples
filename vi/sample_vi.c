@@ -112,7 +112,7 @@ static void *vi_get_stream(void *pArgs) {
 	while (!quit) {
 		s32Ret = SAMPLE_COMM_VI_GetChnFrame(ctx, &pData);
 		if (s32Ret == RK_SUCCESS) {
-			if (ctx->stViFrame.u32Len <= 0) {
+			if (ctx->stViFrame.stVFrame.u64PrivateData <= 0) {
 				continue;
 			}
 			// exit when complete
@@ -125,14 +125,17 @@ static void *vi_get_stream(void *pArgs) {
 			}
 
 			if (fp) {
-				fwrite(pData, 1, ctx->stViFrame.u32Len, fp);
+				fwrite(pData, 1, ctx->stViFrame.stVFrame.u64PrivateData, fp);
 				fflush(fp);
 			}
 
-			printf("SAMPLE_COMM_VI_GetChnFrame DevId %d ok:data %p loop:%d seq:%d "
-			       "pts:%lld ms\n",
-			       ctx->s32DevId, pData, loopCount, ctx->stViFrame.s32Seq,
-			       ctx->stViFrame.s64PTS / 1000);
+			printf(
+			    "SAMPLE_COMM_VI_GetChnFrame DevId %d ok:data %p size:%d loop:%d seq:%d "
+			    "pts:%lld ms\n",
+			    ctx->s32DevId, pData, ctx->stViFrame.stVFrame.u64PrivateData, loopCount,
+			    ctx->stViFrame.stVFrame.u32TimeRef,
+			    ctx->stViFrame.stVFrame.u64PTS / 1000);
+
 			SAMPLE_COMM_VI_ReleaseChnFrame(ctx);
 			loopCount++;
 		}

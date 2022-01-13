@@ -104,7 +104,7 @@ RK_S32 SAMPLE_COMM_VI_GetChnFrame(SAMPLE_VI_CTX_S *ctx, void **pdata) {
 	s32Ret =
 	    RK_MPI_VI_GetChnFrame(ctx->u32PipeId, ctx->s32ChnId, &ctx->stViFrame, waitTime);
 	if (s32Ret == RK_SUCCESS) {
-		*pdata = RK_MPI_MB_Handle2VirAddr(ctx->stViFrame.pMbBlk);
+		*pdata = RK_MPI_MB_Handle2VirAddr(ctx->stViFrame.stVFrame.pMbBlk);
 		s32Ret =
 		    RK_MPI_VI_QueryChnStatus(ctx->u32PipeId, ctx->s32ChnId, &ctx->stChnStatus);
 		RK_LOGD("RK_MPI_VI_QueryChnStatus ret %x, DevId%d,PipeId:%d,ChnId:%d"

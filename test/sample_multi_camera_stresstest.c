@@ -26,7 +26,6 @@ extern "C" {
 #include <getopt.h>
 #include <pthread.h>
 #include <pthread.h>
-#include <semaphore.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -38,18 +37,18 @@ extern "C" {
 
 #include "sample_comm.h"
 
-//#define FILE_TEST
-
 typedef struct _rkMpiCtx {
-	SAMPLE_VI_CTX_S vi;
+	SAMPLE_VI_CTX_S vi[6];
+	SAMPLE_VO_CTX_S vo;
+	SAMPLE_AVS_CTX_S avs;
 	SAMPLE_VPSS_CTX_S vpss;
 	SAMPLE_VENC_CTX_S venc;
 } SAMPLE_MPI_CTX_S;
+RK_S32 s32test = 1;
 
 static int g_loopcount = 1;
 static int g_framcount = 200;
 static COMPRESS_MODE_E g_compressMode = COMPRESS_AFBC_16x16;
-static SAMPLE_MPI_CTX_S *g_ctx;
 
 static bool quit = false;
 static void sigterm_handler(int sig) {
@@ -77,7 +76,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t 0)isp stresstest(IqFileDir: /etc/iqfiles ~ /usr/share/iqfiles)\n");
 	printf("\t 1)venc stresstest(H264 ~ H265)\n");
 	printf("\t 2)venc stresstest(1x ~ 0.5x resolution)\n");
-	printf("\t 3)vi->vps->venc stresstest\n");
+	printf("\t 3)vi[6]->avs->venc stresstest\n");
 	printf("pixel format:\n");
 	printf("\t nv12) no compress\n");
 	printf("\t afbc) compress\n");
@@ -107,7 +106,7 @@ static void *vi_get_stream(void *pArgs) {
 	while (!quit) {
 		s32Ret = SAMPLE_COMM_VI_GetChnFrame(ctx, &pData);
 		if (s32Ret == RK_SUCCESS) {
-			if (ctx->stViFrame.stVFrame.u64PrivateData <= 0) {
+			if (ctx->stViFrame.u32Len <= 0) {
 				continue;
 			}
 
@@ -121,17 +120,14 @@ static void *vi_get_stream(void *pArgs) {
 			}
 
 			if (fp) {
-				fwrite(pData, 1, ctx->stViFrame.stVFrame.u64PrivateData, fp);
+				fwrite(pData, 1, ctx->stViFrame.u32Len, fp);
 				fflush(fp);
 			}
 
-			RK_LOGD(
-			    "SAMPLE_COMM_VI_GetChnFrame DevId %d ok:data %p size:%d loop:%d seq:%d "
-			    "pts:%lld ms\n",
-			    ctx->s32DevId, pData, ctx->stViFrame.stVFrame.u64PrivateData, loopCount,
-			    ctx->stViFrame.stVFrame.u32TimeRef,
-			    ctx->stViFrame.stVFrame.u64PTS / 1000);
-
+			printf("SAMPLE_COMM_VI_GetChnFrame DevId %d ok:data %p loop:%d seq:%d "
+			       "pts:%lld ms\n",
+			       ctx->s32DevId, pData, loopCount, ctx->stViFrame.s32Seq,
+			       ctx->stViFrame.s64PTS / 1000);
 			SAMPLE_COMM_VI_ReleaseChnFrame(ctx);
 			loopCount++;
 		}
@@ -140,143 +136,6 @@ static void *vi_get_stream(void *pArgs) {
 
 	if (fp)
 		fclose(fp);
-
-	return RK_NULL;
-}
-
-/******************************************************************************
-* function : vpss thread
-******************************************************************************/
-static RK_U8 data[2560 * 1520 * 2];
-static RK_U8 data0[2560 * 1520 * 2];
-static RK_U8 data1[2560 * 1520 * 2];
-static void *vpss_get_stream(void *pArgs) {
-	SAMPLE_VPSS_CTX_S *ctx = (SAMPLE_VPSS_CTX_S *)(pArgs);
-	RK_S32 s32Ret = RK_FAILURE;
-	char name[256] = {0};
-	FILE *fp = RK_NULL;
-	FILE *fbc0 = RK_NULL;
-	FILE *fbc1 = RK_NULL;
-	void *pData = RK_NULL;
-	RK_S32 loopCount = 0;
-	VIDEO_FRAME_INFO_S stChnFrameInfos;
-
-	if (ctx->dstFilePath) {
-		snprintf(name, sizeof(name), "/%s/vpss_%d.bin", ctx->dstFilePath, ctx->s32ChnId);
-		fp = fopen(name, "wb");
-		if (fp == RK_NULL) {
-			printf("chn %d can't open %s file !\n", ctx->s32ChnId, ctx->dstFilePath);
-			quit = true;
-			return RK_NULL;
-		}
-	}
-#if 0
-	fbc0 = fopen("/data/vpss_1280_760_fbc.bin", "r");
-	if (fbc0 == RK_NULL) {
-		printf("can't open /data/vpss_1280_760_fbc.bin file !\n");
-		quit = true;
-		return RK_NULL;
-	}
-	fbc1 = fopen("/data/vpss_2560_1520_fbc.bin", "r");
-	if (fbc1 == RK_NULL) {
-		printf("can't open /data/vpss_2560_1520_fbc.bin file !\n");
-		quit = true;
-		return RK_NULL;
-	}
-
-	fread(data0, 1, 1552384, fbc0);
-	fread(data1, 1, 6164480, fbc1);
-#endif
-	while (!quit) {
-		s32Ret = SAMPLE_COMM_VPSS_GetChnFrame(ctx, &pData);
-		if (s32Ret == RK_SUCCESS) {
-			if (ctx->stChnFrameInfos.stVFrame.u64PrivateData <= 0) {
-				continue;
-			}
-
-			// exit when complete
-			if (ctx->s32loopCount > 0) {
-				if (loopCount >= ctx->s32loopCount) {
-					SAMPLE_COMM_VI_ReleaseChnFrame(ctx);
-					quit = true;
-					break;
-				}
-			}
-
-			if (fp) {
-				fwrite(pData, 1, ctx->stChnFrameInfos.stVFrame.u64PrivateData, fp);
-				fflush(fp);
-			}
-#if 1
-			SAMPLE_COMM_VENC_SendStream(
-			    &g_ctx->venc, pData, ctx->stChnFrameInfos.stVFrame.u32Width,
-			    ctx->stChnFrameInfos.stVFrame.u32Height,
-			    ctx->stChnFrameInfos.stVFrame.u64PrivateData, g_compressMode);
-#else
-			if (ctx->stChnFrameInfos.stVFrame.u32Width == 1280) {
-				SAMPLE_COMM_VENC_SendStream(
-				    &g_ctx->venc, data0, ctx->stChnFrameInfos.stVFrame.u32Width,
-				    ctx->stChnFrameInfos.stVFrame.u32Height, 1552384, g_compressMode);
-			} else if (ctx->stChnFrameInfos.stVFrame.u32Width == 2560) {
-				SAMPLE_COMM_VENC_SendStream(
-				    &g_ctx->venc, data1, ctx->stChnFrameInfos.stVFrame.u32Width,
-				    ctx->stChnFrameInfos.stVFrame.u32Height, 6164480, g_compressMode);
-			}
-#endif
-			RK_LOGD(
-			    "SAMPLE_COMM_VPSS_GetChnFrame DevId %d ok:data %p size:%d loop:%d seq:%d "
-			    "pts:%lld ms\n",
-			    ctx->s32GrpId, pData, ctx->stChnFrameInfos.stVFrame.u64PrivateData,
-			    loopCount, ctx->stChnFrameInfos.stVFrame.u32TimeRef,
-			    ctx->stChnFrameInfos.stVFrame.u64PTS / 1000);
-
-			SAMPLE_COMM_VPSS_ReleaseChnFrame(ctx);
-			loopCount++;
-		}
-		usleep(1000);
-	}
-
-	if (fp)
-		fclose(fp);
-
-	return RK_NULL;
-}
-
-static void *vpss_send_stream(void *pArgs) {
-	SAMPLE_VPSS_CTX_S *ctx = (SAMPLE_VPSS_CTX_S *)(pArgs);
-	RK_S32 s32Ret = RK_FAILURE;
-	FILE *fbc = RK_NULL;
-	void *pData = RK_NULL;
-	RK_S32 loopCount = 0;
-
-	fbc = fopen("/data/vpss_2560_1520_fbc.bin", "r");
-	if (fbc == RK_NULL) {
-		printf("can't open /data/vpss_2560_1520_fbc.bin file !\n");
-		quit = true;
-		return RK_NULL;
-	}
-
-	fread(data, 1, 6164480, fbc);
-
-	while (!quit) {
-		// exit when complete
-		if (ctx->s32loopCount > 0) {
-			if (loopCount >= ctx->s32loopCount) {
-				quit = true;
-				break;
-			}
-		}
-
-		SAMPLE_COMM_VPSS_SendStream(&g_ctx->vpss, data, 2560, 1520, 1552384,
-		                            g_compressMode);
-
-		loopCount++;
-
-		usleep(20000);
-	}
-
-	if (fbc)
-		fclose(fbc);
 
 	return RK_NULL;
 }
@@ -346,15 +205,16 @@ int SAMPLE_CAMERA_ISP_Stresstest(SAMPLE_MPI_CTX_S *ctx, char *pIqFileDir) {
 	RK_CHAR *pDeviceName = NULL;
 	RK_CHAR *pOutPath = NULL;
 	char *iq_file_dir = pIqFileDir;
-	RK_S32 s32CamId = 0;
+	RK_S32 i, s32CamNum = 6;
 	RK_S32 s32loopCnt = g_framcount;
 	MPP_CHN_S stSrcChn, stDestChn;
 	FILE *fp = RK_NULL;
 	void *pData = RK_NULL;
 	RK_BOOL bMultictx = RK_FALSE;
-	pthread_t vi_thread_id;
+	pthread_t vi_thread_id[6];
 	quit = false;
 
+	printf("#CameraNum: %d\n", s32CamNum);
 	printf("#pDeviceName: %s\n", pDeviceName);
 	printf("#Output Path: %s\n", pOutPath);
 	printf("#IQ Path: %s\n", iq_file_dir);
@@ -363,11 +223,13 @@ int SAMPLE_CAMERA_ISP_Stresstest(SAMPLE_MPI_CTX_S *ctx, char *pIqFileDir) {
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
 		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
-		// rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_ISP_HDR3;
-		int fps = 30;
+		rk_aiq_camgroup_instance_cfg_t camgroup_cfg;
 
-		SAMPLE_COMM_ISP_Init(s32CamId, hdr_mode, bMultictx, iq_file_dir);
-		SAMPLE_COMM_ISP_Run(s32CamId);
+		memset(&camgroup_cfg, 0, sizeof(camgroup_cfg));
+		camgroup_cfg.sns_num = s32CamNum;
+		camgroup_cfg.config_file_dir = iq_file_dir;
+
+		SAMPLE_COMM_ISP_CamGroup_Init(0, hdr_mode, bMultictx, &camgroup_cfg);
 #endif
 	}
 
@@ -377,27 +239,28 @@ int SAMPLE_CAMERA_ISP_Stresstest(SAMPLE_MPI_CTX_S *ctx, char *pIqFileDir) {
 	}
 
 	// Init VI
-	ctx->vi.u32Width = video_width;
-	ctx->vi.u32Height = video_height;
-	ctx->vi.s32DevId = s32CamId;
-	ctx->vi.u32PipeId = ctx->vi.s32DevId;
-	ctx->vi.s32ChnId = 2;
-	ctx->vi.stChnAttr.stIspOpt.u32BufCount = 3;
-	ctx->vi.stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
-	ctx->vi.stChnAttr.u32Depth = 2;
-	ctx->vi.stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
-	ctx->vi.stChnAttr.enCompressMode = g_compressMode;
-	ctx->vi.stChnAttr.stFrameRate.s32SrcFrameRate = -1;
-	ctx->vi.stChnAttr.stFrameRate.s32DstFrameRate = -1;
-	ctx->vi.dstFilePath = pOutPath;
-	ctx->vi.s32loopCount = s32loopCnt;
-	if (g_compressMode == COMPRESS_MODE_NONE) {
-		ctx->vi.s32ChnId = 0;
+	for (i = 0; i < s32CamNum; i++) {
+		ctx->vi[i].u32Width = video_width;
+		ctx->vi[i].u32Height = video_height;
+		ctx->vi[i].s32DevId = i;
+		ctx->vi[i].u32PipeId = ctx->vi[i].s32DevId;
+		ctx->vi[i].s32ChnId = 2;
+		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 3;
+		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
+		ctx->vi[i].stChnAttr.u32Depth = 2;
+		ctx->vi[i].stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
+		ctx->vi[i].stChnAttr.enCompressMode = g_compressMode;
+		ctx->vi[i].stChnAttr.stFrameRate.s32SrcFrameRate = -1;
+		ctx->vi[i].stChnAttr.stFrameRate.s32DstFrameRate = -1;
+		ctx->vi[i].dstFilePath = pOutPath;
+		ctx->vi[i].s32loopCount = s32loopCnt;
+		if (g_compressMode == COMPRESS_MODE_NONE) {
+			ctx->vi[i].s32ChnId = 0;
+		}
+		SAMPLE_COMM_VI_CreateChn(&ctx->vi[i]);
+
+		pthread_create(&vi_thread_id[i], 0, vi_get_stream, (void *)(&ctx->vi[i]));
 	}
-	SAMPLE_COMM_VI_CreateChn(&ctx->vi);
-
-	pthread_create(&vi_thread_id, 0, vi_get_stream, (void *)(&ctx->vi));
-
 	printf("%s initial finish\n", __func__);
 
 	while (!quit) {
@@ -406,16 +269,19 @@ int SAMPLE_CAMERA_ISP_Stresstest(SAMPLE_MPI_CTX_S *ctx, char *pIqFileDir) {
 
 	printf("%s exit!\n", __func__);
 
-	pthread_join(vi_thread_id, NULL);
+	for (i = 0; i < s32CamNum; i++) {
+		pthread_join(vi_thread_id[i], NULL);
+	}
 
 	// Destroy VI[0]
-	SAMPLE_COMM_VI_DestroyChn(&ctx->vi);
-
+	for (i = 0; i < s32CamNum; i++) {
+		SAMPLE_COMM_VI_DestroyChn(&ctx->vi[i]);
+	}
 __FAILED:
 	RK_MPI_SYS_Exit();
 	if (iq_file_dir) {
 #ifdef RKAIQ
-		SAMPLE_COMM_ISP_Stop(s32CamId);
+		SAMPLE_COMM_ISP_CamGroup_Stop(0);
 #endif
 	}
 
@@ -461,9 +327,10 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	RK_S32 s32Ret = RK_FAILURE;
 	int video_width = 2560;
 	int video_height = 1520;
-	int venc_width = 2560;
-	int venc_height = 1520;
-	RK_CHAR *pOutPathVenc = "/data/"; // NULL;
+	int venc_width = 8192;
+	int venc_height = 2700;
+	RK_CHAR *pAvsLutFilePath = "/usr/share/avs_mesh/";
+	RK_CHAR *pOutPathVenc = NULL;
 	RK_CHAR *iq_file_dir = "/etc/iqfiles";
 	RK_CHAR *pCodecName = "H264";
 	CODEC_TYPE_E enCodecType = RK_CODEC_TYPE_H264;
@@ -471,17 +338,18 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	RK_S32 s32BitRate = 4 * 1024;
 	RK_S32 s32CamId = 0;
 	MPP_CHN_S stSrcChn, stDestChn;
+	RK_S32 s32CamNum = 6;
 	RK_S32 s32loopCnt = g_framcount;
 	RK_S32 i;
 	RK_BOOL bMultictx = RK_FALSE;
 	quit = false;
-	pthread_t vpss_thread_id[2];
 
 	if (mode == 1) {
 		s32loopCnt = -1;
 	}
 
 	printf("#CameraIdx: %d\n", s32CamId);
+	printf("#pAvsLutFilePath: %s\n", pAvsLutFilePath);
 	printf("#CodecName:%s\n", pCodecName);
 	printf("#Output Path: %s\n", pOutPathVenc);
 
@@ -490,11 +358,13 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
 		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
-		// rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_ISP_HDR3;
-		int fps = 30;
+		rk_aiq_camgroup_instance_cfg_t camgroup_cfg;
 
-		SAMPLE_COMM_ISP_Init(s32CamId, hdr_mode, bMultictx, iq_file_dir);
-		SAMPLE_COMM_ISP_Run(s32CamId);
+		memset(&camgroup_cfg, 0, sizeof(camgroup_cfg));
+		camgroup_cfg.sns_num = s32CamNum;
+		camgroup_cfg.config_file_dir = iq_file_dir;
+
+		SAMPLE_COMM_ISP_CamGroup_Init(s32CamId, hdr_mode, bMultictx, &camgroup_cfg);
 #endif
 	}
 
@@ -502,40 +372,61 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 		goto __FAILED;
 	}
 
-	MB_POOL pool = MB_INVALID_POOLID;
-	MB_POOL_CONFIG_S stMbPoolCfg;
-	memset(&stMbPoolCfg, 0, sizeof(MB_POOL_CONFIG_S));
-	stMbPoolCfg.u64MBSize = video_width * video_height * 2;
-	stMbPoolCfg.u32MBCnt = 10;
-	stMbPoolCfg.enAllocType = MB_ALLOC_TYPE_DMA;
-	pool = RK_MPI_MB_CreatePool(&stMbPoolCfg);
-	ctx->vpss.pool = ctx->venc.pool = pool;
-
-	// Init VI[0]
-	ctx->vi.u32Width = video_width;
-	ctx->vi.u32Height = video_height;
-	ctx->vi.s32DevId = s32CamId;
-	ctx->vi.u32PipeId = ctx->vi.s32DevId;
-	ctx->vi.s32ChnId = 2; // rk3588 mainpath:0 selfpath:1 fbcpath:2
-	ctx->vi.stChnAttr.stIspOpt.u32BufCount = 4;
-	ctx->vi.stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
-	ctx->vi.stChnAttr.u32Depth = 1;
-	ctx->vi.stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
-	ctx->vi.stChnAttr.enCompressMode = g_compressMode;
-	ctx->vi.stChnAttr.stFrameRate.s32SrcFrameRate = -1;
-	ctx->vi.stChnAttr.stFrameRate.s32DstFrameRate = -1;
-	if (g_compressMode == COMPRESS_MODE_NONE) {
-		ctx->vi.s32ChnId = 0;
+	// Init VI[0] ~ VI[5]
+	for (i = 0; i < s32CamNum; i++) {
+		ctx->vi[i].u32Width = video_width;
+		ctx->vi[i].u32Height = video_height;
+		ctx->vi[i].s32DevId = i;
+		ctx->vi[i].u32PipeId = i;
+		ctx->vi[i].s32ChnId = 2; // rk3588 mainpath:0 selfpath:1 fbcpath:2
+		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 6;
+		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
+		ctx->vi[i].stChnAttr.u32Depth = 0;
+		ctx->vi[i].stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
+		ctx->vi[i].stChnAttr.enCompressMode = g_compressMode;
+		ctx->vi[i].stChnAttr.stFrameRate.s32SrcFrameRate = -1;
+		ctx->vi[i].stChnAttr.stFrameRate.s32DstFrameRate = -1;
+		if (g_compressMode == COMPRESS_MODE_NONE) {
+			ctx->vi[i].s32ChnId = 0;
+		}
+		SAMPLE_COMM_VI_CreateChn(&ctx->vi[i]);
 	}
-	SAMPLE_COMM_VI_CreateChn(&ctx->vi);
+
+	// Init avs[0]
+	ctx->avs.s32GrpId = 0;
+	ctx->avs.s32ChnId = 0;
+	ctx->avs.stAvsModParam.u32WorkingSetSize = 67 * 1024;
+	ctx->avs.stAvsGrpAttr.enMode = 0; // 0: blend 1: no blend
+	ctx->avs.stAvsGrpAttr.u32PipeNum = s32CamNum;
+	ctx->avs.stAvsGrpAttr.stGainAttr.enMode = AVS_GAIN_MODE_AUTO;
+	ctx->avs.stAvsGrpAttr.stOutAttr.enPrjMode = AVS_PROJECTION_EQUIRECTANGULAR;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stCenter.s32X = 5088 / 2;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stCenter.s32Y = 1520 / 2;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stFOV.u32FOVX = 36000;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stFOV.u32FOVY = 18000;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stORIRotation.s32Roll = 9000;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stORIRotation.s32Pitch = 9000;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stORIRotation.s32Yaw = 0;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stRotation.s32Roll = 0;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stRotation.s32Pitch = 0;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stRotation.s32Yaw = 0;
+	ctx->avs.stAvsGrpAttr.stLUT.enAccuracy = AVS_LUT_ACCURACY_HIGH;
+	ctx->avs.stAvsGrpAttr.bSyncPipe = RK_FALSE;
+	ctx->avs.stAvsGrpAttr.stFrameRate.s32SrcFrameRate = -1;
+	ctx->avs.stAvsGrpAttr.stFrameRate.s32DstFrameRate = -1;
+	ctx->avs.stAvsChnAttr[0].enCompressMode = g_compressMode;
+	ctx->avs.stAvsChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
+	ctx->avs.stAvsChnAttr[0].stFrameRate.s32DstFrameRate = -1;
+	ctx->avs.stAvsChnAttr[0].u32Depth = 1;
+	ctx->avs.stAvsChnAttr[0].u32Width = 8192;
+	ctx->avs.stAvsChnAttr[0].u32Height = 2700;
+	ctx->avs.stAvsChnAttr[0].enDynamicRange = DYNAMIC_RANGE_SDR8;
+	strcpy(ctx->avs.stAvsGrpAttr.stLUT.aFilePath, pAvsLutFilePath);
+	SAMPLE_COMM_AVS_CreateChn(&ctx->avs);
 
 	// Init VPSS[0]
-	ctx->vpss.s32GrpId = 0;
+	ctx->vpss.s32GrpId = 0; // 0~85:gpu, 86~169:rga, 170~255:isp
 	ctx->vpss.s32ChnId = 0;
-	// RGA_device: VIDEO_PROC_DEV_RGA GPU_device: VIDEO_PROC_DEV_GPU
-	ctx->vpss.enVProcDevType = VIDEO_PROC_DEV_RGA;
-	// ctx->vpss.enVProcDevType = VIDEO_PROC_DEV_GPU;
-	ctx->vpss.s32loopCount = s32loopCnt;
 	ctx->vpss.stGrpVpssAttr.enPixelFormat = RK_FMT_YUV420SP;
 	ctx->vpss.stGrpVpssAttr.enCompressMode = g_compressMode;
 
@@ -543,15 +434,15 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	ctx->vpss.stCropInfo.enCropCoordinate = VPSS_CROP_RATIO_COOR;
 	ctx->vpss.stCropInfo.stCropRect.s32X = 0;
 	ctx->vpss.stCropInfo.stCropRect.s32Y = 0;
-	ctx->vpss.stCropInfo.stCropRect.u32Width = video_width;
-	ctx->vpss.stCropInfo.stCropRect.u32Height = video_height;
+	ctx->vpss.stCropInfo.stCropRect.u32Width = 8192;
+	ctx->vpss.stCropInfo.stCropRect.u32Height = 2700;
 
 	ctx->vpss.stChnCropInfo[0].bEnable = RK_TRUE;
 	ctx->vpss.stChnCropInfo[0].enCropCoordinate = VPSS_CROP_RATIO_COOR;
 	ctx->vpss.stChnCropInfo[0].stCropRect.s32X = 0;
 	ctx->vpss.stChnCropInfo[0].stCropRect.s32Y = 0;
-	ctx->vpss.stChnCropInfo[0].stCropRect.u32Width = venc_width * 1000 / video_width;
-	ctx->vpss.stChnCropInfo[0].stCropRect.u32Height = venc_height * 1000 / video_height;
+	ctx->vpss.stChnCropInfo[0].stCropRect.u32Width = venc_width * 1000 / 8192;
+	ctx->vpss.stChnCropInfo[0].stCropRect.u32Height = venc_height * 1000 / 2700;
 	ctx->vpss.s32ChnRotation[0] = ROTATION_0;
 	ctx->vpss.stRotationEx[0].bEnable = RK_FALSE;
 	ctx->vpss.stRotationEx[0].stRotationEx.u32Angle = 60;
@@ -563,12 +454,7 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	ctx->vpss.stVpssChnAttr[0].stFrameRate.s32DstFrameRate = -1;
 	ctx->vpss.stVpssChnAttr[0].u32Width = venc_width;
 	ctx->vpss.stVpssChnAttr[0].u32Height = venc_height;
-	ctx->vpss.stVpssChnAttr[0].u32Depth = 2;
 	SAMPLE_COMM_VPSS_CreateChn(&ctx->vpss);
-	pthread_create(&vpss_thread_id[0], 0, vpss_get_stream, (void *)(&ctx->vpss));
-#if defined(FILE_TEST)
-	pthread_create(&vpss_thread_id[1], 0, vpss_send_stream, (void *)(&ctx->vpss));
-#endif
 
 	// Init VENC[0]
 	ctx->venc.s32ChnId = 0;
@@ -589,11 +475,21 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	ctx->venc.stChnAttr.stGopAttr.enGopMode = VENC_GOPMODE_NORMALP; // VENC_GOPMODE_SMARTP
 	SAMPLE_COMM_VENC_CreateChn(&ctx->venc);
 
-#if !defined(FILE_TEST)
-	// Bind VI[0] and VPSS[0]
-	stSrcChn.enModId = RK_ID_VI;
-	stSrcChn.s32DevId = ctx->vi.s32DevId;
-	stSrcChn.s32ChnId = ctx->vi.s32ChnId;
+	// Bind VI[0]~VI[5] and avs[0]
+	for (i = 0; i < s32CamNum; i++) {
+		stSrcChn.enModId = RK_ID_VI;
+		stSrcChn.s32DevId = ctx->vi[i].s32DevId;
+		stSrcChn.s32ChnId = ctx->vi[i].s32ChnId;
+		stDestChn.enModId = RK_ID_AVS;
+		stDestChn.s32DevId = ctx->avs.s32GrpId;
+		stDestChn.s32ChnId = i;
+		SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
+	}
+
+	// Bind AVS[0] and VPSS[0]
+	stSrcChn.enModId = RK_ID_AVS;
+	stSrcChn.s32DevId = ctx->avs.s32GrpId;
+	stSrcChn.s32ChnId = ctx->avs.s32ChnId;
 	stDestChn.enModId = RK_ID_VPSS;
 	stDestChn.s32DevId = ctx->vpss.s32GrpId;
 	stDestChn.s32ChnId = ctx->vpss.s32ChnId;
@@ -607,7 +503,6 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	stDestChn.s32DevId = 0;
 	stDestChn.s32ChnId = ctx->venc.s32ChnId;
 	SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
-#endif
 
 	printf("%s initial finish\n", __func__);
 
@@ -677,14 +572,8 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 		if (ctx->venc.getStreamCbFunc) {
 			pthread_join(ctx->venc.getStreamThread, NULL);
 		}
-		pthread_join(vpss_thread_id[0], NULL);
-		pthread_join(vpss_thread_id[1], NULL);
 	}
 
-	RK_MPI_MB_DestroyPool(ctx->venc.pool);
-	RK_MPI_MB_DestroyPool(ctx->vpss.pool);
-
-#if !defined(FILE_TEST)
 	// UnBind VPSS[0] and VENC[0]
 	stSrcChn.enModId = RK_ID_VPSS;
 	stSrcChn.s32DevId = ctx->vpss.s32GrpId;
@@ -695,28 +584,44 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
 	printf("%s Unbind VPSS[0] - VENC[0]!\n", __func__);
 
-	// Bind VI[0] and VPSS[0]
-	stSrcChn.enModId = RK_ID_VI;
-	stSrcChn.s32DevId = ctx->vi.s32DevId;
-	stSrcChn.s32ChnId = ctx->vi.s32ChnId;
+	// UnBind AVS[0] and VPSS[0]
+	stSrcChn.enModId = RK_ID_AVS;
+	stSrcChn.s32DevId = ctx->avs.s32GrpId;
+	stSrcChn.s32ChnId = ctx->avs.s32ChnId;
 	stDestChn.enModId = RK_ID_VPSS;
 	stDestChn.s32DevId = ctx->vpss.s32GrpId;
 	stDestChn.s32ChnId = ctx->vpss.s32ChnId;
 	SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
-	printf("%s Unbind VI[0] - VPSS[0]!\n", __func__);
-#endif
+	printf("%s Unbind AVS[0] - VPSS[0]!\n", __func__);
+
+	// UnBind Bind VI[0]~VI[5]
+	for (i = 0; i < s32CamNum; i++) {
+		stSrcChn.enModId = RK_ID_VI;
+		stSrcChn.s32DevId = ctx->vi[i].s32DevId;
+		stSrcChn.s32ChnId = ctx->vi[i].s32ChnId;
+		stDestChn.enModId = RK_ID_AVS;
+		stDestChn.s32DevId = ctx->avs.s32GrpId;
+		stDestChn.s32ChnId = i;
+		SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
+	}
+	printf("%s Unbind VI - AVS !\n", __func__);
+
 	// Destroy VENC[0]
 	SAMPLE_COMM_VENC_DestroyChn(&ctx->venc);
 	// Destroy VPSS[0]
 	SAMPLE_COMM_VPSS_DestroyChn(&ctx->vpss);
-	// Destroy VI[0]
-	SAMPLE_COMM_VI_DestroyChn(&ctx->vi);
+	// Destroy AVS[0]
+	SAMPLE_COMM_AVS_DestroyChn(&ctx->avs);
+	// Destroy VI[0]~VI[5]
+	for (i = 0; i < s32CamNum; i++) {
+		SAMPLE_COMM_VI_DestroyChn(&ctx->vi[i]);
+	}
 
 __FAILED:
 	RK_MPI_SYS_Exit();
 	if (iq_file_dir) {
 #ifdef RKAIQ
-		SAMPLE_COMM_ISP_Stop(s32CamId);
+		SAMPLE_COMM_ISP_CamGroup_Stop(s32CamId);
 #endif
 	}
 
@@ -726,7 +631,193 @@ __FAILED:
 /******************************************************************************
 * function    : SAMPLE_COMM_VI_AVS_VENC_Stresstest
 ******************************************************************************/
-int SAMPLE_CAMERA_VI_VPSS_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx) { return 0; }
+int SAMPLE_CAMERA_VI_AVS_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx) {
+	RK_S32 s32Ret = RK_FAILURE;
+	int video_width = 2560;
+	int video_height = 1520;
+	int venc_width = 8192;
+	int venc_height = 2700;
+	RK_CHAR *pAvsLutFilePath = "/usr/share/avs_mesh/";
+	RK_CHAR *pOutPathVenc = "/data/";
+	RK_CHAR *iq_file_dir = "/etc/iqfiles";
+	RK_CHAR *pCodecName = "H265";
+	CODEC_TYPE_E enCodecType = RK_CODEC_TYPE_H265;
+	VENC_RC_MODE_E enRcMode = VENC_RC_MODE_H265CBR;
+	RK_S32 s32BitRate = 4 * 1024;
+	RK_S32 s32CamId = 0;
+	MPP_CHN_S stSrcChn, stDestChn;
+	RK_S32 s32CamNum = 6;
+	RK_S32 s32loopCnt = g_framcount;
+	RK_S32 i;
+	RK_BOOL bMultictx = RK_FALSE;
+	quit = false;
+
+	printf("#CameraIdx: %d\n", s32CamId);
+	printf("#pAvsLutFilePath: %s\n", pAvsLutFilePath);
+	printf("#CodecName:%s\n", pCodecName);
+	printf("#Output Path: %s\n", pOutPathVenc);
+	printf("#IQ Path: %s\n", iq_file_dir);
+	if (iq_file_dir) {
+#ifdef RKAIQ
+		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
+		printf("#bMultictx: %d\n\n", bMultictx);
+		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
+		rk_aiq_camgroup_instance_cfg_t camgroup_cfg;
+
+		memset(&camgroup_cfg, 0, sizeof(camgroup_cfg));
+		camgroup_cfg.sns_num = s32CamNum;
+		camgroup_cfg.config_file_dir = iq_file_dir;
+
+		SAMPLE_COMM_ISP_CamGroup_Init(s32CamId, hdr_mode, bMultictx, &camgroup_cfg);
+#endif
+	}
+
+	if (RK_MPI_SYS_Init() != RK_SUCCESS) {
+		goto __FAILED;
+	}
+
+	// Init VI[0] ~ VI[5]
+	for (i = 0; i < s32CamNum; i++) {
+		ctx->vi[i].u32Width = video_width;
+		ctx->vi[i].u32Height = video_height;
+		ctx->vi[i].s32DevId = i;
+		ctx->vi[i].u32PipeId = i;
+		ctx->vi[i].s32ChnId = 2; // rk3588 mainpath:0 selfpath:1 fbcpath:2
+		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 6;
+		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
+		ctx->vi[i].stChnAttr.u32Depth = 0;
+		ctx->vi[i].stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
+		ctx->vi[i].stChnAttr.enCompressMode = g_compressMode;
+		ctx->vi[i].stChnAttr.stFrameRate.s32SrcFrameRate = -1;
+		ctx->vi[i].stChnAttr.stFrameRate.s32DstFrameRate = -1;
+		if (g_compressMode == COMPRESS_MODE_NONE) {
+			ctx->vi[i].s32ChnId = 0;
+		}
+		SAMPLE_COMM_VI_CreateChn(&ctx->vi[i]);
+	}
+
+	// Init avs[0]
+	ctx->avs.s32GrpId = 0;
+	ctx->avs.s32ChnId = 0;
+	ctx->avs.stAvsModParam.u32WorkingSetSize = 67 * 1024;
+	ctx->avs.stAvsGrpAttr.enMode = 0; // 0: blend 1: no blend
+	ctx->avs.stAvsGrpAttr.u32PipeNum = s32CamNum;
+	ctx->avs.stAvsGrpAttr.stGainAttr.enMode = AVS_GAIN_MODE_AUTO;
+	ctx->avs.stAvsGrpAttr.stOutAttr.enPrjMode = AVS_PROJECTION_EQUIRECTANGULAR;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stCenter.s32X = 5088 / 2;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stCenter.s32Y = 1520 / 2;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stFOV.u32FOVX = 36000;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stFOV.u32FOVY = 18000;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stORIRotation.s32Roll = 9000;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stORIRotation.s32Pitch = 9000;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stORIRotation.s32Yaw = 0;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stRotation.s32Roll = 0;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stRotation.s32Pitch = 0;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stRotation.s32Yaw = 0;
+	ctx->avs.stAvsGrpAttr.stLUT.enAccuracy = AVS_LUT_ACCURACY_HIGH;
+	ctx->avs.stAvsGrpAttr.bSyncPipe = RK_FALSE;
+	ctx->avs.stAvsGrpAttr.stFrameRate.s32SrcFrameRate = -1;
+	ctx->avs.stAvsGrpAttr.stFrameRate.s32DstFrameRate = -1;
+	ctx->avs.stAvsChnAttr[0].enCompressMode = g_compressMode;
+	ctx->avs.stAvsChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
+	ctx->avs.stAvsChnAttr[0].stFrameRate.s32DstFrameRate = -1;
+	ctx->avs.stAvsChnAttr[0].u32Depth = 1;
+	ctx->avs.stAvsChnAttr[0].u32Width = 8192;
+	ctx->avs.stAvsChnAttr[0].u32Height = 2700;
+	ctx->avs.stAvsChnAttr[0].enDynamicRange = DYNAMIC_RANGE_SDR8;
+	strcpy(ctx->avs.stAvsGrpAttr.stLUT.aFilePath, pAvsLutFilePath);
+	SAMPLE_COMM_AVS_CreateChn(&ctx->avs);
+
+	// Init VENC[0]
+	ctx->venc.s32ChnId = 0;
+	ctx->venc.u32Width = venc_width;
+	ctx->venc.u32Height = venc_height;
+	ctx->venc.u32Fps = 30;
+	ctx->venc.u32Gop = 50;
+	ctx->venc.u32BitRate = s32BitRate;
+	ctx->venc.enCodecType = enCodecType;
+	ctx->venc.enRcMode = enRcMode;
+	ctx->venc.getStreamCbFunc = venc_get_stream;
+	ctx->venc.s32loopCount = s32loopCnt;
+	ctx->venc.dstFilePath = pOutPathVenc;
+	// H264  66：Baseline  77：Main Profile 100：High Profile
+	// H265  0：Main Profile  1：Main 10 Profile
+	// MJPEG 0：Baseline
+	ctx->venc.stChnAttr.stVencAttr.u32Profile = 0;
+	ctx->venc.stChnAttr.stGopAttr.enGopMode = VENC_GOPMODE_NORMALP; // VENC_GOPMODE_SMARTP
+	SAMPLE_COMM_VENC_CreateChn(&ctx->venc);
+
+	// Bind VI[0]~VI[5] and avs[0]
+	for (i = 0; i < s32CamNum; i++) {
+		stSrcChn.enModId = RK_ID_VI;
+		stSrcChn.s32DevId = ctx->vi[i].s32DevId;
+		stSrcChn.s32ChnId = ctx->vi[i].s32ChnId;
+		stDestChn.enModId = RK_ID_AVS;
+		stDestChn.s32DevId = ctx->avs.s32GrpId;
+		stDestChn.s32ChnId = i;
+		SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
+	}
+
+	// Bind AVS[0] and VENC[0]
+	stSrcChn.enModId = RK_ID_AVS;
+	stSrcChn.s32DevId = ctx->avs.s32GrpId;
+	stSrcChn.s32ChnId = ctx->avs.s32ChnId;
+	stDestChn.enModId = RK_ID_VENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = ctx->venc.s32ChnId;
+	SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
+
+	printf("%s initial finish\n", __func__);
+
+	while (!quit) {
+		sleep(1);
+	}
+
+	printf("%s exit!\n", __func__);
+
+	if (ctx->venc.getStreamCbFunc) {
+		pthread_join(ctx->venc.getStreamThread, NULL);
+	}
+
+	// UnBind avs[0] and VENC[0]
+	stSrcChn.enModId = RK_ID_AVS;
+	stSrcChn.s32DevId = ctx->avs.s32GrpId;
+	stSrcChn.s32ChnId = ctx->avs.s32ChnId;
+	stDestChn.enModId = RK_ID_VENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = ctx->venc.s32ChnId;
+	SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
+
+	// UnBind Bind VI[0]~VI[5] and AVS[0]
+	for (i = 0; i < s32CamNum; i++) {
+		stSrcChn.enModId = RK_ID_VI;
+		stSrcChn.s32DevId = ctx->vi[i].s32DevId;
+		stSrcChn.s32ChnId = ctx->vi[i].s32ChnId;
+		stDestChn.enModId = RK_ID_AVS;
+		stDestChn.s32DevId = ctx->avs.s32GrpId;
+		stDestChn.s32ChnId = i;
+		SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
+	}
+
+	// Destroy VENC[0]
+	SAMPLE_COMM_VENC_DestroyChn(&ctx->venc);
+	// Destroy AVS[0]
+	SAMPLE_COMM_AVS_DestroyChn(&ctx->avs);
+	// Destroy VI[0]~VI[5]
+	for (i = 0; i < s32CamNum; i++) {
+		SAMPLE_COMM_VI_DestroyChn(&ctx->vi[i]);
+	}
+
+__FAILED:
+	RK_MPI_SYS_Exit();
+	if (iq_file_dir) {
+#ifdef RKAIQ
+		SAMPLE_COMM_ISP_CamGroup_Stop(s32CamId);
+#endif
+	}
+
+	return 0;
+}
 
 /******************************************************************************
 * function    : main()
@@ -777,7 +868,6 @@ int main(int argc, char *argv[]) {
 	}
 
 	memset(&ctx, 0, sizeof(SAMPLE_MPI_CTX_S));
-	g_ctx = &ctx;
 
 	while (g_loopcount) {
 		switch (s32Index) {
@@ -797,7 +887,7 @@ int main(int argc, char *argv[]) {
 			g_loopcount = 0;
 			break;
 		case 3:
-			s32Ret = SAMPLE_CAMERA_VI_VPSS_VENC_Stresstest(&ctx);
+			s32Ret = SAMPLE_CAMERA_VI_AVS_VENC_Stresstest(&ctx);
 			break;
 		default:
 			printf("the index %d is invaild!\n", s32Index);

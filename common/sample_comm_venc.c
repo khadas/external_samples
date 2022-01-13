@@ -131,6 +131,51 @@ RK_S32 SAMPLE_COMM_VENC_CreateChn(SAMPLE_VENC_CTX_S *ctx) {
 	return RK_SUCCESS;
 }
 
+RK_S32 SAMPLE_COMM_VENC_SendStream(SAMPLE_VENC_CTX_S *ctx, void *pdata, RK_S32 width,
+                                   RK_S32 height, RK_S32 size,
+                                   COMPRESS_MODE_E enCompressMode) {
+	RK_S32 s32Ret = RK_FAILURE;
+	MB_BLK blk = RK_NULL;
+	RK_U8 *pVirAddr = RK_NULL;
+	RK_S32 s32ReachEOS = 0;
+	VIDEO_FRAME_INFO_S stFrame;
+
+__RETRY0:
+	blk = RK_MPI_MB_GetMB(ctx->pool, size, RK_TRUE);
+	if (RK_NULL == blk) {
+		RK_LOGE("RK_MPI_MB_GetMB fail %x", blk);
+		usleep(2000llu);
+		goto __RETRY0;
+	}
+
+	pVirAddr = (RK_U8 *)(RK_MPI_MB_Handle2VirAddr(blk));
+
+	memcpy(pVirAddr, pdata, size);
+
+	RK_MPI_SYS_MmzFlushCache(blk, RK_FALSE);
+
+	stFrame.stVFrame.pMbBlk = blk;
+	stFrame.stVFrame.u32Width = width;
+	stFrame.stVFrame.u32Height = height;
+	stFrame.stVFrame.u32VirWidth = width;
+	stFrame.stVFrame.u32VirHeight = height;
+	stFrame.stVFrame.enPixelFormat = RK_FMT_YUV420SP;
+	stFrame.stVFrame.u32FrameFlag |= s32ReachEOS ? FRAME_FLAG_SNAP_END : 0;
+	stFrame.stVFrame.enCompressMode = enCompressMode;
+
+__RETRY1:
+	s32Ret = RK_MPI_VENC_SendFrame(ctx->s32ChnId, &stFrame, -1);
+	if (s32Ret == RK_SUCCESS) {
+		RK_MPI_MB_ReleaseMB(blk);
+	} else {
+		RK_LOGE("RK_MPI_VENC_SendFrame fail %x", s32Ret);
+		usleep(10000llu);
+		goto __RETRY1;
+	}
+
+	return s32Ret;
+}
+
 RK_S32 SAMPLE_COMM_VENC_GetStream(SAMPLE_VENC_CTX_S *ctx, void **pdata) {
 	RK_S32 s32Ret = RK_FAILURE;
 

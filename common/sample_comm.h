@@ -99,7 +99,7 @@ typedef struct _rkMpiVICtx {
 	VI_DEV_BIND_PIPE_S stBindPipe;
 	VI_CHN_ATTR_S stChnAttr;
 	VI_SAVE_FILE_INFO_S stDebugFile;
-	VI_FRAME_S stViFrame;
+	VIDEO_FRAME_INFO_S stViFrame;
 	VI_CHN_STATUS_S stChnStatus;
 	RK_CHAR *dstFilePath;
 } SAMPLE_VI_CTX_S;
@@ -129,6 +129,7 @@ typedef struct _rkMpiVENCCtx {
 	VENC_STREAM_S stFrame;
 	pthread_t getStreamThread;
 	Thread_Func getStreamCbFunc;
+	MB_POOL pool;
 	RK_CHAR *srcFilePath;
 	RK_CHAR *dstFilePath;
 } SAMPLE_VENC_CTX_S;
@@ -157,6 +158,7 @@ typedef struct _rkMpiRGNCtx {
 } SAMPLE_RGN_CTX_S;
 
 typedef struct _rkMpiVPSSCtx {
+	RK_S32 s32loopCount;
 	VPSS_GRP s32GrpId;
 	VPSS_CHN s32ChnId;
 	RK_S32 s32RotationEx;
@@ -164,10 +166,15 @@ typedef struct _rkMpiVPSSCtx {
 	RK_S32 s32ChnCropRatio;
 	VPSS_GRP_ATTR_S stGrpVpssAttr;
 	VPSS_CROP_INFO_S stCropInfo;
+	VIDEO_PROC_DEV_TYPE_E enVProcDevType;
 	RK_S32 s32ChnRotation[VPSS_MAX_CHN_NUM];
 	VPSS_CROP_INFO_S stChnCropInfo[VPSS_MAX_CHN_NUM];
 	VPSS_ROTATION_EX_ATTR_S stRotationEx[VPSS_MAX_CHN_NUM];
 	VPSS_CHN_ATTR_S stVpssChnAttr[VPSS_MAX_CHN_NUM];
+	MB_POOL pool;
+	RK_CHAR *srcFilePath;
+	RK_CHAR *dstFilePath;
+	VIDEO_FRAME_INFO_S stChnFrameInfos;
 } SAMPLE_VPSS_CTX_S;
 
 typedef struct _rkMpiAVSCtx {
