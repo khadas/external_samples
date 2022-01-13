@@ -203,6 +203,8 @@ int main(int argc, char *argv[]) {
 	// Init VPSS[0]
 	ctx->vpss.s32GrpId = 0; // 0~85:gpu, 86~169:rga, 170~255:isp
 	ctx->vpss.s32ChnId = 0;
+	// RGA_device: VIDEO_PROC_DEV_RGA GPU_device: VIDEO_PROC_DEV_GPU
+	ctx->vpss.enVProcDevType = VIDEO_PROC_DEV_RGA;
 	ctx->vpss.stGrpVpssAttr.enPixelFormat = RK_FMT_YUV420SP;
 	ctx->vpss.stGrpVpssAttr.enCompressMode = COMPRESS_MODE_NONE; // no compress
 	ctx->vpss.s32ChnRotation[0] = ROTATION_0;

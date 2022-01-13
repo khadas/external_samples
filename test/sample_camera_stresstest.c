@@ -681,8 +681,7 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 		pthread_join(vpss_thread_id[1], NULL);
 	}
 
-	RK_MPI_MB_DestroyPool(ctx->venc.pool);
-	RK_MPI_MB_DestroyPool(ctx->vpss.pool);
+	RK_MPI_MB_DestroyPool(pool);
 
 #if !defined(FILE_TEST)
 	// UnBind VPSS[0] and VENC[0]

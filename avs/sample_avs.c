@@ -58,7 +58,7 @@ static const struct option long_options[] = {
     {"avs_lut_name", required_argument, NULL, 'A'},
     {"width", required_argument, NULL, 'w'},
     {"height", required_argument, NULL, 'h'},
-	{"avs_width", required_argument, NULL, 'W'},
+    {"avs_width", required_argument, NULL, 'W'},
     {"avs_height", required_argument, NULL, 'H'},
     {"input_yuv_path", required_argument, NULL, 'i'},
     {"loop_count", required_argument, NULL, 'l'},
@@ -102,15 +102,15 @@ static void *avs_send_stream(void *pArgs) {
 	RK_S32 loopCount = 0;
 	VIDEO_FRAME_INFO_S *stVideoFrames;
 	stVideoFrames = malloc(sizeof(VIDEO_FRAME_INFO_S));
-    memset(stVideoFrames, 0x0, sizeof(stVideoFrames));
+	memset(stVideoFrames, 0x0, sizeof(stVideoFrames));
 	stVideoFrames->stVFrame.u32Width = video_width;
-    stVideoFrames->stVFrame.u32Height = video_height;
-    stVideoFrames->stVFrame.u32VirWidth = video_width;
-    stVideoFrames->stVFrame.u32VirHeight = video_height;
-    stVideoFrames->stVFrame.enPixelFormat = RK_FMT_YUV420SP;
-    stVideoFrames->stVFrame.enCompressMode = COMPRESS_MODE_NONE;
+	stVideoFrames->stVFrame.u32Height = video_height;
+	stVideoFrames->stVFrame.u32VirWidth = video_width;
+	stVideoFrames->stVFrame.u32VirHeight = video_height;
+	stVideoFrames->stVFrame.enPixelFormat = RK_FMT_YUV420SP;
+	stVideoFrames->stVFrame.enCompressMode = COMPRESS_MODE_NONE;
 	RK_MPI_SYS_MmzAlloc_Cached(&(stVideoFrames->stVFrame.pMbBlk), RK_NULL, RK_NULL,
-								video_width*video_height * 3 / 2);
+	                           video_width * video_height * 3 / 2);
 	for (int i = 0; i < ctx->stAvsGrpAttr.u32PipeNum; i++) {
 		snprintf(name, sizeof(name), "%s/%d.yuv", input_yuv_path, i);
 		fp[i] = fopen(name, "rb");
@@ -129,7 +129,7 @@ static void *avs_send_stream(void *pArgs) {
 		}
 		for (int i = 0; i < ctx->stAvsGrpAttr.u32PipeNum; i++) {
 			fread(RK_MPI_MB_Handle2VirAddr(stVideoFrames->stVFrame.pMbBlk), 1,
-									video_width*video_height*3/2, fp[i]);
+			      video_width * video_height * 3 / 2, fp[i]);
 			RK_MPI_SYS_MmzFlushCache(stVideoFrames->stVFrame.pMbBlk, RK_FALSE);
 			RK_MPI_AVS_SendPipeFrame(ctx->s32GrpId, i, stVideoFrames, 1000);
 		}
@@ -141,7 +141,7 @@ static void *avs_send_stream(void *pArgs) {
 	}
 
 	RK_MPI_MB_ReleaseMB(stVideoFrames->stVFrame.pMbBlk);
-    free(stVideoFrames);
+	free(stVideoFrames);
 
 	return RK_NULL;
 }
@@ -163,9 +163,9 @@ static void *avs_get_stream(void *pArgs) {
 			snprintf(name, sizeof(name), "/%s/avs_%d.bin", ctx->dstFilePath, loopCount);
 			fp = fopen(name, "wb");
 			if (fp == RK_NULL) {
-					printf("can't open %s file !\n", name);
-					quit = true;
-					return RK_NULL;
+				printf("can't open %s file !\n", name);
+				quit = true;
+				return RK_NULL;
 			}
 		}
 
