@@ -311,11 +311,9 @@ int main(int argc, char *argv[]) {
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
 		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
-		// rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_ISP_HDR3;
-		int fps = 30;
+
 		SAMPLE_COMM_ISP_Init(s32CamId, hdr_mode, bMultictx, iq_file_dir);
 		SAMPLE_COMM_ISP_Run(s32CamId);
-// SAMPLE_COMM_ISP_SetFrameRate(s32CamId, fps);
 #endif
 	}
 

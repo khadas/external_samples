@@ -91,8 +91,8 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-M | --multictx: switch of multictx in isp, set 0 to disable, set "
 	       "1 to enable. Default: 0\n");
 #endif
-	printf("\t-A | --avs_lut_name: input file path of rk_ps_gpu_xxx.bin "
-	       "Default /usr/share/avs_mesh/\n");
+	printf("\t-A | --calib_file_path: input file path of calib_file_xxx.pto "
+	       "Default /usr/share/avs_calib/calib_file_pos.pto\n");
 	printf("\t-w | --width: camera with, Default 1920\n");
 	printf("\t-h | --height: camera height, Default 1080\n");
 	printf("\t-e | --encode: encode type, Default:h264cbr, Value:h264cbr, "
@@ -179,7 +179,9 @@ int main(int argc, char *argv[]) {
 	int venc_height = 2700;
 	int disp_width = 0;
 	int disp_height = 0;
-	RK_CHAR *pAvsLutFilePath = "/usr/share/avs_mesh/";
+	RK_CHAR *pAvsCalibFilePath = "/usr/share/avs_calib/calib_file_pos.pto";
+	RK_CHAR *pAvsMeshAlphaPath = "/usr/share/test/";
+	RK_CHAR *pAvsLutFilePath = NULL;
 	RK_CHAR *pInPathBmp = NULL;
 	RK_CHAR *pOutPathVenc = NULL;
 	CODEC_TYPE_E enCodecType = RK_CODEC_TYPE_H264;
@@ -223,7 +225,8 @@ int main(int argc, char *argv[]) {
 			}
 			break;
 		case 'A':
-			pAvsLutFilePath = optarg;
+			// pAvsLutFilePath = optarg;
+			pAvsCalibFilePath = optarg;
 			break;
 		case 'b':
 			s32BitRate = atoi(optarg);
@@ -303,6 +306,8 @@ int main(int argc, char *argv[]) {
 
 	printf("#CameraIdx: %d\n", s32CamId);
 	printf("#pAvsLutFilePath: %s\n", pAvsLutFilePath);
+	printf("#pAvsCalibFilePath: %s\n", pAvsCalibFilePath);
+	printf("#pAvsMeshAlphaPath: %s\n", pAvsMeshAlphaPath);
 	printf("#CodecName:%s\n", pCodecName);
 	printf("#Output Path: %s\n", pOutPathVenc);
 	printf("#IQ Path: %s\n", iq_file_dir);
@@ -363,18 +368,18 @@ int main(int argc, char *argv[]) {
 	ctx->avs.stAvsGrpAttr.u32PipeNum = s32CamNum;
 	ctx->avs.stAvsGrpAttr.stGainAttr.enMode = AVS_GAIN_MODE_AUTO;
 	ctx->avs.stAvsGrpAttr.stOutAttr.enPrjMode = AVS_PROJECTION_EQUIRECTANGULAR;
-	ctx->avs.stAvsGrpAttr.stOutAttr.stCenter.s32X = 5088 / 2;
-	ctx->avs.stAvsGrpAttr.stOutAttr.stCenter.s32Y = 1520 / 2;
-	ctx->avs.stAvsGrpAttr.stOutAttr.stFOV.u32FOVX = 36000;
-	ctx->avs.stAvsGrpAttr.stOutAttr.stFOV.u32FOVY = 18000;
-	ctx->avs.stAvsGrpAttr.stOutAttr.stORIRotation.s32Roll = 9000;
-	ctx->avs.stAvsGrpAttr.stOutAttr.stORIRotation.s32Pitch = 9000;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stCenter.s32X = 4196;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stCenter.s32Y = 2080;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stFOV.u32FOVX = 28000;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stFOV.u32FOVY = 9500;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stORIRotation.s32Roll = 0;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stORIRotation.s32Pitch = 0;
 	ctx->avs.stAvsGrpAttr.stOutAttr.stORIRotation.s32Yaw = 0;
 	ctx->avs.stAvsGrpAttr.stOutAttr.stRotation.s32Roll = 0;
 	ctx->avs.stAvsGrpAttr.stOutAttr.stRotation.s32Pitch = 0;
 	ctx->avs.stAvsGrpAttr.stOutAttr.stRotation.s32Yaw = 0;
 	ctx->avs.stAvsGrpAttr.stLUT.enAccuracy = AVS_LUT_ACCURACY_HIGH;
-	ctx->avs.stAvsGrpAttr.bSyncPipe = RK_FALSE;
+	ctx->avs.stAvsGrpAttr.bSyncPipe = RK_TRUE;
 	ctx->avs.stAvsGrpAttr.stFrameRate.s32SrcFrameRate = -1;
 	ctx->avs.stAvsGrpAttr.stFrameRate.s32DstFrameRate = -1;
 	ctx->avs.stAvsChnAttr[0].enCompressMode = COMPRESS_AFBC_16x16;
@@ -384,7 +389,15 @@ int main(int argc, char *argv[]) {
 	ctx->avs.stAvsChnAttr[0].u32Width = avs_width;
 	ctx->avs.stAvsChnAttr[0].u32Height = avs_height;
 	ctx->avs.stAvsChnAttr[0].enDynamicRange = DYNAMIC_RANGE_SDR8;
-	strcpy(ctx->avs.stAvsGrpAttr.stLUT.aFilePath, pAvsLutFilePath);
+	if (pAvsCalibFilePath) {
+		strcpy(ctx->avs.stAvsGrpAttr.stOutAttr.stCalib.aCalibFilePath, pAvsCalibFilePath);
+	}
+	if (pAvsMeshAlphaPath) {
+		strcpy(ctx->avs.stAvsGrpAttr.stOutAttr.stCalib.aMeshAlphaPath, pAvsMeshAlphaPath);
+	}
+	if (pAvsLutFilePath) {
+		strcpy(ctx->avs.stAvsGrpAttr.stLUT.aFilePath, pAvsLutFilePath);
+	}
 	SAMPLE_COMM_AVS_CreateChn(&ctx->avs);
 
 	// Init VENC[0]

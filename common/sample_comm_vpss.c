@@ -182,7 +182,7 @@ __RETRY0:
 
 	pVirAddr = (RK_U8 *)(RK_MPI_MB_Handle2VirAddr(blk));
 
-	memcpy(pVirAddr, pdata, size);
+	pVirAddr = pdata;
 
 	RK_MPI_SYS_MmzFlushCache(blk, RK_FALSE);
 
