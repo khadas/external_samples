@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  */
+#ifdef AVS_ENABLE
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
@@ -141,3 +142,4 @@ RK_S32 SAMPLE_COMM_AVS_DestroyChn(SAMPLE_AVS_CTX_S *ctx) {
 }
 #endif
 #endif /* End of #ifdef __cplusplus */
+#endif

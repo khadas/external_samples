@@ -29,7 +29,12 @@ PKG_CONF_OPTS += -DARCH64=OFF
 endif
 
 ifeq ($(RK_MEDIA_CHIP), rk3588)
-PKG_CONF_OPTS += -DARCH64=ON
+export AVS_ENABLE=y
+PKG_CONF_OPTS += -DARCH64=ON -DAVS_ENABLE=y
+endif
+
+ifeq ($(RK_MEDIA_CHIP), rv1106)
+PKG_CONF_OPTS += -DARCH64=OFF
 endif
 
 ifeq ($(CONFIG_RK_SAMPLE),y)
@@ -51,6 +56,9 @@ endif
 ifeq ($(RK_MEDIA_CHIP), rk3588)
 COMM_SRC += $(wildcard $(COMM_DIR)/isp3.x/*.c)
 endif
+ifeq ($(RK_MEDIA_CHIP), rv1106)
+COMM_SRC += $(wildcard $(COMM_DIR)/isp3.x/*.c)
+endif
 COMM_OBJ := $(COMM_SRC:%.c=%.o)
 
 INC_FLAGS := -I$(COMM_DIR)
@@ -64,19 +72,26 @@ INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/algos
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/iq_parser
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/iq_parser_v2
 CFLAGS += -g -Wall $(INC_FLAGS) $(PKG_CONF_OPTS) -lpthread -lm -ldl
-LD_FLAGS += -L$(RK_MEDIA_OUTPUT)/lib  -lrockit -lrockchip_mpp -lasound -ldrm -lrkaiq
-LD_FLAGS += -L$(RK_MEDIA_OUTPUT)/root/usr/lib -lasound
+LD_FLAGS += -L$(RK_MEDIA_OUTPUT)/lib  -lrockit -lrockchip_mpp -ldrm -lrkaiq
 
 ifeq ($(RK_MEDIA_CHIP), rv1126)
 INC_FLAGS += -I$(COMM_DIR)/isp2.x
 CFLAGS += -DISP_HW_V20
 LD_FLAGS += -L$(CURRENT_DIR)/lib  -lrtsp_32bit
+LD_FLAGS += -L$(RK_MEDIA_OUTPUT)/root/usr/lib -lasound
 endif
 
 ifeq ($(RK_MEDIA_CHIP), rk3588)
 INC_FLAGS += -I$(COMM_DIR)/isp3.x
 CFLAGS += -DISP_HW_V30
 LD_FLAGS += -L$(CURRENT_DIR)/lib  -lrtsp_64bit
+LD_FLAGS += -L$(RK_MEDIA_OUTPUT)/root/usr/lib -lasound
+endif
+
+ifeq ($(RK_MEDIA_CHIP), rv1106)
+INC_FLAGS += -I$(COMM_DIR)/isp3.x
+CFLAGS += -DISP_HW_V30
+LD_FLAGS += -L$(CURRENT_DIR)/lib  -lrtsp_uclibc
 endif
 
 export SAMPLE_OUT_DIR=$(CURRENT_DIR)/out
@@ -99,8 +114,10 @@ sample-build: libasound librkaiq librockit
 	@make -C $(CURRENT_DIR)/vo install;
 	@make -C $(CURRENT_DIR)/venc;
 	@make -C $(CURRENT_DIR)/venc install;
+ifeq ($(RK_MEDIA_CHIP), rk3588)
 	@make -C $(CURRENT_DIR)/avs;
 	@make -C $(CURRENT_DIR)/avs install;
+endif
 	@make -C $(CURRENT_DIR)/test;
 	@make -C $(CURRENT_DIR)/test install;
 	@cp -rfa $(SAMPLE_OUT_DIR)/* $(RK_MEDIA_OUTPUT)
@@ -120,7 +137,9 @@ clean:
 	@make -C $(CURRENT_DIR)/vi clean
 	@make -C $(CURRENT_DIR)/vo clean
 	@make -C $(CURRENT_DIR)/venc clean
+ifeq ($(RK_MEDIA_CHIP), rk3588)
 	@make -C $(CURRENT_DIR)/avs clean
+endif
 	@make -C $(CURRENT_DIR)/test clean
 	@rm -rf $(SAMPLE_OUT_DIR)
 
