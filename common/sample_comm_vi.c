@@ -108,11 +108,12 @@ RK_S32 SAMPLE_COMM_VI_GetChnFrame(SAMPLE_VI_CTX_S *ctx, void **pdata) {
 		s32Ret =
 		    RK_MPI_VI_QueryChnStatus(ctx->u32PipeId, ctx->s32ChnId, &ctx->stChnStatus);
 		RK_LOGD("RK_MPI_VI_QueryChnStatus ret %x, DevId%d,PipeId:%d,ChnId:%d"
-		        "w:%d,h:%d,enable:%d,lost:%d,framerate:%d,vbfail:%d",
+		        "w:%d,h:%d,enable:%d,inputlost:%d,outputlost:%d,framerate:%d,vbfail:%d",
 		        ctx->s32DevId, ctx->u32PipeId, ctx->s32ChnId, s32Ret,
 		        ctx->stChnStatus.stSize.u32Width, ctx->stChnStatus.stSize.u32Height,
-		        ctx->stChnStatus.bEnable, ctx->stChnStatus.u32LostFrame,
-		        ctx->stChnStatus.u32FrameRate, ctx->stChnStatus.u32VbFail);
+		        ctx->stChnStatus.bEnable, ctx->stChnStatus.u32InputLostFrame,
+		        ctx->stChnStatus.u32OutputLostFrame, ctx->stChnStatus.u32FrameRate,
+		        ctx->stChnStatus.u32VbFail);
 	} else {
 		RK_LOGE("RK_MPI_VI_GetChnFrame DevId %d timeout %x", ctx->s32DevId, s32Ret);
 	}
