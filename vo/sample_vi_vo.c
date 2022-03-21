@@ -96,8 +96,8 @@ int main(int argc, char *argv[]) {
 	SAMPLE_MPI_CTX_S *ctx;
 	int video_width = 1920;
 	int video_height = 1080;
-	int disp_width = 0; // Default 0, get length and width automatically
-	int disp_height = 0;
+	int disp_width = 1080;
+	int disp_height = 1920;
 	RK_CHAR *pDeviceName = NULL;
 	RK_S32 s32CamId = 0;
 	RK_S32 s32DisId = 0;
@@ -137,6 +137,13 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'D':
 			s32DisId = atoi(optarg);
+			if (s32DisId == 3) { // MIPI
+				disp_width = 1080;
+				disp_height = 1920;
+			} else {
+				disp_width = 1920;
+				disp_height = 1080;
+			}
 			break;
 		case 'w':
 			video_width = atoi(optarg);
@@ -200,7 +207,7 @@ int main(int argc, char *argv[]) {
 	SAMPLE_COMM_VI_CreateChn(&ctx->vi);
 
 	// Init VPSS[0]
-	ctx->vpss.s32GrpId = 0; // 0~85:gpu, 86~169:rga, 170~255:isp
+	ctx->vpss.s32GrpId = 0;
 	ctx->vpss.s32ChnId = 0;
 	// RGA_device: VIDEO_PROC_DEV_RGA GPU_device: VIDEO_PROC_DEV_GPU
 	ctx->vpss.enVProcDevType = VIDEO_PROC_DEV_RGA;

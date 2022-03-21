@@ -176,8 +176,8 @@ int main(int argc, char *argv[]) {
 	int video_height = 1080;
 	int venc_width = 1920;
 	int venc_height = 1080;
-	int disp_width = 0;
-	int disp_height = 0;
+	int disp_width = 1080;
+	int disp_height = 1920;
 	RK_CHAR *pDeviceName = NULL;
 	RK_CHAR *pInPathBmp = NULL;
 	RK_CHAR *pOutPathVenc = NULL;
@@ -227,6 +227,13 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'D':
 			s32DisId = atoi(optarg);
+			if (s32DisId == 3) { // MIPI
+				disp_width = 1080;
+				disp_height = 1920;
+			} else {
+				disp_width = 1920;
+				disp_height = 1080;
+			}
 			break;
 		case 'e':
 			if (!strcmp(optarg, "h264cbr")) {
@@ -352,7 +359,7 @@ int main(int argc, char *argv[]) {
 	SAMPLE_COMM_VI_CreateChn(&ctx->vi);
 
 	// Init VPSS[0]
-	ctx->vpss.s32GrpId = 0; // 0~85:gpu, 86~169:rga, 170~255:isp
+	ctx->vpss.s32GrpId = 0;
 	ctx->vpss.s32ChnId = 0;
 	// RGA_device: VIDEO_PROC_DEV_RGA GPU_device: VIDEO_PROC_DEV_GPU
 	ctx->vpss.enVProcDevType = VIDEO_PROC_DEV_RGA;

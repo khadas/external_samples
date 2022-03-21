@@ -92,7 +92,7 @@ static void print_usage(const RK_CHAR *name) {
 	       "1 to enable. Default: 0\n");
 #endif
 	printf("\t-A | --calib_file_path: input file path of calib_file_xxx.pto "
-	       "Default /usr/share/avs_calib/calib_file_pos.pto\n");
+	       "Default /usr/share/avs_calib/calib_file.pto\n");
 	printf("\t-w | --width: camera with, Default 1920\n");
 	printf("\t-h | --height: camera height, Default 1080\n");
 	printf("\t-e | --encode: encode type, Default:h264cbr, Value:h264cbr, "
@@ -177,10 +177,10 @@ int main(int argc, char *argv[]) {
 	int avs_height = 2700;
 	int venc_width = 8192;
 	int venc_height = 2700;
-	int disp_width = 0;
-	int disp_height = 0;
-	RK_CHAR *pAvsCalibFilePath = "/usr/share/avs_calib/calib_file_pos.pto";
-	RK_CHAR *pAvsMeshAlphaPath = "/usr/share/test/";
+	int disp_width = 1080;
+	int disp_height = 1920;
+	RK_CHAR *pAvsCalibFilePath = "/usr/share/avs_calib/calib_file.pto";
+	RK_CHAR *pAvsMeshAlphaPath = "/tmp/";
 	RK_CHAR *pAvsLutFilePath = NULL;
 	RK_CHAR *pInPathBmp = NULL;
 	RK_CHAR *pOutPathVenc = NULL;
@@ -233,6 +233,13 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'D':
 			s32DisId = atoi(optarg);
+			if (s32DisId == 3) { // MIPI
+				disp_width = 1080;
+				disp_height = 1920;
+			} else {
+				disp_width = 1920;
+				disp_height = 1080;
+			}
 			break;
 		case 'e':
 			if (!strcmp(optarg, "h264cbr")) {
@@ -452,7 +459,7 @@ int main(int argc, char *argv[]) {
 
 	if (s32DisId >= 0) {
 		// Init VPSS[0]
-		ctx->vpss.s32GrpId = 0; // 0~85:gpu, 86~169:rga, 170~255:isp
+		ctx->vpss.s32GrpId = 0;
 		ctx->vpss.s32ChnId = 0;
 		// RGA_device: VIDEO_PROC_DEV_RGA GPU_device: VIDEO_PROC_DEV_GPU
 		ctx->vpss.enVProcDevType = VIDEO_PROC_DEV_RGA;

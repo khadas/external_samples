@@ -591,7 +591,6 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	ctx->venc.stChnAttr.stGopAttr.enGopMode = VENC_GOPMODE_NORMALP; // VENC_GOPMODE_SMARTP
 	SAMPLE_COMM_VENC_CreateChn(&ctx->venc);
 
-#if !defined(FILE_TEST)
 	// Bind VI[0] and VPSS[0]
 	stSrcChn.enModId = RK_ID_VI;
 	stSrcChn.s32DevId = ctx->vi.s32DevId;
@@ -601,6 +600,7 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	stDestChn.s32ChnId = ctx->vpss.s32ChnId;
 	SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
 
+#if !defined(FILE_TEST)
 	// Bind VPSS[0] and VENC[0]
 	stSrcChn.enModId = RK_ID_VPSS;
 	stSrcChn.s32DevId = ctx->vpss.s32GrpId;

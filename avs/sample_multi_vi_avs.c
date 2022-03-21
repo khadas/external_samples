@@ -86,7 +86,7 @@ static void print_usage(const RK_CHAR *name) {
 	       "1 to enable. Default: 0\n");
 #endif
 	printf("\t-A | --avs_lut_name: input file path of rk_ps_gpu_xxx.bin "
-	       "Default /usr/share/avs_mesh/\n");
+	       "Default /usr/share/avs_calib/\n");
 	printf("\t-w | --width: camera with, Default 1920\n");
 	printf("\t-h | --height: camera height, Default 1080\n");
 	printf("\t-l | --loop_count: loop count, Default -1\n");
@@ -165,7 +165,7 @@ int main(int argc, char *argv[]) {
 	int venc_height = 2700;
 	int disp_width = 0;
 	int disp_height = 0;
-	RK_CHAR *pAvsLutFilePath = "/usr/share/avs_mesh/";
+	RK_CHAR *pAvsLutFilePath = "/usr/share/avs_calib/";
 	RK_CHAR *pInPathBmp = NULL;
 	RK_CHAR *pOutPath = NULL;
 	CODEC_TYPE_E enCodecType = RK_CODEC_TYPE_H264;

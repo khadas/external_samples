@@ -331,7 +331,7 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	int video_height = 1520;
 	int venc_width = 8192;
 	int venc_height = 2700;
-	RK_CHAR *pAvsLutFilePath = "/usr/share/avs_mesh/";
+	RK_CHAR *pAvsLutFilePath = "/usr/share/avs_calib/";
 	RK_CHAR *pOutPathVenc = NULL;
 	RK_CHAR *iq_file_dir = "/etc/iqfiles";
 	RK_CHAR *pCodecName = "H264";
@@ -427,7 +427,7 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	SAMPLE_COMM_AVS_CreateChn(&ctx->avs);
 
 	// Init VPSS[0]
-	ctx->vpss.s32GrpId = 0; // 0~85:gpu, 86~169:rga, 170~255:isp
+	ctx->vpss.s32GrpId = 0;
 	ctx->vpss.s32ChnId = 0;
 	// RGA_device: VIDEO_PROC_DEV_RGA GPU_device: VIDEO_PROC_DEV_GPU
 	ctx->vpss.enVProcDevType = VIDEO_PROC_DEV_RGA;
@@ -641,7 +641,7 @@ int SAMPLE_CAMERA_VI_AVS_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx) {
 	int video_height = 1520;
 	int venc_width = 8192;
 	int venc_height = 2700;
-	RK_CHAR *pAvsLutFilePath = "/usr/share/avs_mesh/";
+	RK_CHAR *pAvsLutFilePath = "/usr/share/avs_calib/";
 	RK_CHAR *pOutPathVenc = "/data/";
 	RK_CHAR *iq_file_dir = "/etc/iqfiles";
 	RK_CHAR *pCodecName = "H265";

@@ -80,7 +80,7 @@ static void print_usage(const RK_CHAR *name) {
 	       "should run in other application\n");
 #endif
 	printf("\t-A | --avs_lut_name: input file path of rk_ps_gpu_xxx.bin "
-	       "Default /usr/share/avs_mesh/\n");
+	       "Default /usr/share/avs_calib/\n");
 	printf("\t-w | --width: camera with, Default 1920\n");
 	printf("\t-h | --height: camera height, Default 1080\n");
 	printf("\t-W | --width: avs out with, Default 8192\n");
@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
 	SAMPLE_MPI_CTX_S *ctx;
 	int avs_width = 8192;
 	int avs_height = 2700;
-	RK_CHAR *pAvsLutFilePath = "/usr/share/avs_mesh/";
+	RK_CHAR *pAvsLutFilePath = "/usr/share/avs_calib/";
 	RK_CHAR *pOutPath = NULL;
 	RK_S32 s32CamNum = 6;
 	RK_S32 s32loopCnt = -1;

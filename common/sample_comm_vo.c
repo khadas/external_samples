@@ -32,14 +32,7 @@ RK_S32 SAMPLE_COMM_VO_CreateChn(SAMPLE_VO_CTX_S *ctx) {
 	RK_S32 s32Ret = RK_FAILURE;
 	VO_PUB_ATTR_S pstA;
 
-	// 0. Bind Layer
-	s32Ret = RK_MPI_VO_BindLayer(ctx->s32LayerId, ctx->s32DevId, ctx->Volayer_mode);
-	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("RK_MPI_VO_BindLayer failed with %#x!\n", s32Ret);
-		return RK_FAILURE;
-	}
-
-	// 1. Set/Enable vo PubAttr
+	// 0. Set/Enable vo PubAttr
 	s32Ret = RK_MPI_VO_SetPubAttr(ctx->s32DevId, &ctx->stVoPubAttr);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_VO_SetPubAttr failed with %#x!\n", s32Ret);
@@ -54,7 +47,7 @@ RK_S32 SAMPLE_COMM_VO_CreateChn(SAMPLE_VO_CTX_S *ctx) {
 		RK_LOGE("RK_MPI_VO_Enable already");
 	}
 
-	// 2. Set dispBufLen
+	// 1. Set dispBufLen
 	RK_U32 u32DispBufLen;
 	s32Ret = RK_MPI_VO_GetLayerDispBufLen(ctx->s32LayerId, &u32DispBufLen);
 	if (s32Ret != RK_SUCCESS) {
@@ -70,7 +63,7 @@ RK_S32 SAMPLE_COMM_VO_CreateChn(SAMPLE_VO_CTX_S *ctx) {
 	}
 	RK_LOGD("Set s32LayerId %d disp buf len is %d", ctx->s32LayerId, ctx->u32DispBufLen);
 
-	// 3. Set/Enable Layer
+	// 2. Set/Enable Layer
 	s32Ret = RK_MPI_VO_GetPubAttr(ctx->s32DevId, &pstA);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_VO_GetPubAttr failed with %#x!\n", s32Ret);
@@ -90,6 +83,12 @@ RK_S32 SAMPLE_COMM_VO_CreateChn(SAMPLE_VO_CTX_S *ctx) {
 		ctx->stLayerAttr.stImageSize.u32Height = pstA.stSyncInfo.u16Vact;
 	}
 
+	s32Ret = RK_MPI_VO_BindLayer(ctx->s32LayerId, ctx->s32DevId, ctx->Volayer_mode);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("RK_MPI_VO_BindLayer failed with %#x!\n", s32Ret);
+		return RK_FAILURE;
+	}
+
 	s32Ret = RK_MPI_VO_SetLayerAttr(ctx->s32LayerId, &ctx->stLayerAttr);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_VO_SetLayerAttr failed with %#x!\n", s32Ret);
@@ -104,7 +103,7 @@ RK_S32 SAMPLE_COMM_VO_CreateChn(SAMPLE_VO_CTX_S *ctx) {
 		RK_LOGE("RK_MPI_VO_EnableLayer already");
 	}
 
-	// 4. Set/Enable ChnAttr
+	// 3. Set/Enable ChnAttr
 	if ((ctx->stChnAttr.stRect.u32Width <= 0) && (ctx->stChnAttr.stRect.u32Height <= 0)) {
 		ctx->stChnAttr.stRect.u32Width = pstA.stSyncInfo.u16Hact;
 		ctx->stChnAttr.stRect.u32Height = pstA.stSyncInfo.u16Vact;
