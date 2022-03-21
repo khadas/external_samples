@@ -397,6 +397,7 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	// Init avs[0]
 	ctx->avs.s32GrpId = 0;
 	ctx->avs.s32ChnId = 0;
+	ctx->avs.stAvsModParam.enMBSource = MB_SOURCE_PRIVATE;
 	ctx->avs.stAvsModParam.u32WorkingSetSize = 67 * 1024;
 	ctx->avs.stAvsGrpAttr.enMode = 0; // 0: blend 1: no blend
 	ctx->avs.stAvsGrpAttr.u32PipeNum = s32CamNum;
@@ -703,6 +704,7 @@ int SAMPLE_CAMERA_VI_AVS_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx) {
 	// Init avs[0]
 	ctx->avs.s32GrpId = 0;
 	ctx->avs.s32ChnId = 0;
+	ctx->avs.stAvsModParam.enMBSource = MB_SOURCE_PRIVATE;
 	ctx->avs.stAvsModParam.u32WorkingSetSize = 67 * 1024;
 	ctx->avs.stAvsGrpAttr.enMode = 0; // 0: blend 1: no blend
 	ctx->avs.stAvsGrpAttr.u32PipeNum = s32CamNum;
