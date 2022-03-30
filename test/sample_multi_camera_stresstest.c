@@ -106,7 +106,8 @@ static void *vi_get_stream(void *pArgs) {
 		s32Ret = SAMPLE_COMM_VI_GetChnFrame(ctx, &pData);
 		if (s32Ret == RK_SUCCESS) {
 			if (ctx->stViFrame.stVFrame.u64PrivateData <= 0) {
-				continue;
+			    //SAMPLE_COMM_VI_ReleaseChnFrame(ctx);
+				//continue;
 			}
 
 			// exit when complete
@@ -431,7 +432,7 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	ctx->vpss.s32GrpId = 0;
 	ctx->vpss.s32ChnId = 0;
 	// RGA_device: VIDEO_PROC_DEV_RGA GPU_device: VIDEO_PROC_DEV_GPU
-	ctx->vpss.enVProcDevType = VIDEO_PROC_DEV_RGA;
+	ctx->vpss.enVProcDevType = VIDEO_PROC_DEV_GPU;
 	ctx->vpss.stGrpVpssAttr.enPixelFormat = RK_FMT_YUV420SP;
 	ctx->vpss.stGrpVpssAttr.enCompressMode = g_compressMode;
 

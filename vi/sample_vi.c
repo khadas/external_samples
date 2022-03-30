@@ -113,7 +113,8 @@ static void *vi_get_stream(void *pArgs) {
 		s32Ret = SAMPLE_COMM_VI_GetChnFrame(ctx, &pData);
 		if (s32Ret == RK_SUCCESS) {
 			if (ctx->stViFrame.stVFrame.u64PrivateData <= 0) {
-				continue;
+			    //SAMPLE_COMM_VI_ReleaseChnFrame(ctx);
+				//continue;
 			}
 			// exit when complete
 			if (ctx->s32loopCount > 0) {
