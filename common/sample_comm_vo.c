@@ -31,7 +31,7 @@ extern "C" {
 RK_S32 SAMPLE_COMM_VO_CreateChn(SAMPLE_VO_CTX_S *ctx) {
 	RK_S32 s32Ret = RK_FAILURE;
 	VO_PUB_ATTR_S pstA;
-
+#ifdef HAVE_VO
 	// 0. Set/Enable vo PubAttr
 	s32Ret = RK_MPI_VO_SetPubAttr(ctx->s32DevId, &ctx->stVoPubAttr);
 	if (s32Ret != RK_SUCCESS) {
@@ -121,13 +121,13 @@ RK_S32 SAMPLE_COMM_VO_CreateChn(SAMPLE_VO_CTX_S *ctx) {
 	} else {
 		RK_LOGE("RK_MPI_VO_EnableChn already");
 	}
-
+#endif
 	return RK_SUCCESS;
 }
 
 RK_S32 SAMPLE_COMM_VO_DestroyChn(SAMPLE_VO_CTX_S *ctx) {
 	RK_S32 s32Ret = RK_FAILURE;
-
+#ifdef HAVE_VO
 	s32Ret = RK_MPI_VO_DisableChn(ctx->s32LayerId, ctx->s32ChnId);
 	s32Ret |= RK_MPI_VO_DisableLayer(ctx->s32LayerId);
 	s32Ret |= RK_MPI_VO_Disable(ctx->s32DevId);
@@ -139,7 +139,7 @@ RK_S32 SAMPLE_COMM_VO_DestroyChn(SAMPLE_VO_CTX_S *ctx) {
 	} else {
 		RK_LOGE("RK_MPI_VO_Close success");
 	}
-
+#endif
 	return RK_SUCCESS;
 }
 

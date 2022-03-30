@@ -110,8 +110,11 @@ sample-build: libasound librkaiq librockit
 	@make -C $(CURRENT_DIR)/audio install;
 	@make -C $(CURRENT_DIR)/vi;
 	@make -C $(CURRENT_DIR)/vi install;
+ifneq ($(RK_MEDIA_CHIP), rv1106)
+	CFLAGS += -DHAVE_VO
 	@make -C $(CURRENT_DIR)/vo;
 	@make -C $(CURRENT_DIR)/vo install;
+endif
 	@make -C $(CURRENT_DIR)/venc;
 	@make -C $(CURRENT_DIR)/venc install;
 ifeq ($(RK_MEDIA_CHIP), rk3588)
