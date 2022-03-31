@@ -79,6 +79,7 @@ INC_FLAGS += -I$(COMM_DIR)/isp2.x
 CFLAGS += -DISP_HW_V20
 LD_FLAGS += -L$(CURRENT_DIR)/lib  -lrtsp_32bit
 LD_FLAGS += -L$(RK_MEDIA_OUTPUT)/root/usr/lib -lasound
+CFLAGS += -DHAVE_VO
 endif
 
 ifeq ($(RK_MEDIA_CHIP), rk3588)
@@ -86,6 +87,7 @@ INC_FLAGS += -I$(COMM_DIR)/isp3.x
 CFLAGS += -DISP_HW_V30
 LD_FLAGS += -L$(CURRENT_DIR)/lib  -lrtsp_64bit
 LD_FLAGS += -L$(RK_MEDIA_OUTPUT)/root/usr/lib -lasound
+CFLAGS += -DHAVE_VO
 endif
 
 ifeq ($(RK_MEDIA_CHIP), rv1106)
@@ -111,7 +113,6 @@ sample-build: libasound librkaiq librockit
 	@make -C $(CURRENT_DIR)/vi;
 	@make -C $(CURRENT_DIR)/vi install;
 ifneq ($(RK_MEDIA_CHIP), rv1106)
-	CFLAGS += -DHAVE_VO
 	@make -C $(CURRENT_DIR)/vo;
 	@make -C $(CURRENT_DIR)/vo install;
 endif
