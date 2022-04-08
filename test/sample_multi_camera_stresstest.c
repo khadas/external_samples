@@ -882,7 +882,7 @@ int main(int argc, char *argv[]) {
 			if (g_loopcount % 2 == 0) {
 				s32Ret = SAMPLE_CAMERA_ISP_Stresstest(&ctx, "/etc/iqfiles");
 			} else {
-				s32Ret = SAMPLE_CAMERA_ISP_Stresstest(&ctx, "/usr/share/iqfiles");
+				s32Ret = SAMPLE_CAMERA_ISP_Stresstest(&ctx, "/oem/usr/share/iqfiles");
 			}
 			break;
 		case 1:
