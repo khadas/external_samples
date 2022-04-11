@@ -643,7 +643,7 @@ int SAMPLE_CAMERA_VI_AVS_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx) {
 	int video_height = 1520;
 	int venc_width = 8192;
 	int venc_height = 2700;
-	RK_CHAR *pAvsLutFilePath = "/usr/share/avs_calib/";
+	RK_CHAR *pAvsLutFilePath = "/oem/usr/share/avs_calib/";
 	RK_CHAR *pOutPathVenc = "/data/";
 	RK_CHAR *iq_file_dir = "/etc/iqfiles";
 	RK_CHAR *pCodecName = "H265";
