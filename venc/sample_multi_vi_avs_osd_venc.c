@@ -92,7 +92,7 @@ static void print_usage(const RK_CHAR *name) {
 	       "1 to enable. Default: 0\n");
 #endif
 	printf("\t-A | --calib_file_path: input file path of calib_file_xxx.pto "
-	       "Default /usr/share/avs_calib/calib_file.pto\n");
+	       "Default /oem/usr/share/avs_calib/calib_file.pto\n");
 	printf("\t-w | --width: camera with, Default 1920\n");
 	printf("\t-h | --height: camera height, Default 1080\n");
 	printf("\t-e | --encode: encode type, Default:h264cbr, Value:h264cbr, "
@@ -179,7 +179,7 @@ int main(int argc, char *argv[]) {
 	int venc_height = 2700;
 	int disp_width = 1080;
 	int disp_height = 1920;
-	RK_CHAR *pAvsCalibFilePath = "/usr/share/avs_calib/calib_file.pto";
+	RK_CHAR *pAvsCalibFilePath = "/oem/usr/share/avs_calib/calib_file.pto";
 	RK_CHAR *pAvsMeshAlphaPath = "/tmp/";
 	RK_CHAR *pAvsLutFilePath = NULL;
 	RK_CHAR *pInPathBmp = NULL;
