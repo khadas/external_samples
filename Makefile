@@ -72,7 +72,7 @@ INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/algos
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/iq_parser
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/iq_parser_v2
 CFLAGS += -g -Wall $(INC_FLAGS) $(PKG_CONF_OPTS) -lpthread -lm -ldl
-LD_FLAGS += -L$(RK_MEDIA_OUTPUT)/lib  -lrockit -lrockchip_mpp -ldrm -lrkaiq
+LD_FLAGS += -L$(RK_MEDIA_OUTPUT)/lib  -lrockit -lrockchip_mpp -lrkaiq
 
 ifeq ($(RK_MEDIA_CHIP), rv1126)
 INC_FLAGS += -I$(COMM_DIR)/isp2.x
@@ -80,6 +80,7 @@ CFLAGS += -DISP_HW_V20
 LD_FLAGS += -L$(CURRENT_DIR)/lib  -lrtsp_32bit
 LD_FLAGS += -L$(RK_MEDIA_OUTPUT)/root/usr/lib -lasound
 CFLAGS += -DHAVE_VO
+LD_FLAGS += -ldrm
 endif
 
 ifeq ($(RK_MEDIA_CHIP), rk3588)
@@ -88,6 +89,7 @@ CFLAGS += -DISP_HW_V30
 LD_FLAGS += -L$(CURRENT_DIR)/lib  -lrtsp_64bit
 LD_FLAGS += -L$(RK_MEDIA_OUTPUT)/root/usr/lib -lasound
 CFLAGS += -DHAVE_VO
+LD_FLAGS += -ldrm
 endif
 
 ifeq ($(RK_MEDIA_CHIP), rv1106)
