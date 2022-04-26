@@ -17,7 +17,6 @@ PKG_BIN ?= out
 PKG_BUILD ?= build
 
 RK_MEDIA_OPTS += -Wl,-rpath-link,${RK_MEDIA_OUTPUT}/lib:$(RK_MEDIA_OUTPUT)/root/usr/lib
-PKG_CONF_OPTS += -DCMAKE_C_FLAGS="$(RK_MEDIA_OPTS)" -DCMAKE_CXX_FLAGS="$(RK_MEDIA_OPTS)"
 PKG_CONF_OPTS += -DRKPLATFORM=ON
 
 # debug: build cmake with more message
@@ -72,7 +71,7 @@ INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/algos
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/iq_parser
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/iq_parser_v2
 CFLAGS += -g -Wall $(INC_FLAGS) $(PKG_CONF_OPTS) -lpthread -lm -ldl
-LD_FLAGS += -L$(RK_MEDIA_OUTPUT)/lib  -lrockit -lrockchip_mpp -lrkaiq
+LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib  -lrockit -lrockchip_mpp -lrkaiq
 
 ifeq ($(RK_MEDIA_CHIP), rv1126)
 INC_FLAGS += -I$(COMM_DIR)/isp2.x
