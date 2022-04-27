@@ -477,7 +477,7 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 	// H264  66：Baseline  77：Main Profile 100：High Profile
 	// H265  0：Main Profile  1：Main 10 Profile
 	// MJPEG 0：Baseline
-	ctx->venc.stChnAttr.stVencAttr.u32Profile = 66;
+	ctx->venc.stChnAttr.stVencAttr.u32Profile = 100;
 	ctx->venc.stChnAttr.stGopAttr.enGopMode = VENC_GOPMODE_NORMALP; // VENC_GOPMODE_SMARTP
 	SAMPLE_COMM_VENC_CreateChn(&ctx->venc);
 
@@ -548,7 +548,7 @@ int SAMPLE_CAMERA_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx, RK_S32 mode) {
 				printf("Switch to h264cbr coding!\n");
 				ctx->venc.enCodecType = RK_CODEC_TYPE_H264;
 				ctx->venc.enRcMode = VENC_RC_MODE_H264CBR;
-				ctx->venc.stChnAttr.stVencAttr.u32Profile = 66;
+				ctx->venc.stChnAttr.stVencAttr.u32Profile = 100;
 				s32Ret = SAMPLE_CAMERA_VENC_SetConfig(ctx, &stSrcChn, &stDestChn);
 			} else if (mode == 1) {
 				printf("Switch to %dx%d coding!\n", venc_width, venc_height);
