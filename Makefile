@@ -113,6 +113,8 @@ sample-build: libasound librkaiq librockit
 	@make -C $(CURRENT_DIR)/audio install;
 	@make -C $(CURRENT_DIR)/vi;
 	@make -C $(CURRENT_DIR)/vi install;
+	@make -C $(CURRENT_DIR)/simple_test;
+	@make -C $(CURRENT_DIR)/simple_test install;
 ifneq ($(RK_MEDIA_CHIP), rv1106)
 	@make -C $(CURRENT_DIR)/vo;
 	@make -C $(CURRENT_DIR)/vo install;
@@ -142,6 +144,7 @@ clean:
 	@make -C $(CURRENT_DIR)/vi clean
 	@make -C $(CURRENT_DIR)/vo clean
 	@make -C $(CURRENT_DIR)/venc clean
+	@make -C $(CURRENT_DIR)/simple_test clean
 ifeq ($(RK_MEDIA_CHIP), rk3588)
 	@make -C $(CURRENT_DIR)/avs clean
 endif

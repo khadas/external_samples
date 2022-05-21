@@ -41,6 +41,7 @@ extern "C" {
 #include "rk_mpi_vi.h"
 #include "rk_mpi_vo.h"
 #include "rk_mpi_vpss.h"
+#include "rk_mpi_ivs.h"
 #include "sample_comm_isp.h"
 
 /*******************************************************
