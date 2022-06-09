@@ -32,7 +32,9 @@ T_AI = simple_ai
 T_VI_VPSS_VENC = simple_vi_vpss_venc
 T_VENC_JPEG = simple_venc_jpeg
 T_VI_VENC_RTSP = simple_vi_venc_rtsp
+T_VI_VENC_WRAP = simple_vi_venc_wrap
 T_VI_VENC_CHANGE_RESOLUTION = simple_vi_venc_change_resolution
+T_FAST_BOOT = simple_fast_boot
 
 ifeq ($(CONFIG_ROCKIVA), y)
 T_VI_ROCKIVA = simple_vi_rockiva
@@ -67,10 +69,7 @@ $(T_VI_VPSS_VENC):$(COMM_OBJ) $(T_VI_VPSS_VENC).o
 
 $(T_VENC_JPEG):$(COMM_OBJ) $(T_VENC_JPEG).o
 	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
-	
-$(T_VI_VENC_RTSP):$(COMM_OBJ) $(T_VI_VENC_RTSP).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
-	
+
 $(T_VI_VENC_CHANGE_RESOLUTION):$(COMM_OBJ) $(T_VI_VENC_CHANGE_RESOLUTION).o
 	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
 
@@ -80,6 +79,14 @@ $(T_VI_ROCKIVA):$(COMM_OBJ) $(T_VI_ROCKIVA).o
 	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS) $(IVE_LD_FLAGS)
 endif
 
+$(T_VI_VENC_RTSP):$(COMM_OBJ) $(T_VI_VENC_RTSP).o
+	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
+
+$(T_VI_VENC_WRAP):$(COMM_OBJ) $(T_VI_VENC_WRAP).o
+	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
+
+$(T_FAST_BOOT):$(COMM_OBJ) $(T_FAST_BOOT).o
+	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
 
 install:
 	@mv -f $(TARGET1) $(SAMPLE_OUT_DIR)/bin
