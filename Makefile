@@ -70,7 +70,7 @@ ifeq ($(BUILD_STATIC_LINK), y)
 LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic -lpthread -lrockit -lrockchip_mpp -lrkaiq \
 			-lrkaudio_detect -laec_bf_process  \
 		  -lm -lrga -lstdc++ -Wl,-Bdynamic
-LD_FLAGS += -L$(CURRENT_DIR)/lib/$(RK_MEDIA_CROSS) -Wl,-Bstatic -lrtsp -Wl,-Bdynamic
+LD_FLAGS += -L$(CURRENT_DIR)/lib/$(RK_MEDIA_CROSS) -Wl,-Bstatic -lrtsp -Wl,-Bdynamic -Wl,--gc-sections -Wl,--as-needed
 else
 LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib  -lrockit -lrockchip_mpp -lrkaiq -lpthread -lm -ldl
 LD_FLAGS += -L$(CURRENT_DIR)/lib/$(RK_MEDIA_CROSS) -lrtsp
