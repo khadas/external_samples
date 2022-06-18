@@ -96,13 +96,22 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
     stVencChnBufWrap.bEnable = g_bWrap;
     stVencChnBufWrap.u32BufLine = g_u32WrapLine;
 
-    stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H264CBR;
-    stAttr.stRcAttr.stH264Cbr.u32BitRate = 10 * 1024;
-    stAttr.stRcAttr.stH264Cbr.u32Gop = 60;
+    if (enType == RK_VIDEO_ID_AVC) {
+        stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H264CBR;
+        stAttr.stRcAttr.stH264Cbr.u32BitRate = 2 * 1024;
+        stAttr.stRcAttr.stH264Cbr.u32Gop = 60;
+    } else if (enType == RK_VIDEO_ID_HEVC) {
+        stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H265CBR;
+        stAttr.stRcAttr.stH265Cbr.u32BitRate = 2 * 1024;
+        stAttr.stRcAttr.stH265Cbr.u32Gop = 60;
+    }
 
     stAttr.stVencAttr.enType = enType;
     stAttr.stVencAttr.enPixelFormat = RK_FMT_YUV420SP;
-    stAttr.stVencAttr.u32Profile = H264E_PROFILE_HIGH;
+    if (enType == RK_VIDEO_ID_AVC)
+        stAttr.stVencAttr.u32Profile = H264E_PROFILE_HIGH;
+    else if (enType == RK_VIDEO_ID_HEVC)
+        stAttr.stVencAttr.u32Profile = H265E_PROFILE_MAIN;
     stAttr.stVencAttr.u32PicWidth = width;
     stAttr.stVencAttr.u32PicHeight = height;
     stAttr.stVencAttr.u32VirWidth = width;
