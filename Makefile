@@ -16,6 +16,12 @@ else
 export BUILD_STATIC_LINK=n
 endif
 
+ifeq ($(RK_MEDIA_SAMPLE_STATIC_LINK),y)
+export BUILD_STATIC_LINK=y
+else
+export BUILD_STATIC_LINK=n
+endif
+
 CC := $(RK_MEDIA_CROSS)-gcc
 
 PKG_NAME := sample
