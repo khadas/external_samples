@@ -64,7 +64,7 @@ static void *GetMediaBuffer0(void *arg) {
             }
             loopCount++;
         } else {
-            printf("RK_MPI_VI_GetChnFrame fail %x\n", s32Ret);
+            printf("RK_MPI_VENC_GetChnFrame fail %x\n", s32Ret);
         }
 
         if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt)) {
@@ -181,7 +181,8 @@ int vi_dev_init() {
 
 int vi_chn_init(int channelId, int width, int height) {
     int ret;
-    int buf_cnt = 2;
+    int buf_cnt = 1;
+
     // VI init
     VI_CHN_ATTR_S vi_chn_attr;
     memset(&vi_chn_attr, 0, sizeof(vi_chn_attr));
@@ -211,7 +212,11 @@ int vi_chn_init(int channelId, int width, int height) {
         RK_MPI_VI_SetChnWrapBufAttr(0, channelId, &g_stViWrap);
     }
 
+    RK_S64 s64ViEnSta = TEST_COMM_GetNowUs();
     ret |= RK_MPI_VI_EnableChn(0, channelId);
+    RK_S64 s64ViEnEnd = TEST_COMM_GetNowUs();
+    printf("  vi en: %lld us\n", s64ViEnEnd - s64ViEnSta);
+
     if (ret) {
         printf("ERROR: create VI error! ret=%d\n", ret);
         return ret;
@@ -254,7 +259,7 @@ int main(int argc, char *argv[])
     RK_S32 s32chnlId = 0;
     int c;
 
-    int ssFd = -1, viDev = -1;
+    int ssFd = -1;
     const char *ssName = "/dev/video8";
     ssFd = open(ssName, O_RDWR | O_CLOEXEC);
     if (ssFd < 0) {
@@ -263,11 +268,6 @@ int main(int argc, char *argv[])
     }
     //printf("simple_fast_boot %s start\n", __func__);
 
-    viDev = open("/dev/mpi/vvi", O_RDONLY);
-    if (viDev < 0) {
-        printf("failed to open /dev/mpi/vvi\n");
-        return -1;
-    }
 #ifdef RKAIQ
     RK_BOOL bMultictx = RK_FALSE;
 #endif
@@ -383,8 +383,10 @@ int main(int argc, char *argv[])
 
     RK_S64 s64ViInitStart = TEST_COMM_GetNowUs();
     vi_dev_init();
-    vi_chn_init(s32chnlId, u32Width, u32Height);
+    RK_S64 s64ViDevEnd = TEST_COMM_GetNowUs();
+    printf("  vi dev:%lld us\n", s64ViDevEnd - s64ViInitStart);
 
+    vi_chn_init(s32chnlId, u32Width, u32Height);
     RK_S64 s64ViInitEnd = TEST_COMM_GetNowUs();
     printf("vi:%lld us\n", s64ViInitEnd - s64ViInitStart);
 
@@ -435,6 +437,9 @@ int main(int argc, char *argv[])
 __FAILED:
     printf("test running exit:%d\n", s32Ret);
     RK_MPI_SYS_Exit();
+
+    if (ssFd >=0)
+        close(ssFd);
 
     if (iq_file_dir) {
 #ifdef RKAIQ
