@@ -34,7 +34,11 @@ T_VENC_JPEG = simple_venc_jpeg
 T_VI_VENC_RTSP = simple_vi_venc_rtsp
 T_VI_VENC_WRAP = simple_vi_venc_wrap
 T_VI_VENC_CHANGE_RESOLUTION = simple_vi_venc_change_resolution
+
 T_FAST_BOOT = simple_fast_boot
+SIMPLE_FAST_LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic -lpthread -lrockit_tiny -lrockchip_mpp -lrkaiq \
+		  -lm -lrga -lstdc++ -Wl,-Bdynamic
+SIMPLE_FAST_LD_FLAGS += -L$(CURRENT_DIR)/lib/$(RK_MEDIA_CROSS) -Wl,-Bstatic -Wl,-Bdynamic -Wl,--gc-sections -Wl,--as-needed
 
 ifeq ($(CONFIG_ROCKIVA), y)
 T_VI_ROCKIVA = simple_vi_rockiva
@@ -86,7 +90,7 @@ $(T_VI_VENC_WRAP):$(COMM_OBJ) $(T_VI_VENC_WRAP).o
 	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
 
 $(T_FAST_BOOT):$(COMM_OBJ) $(T_FAST_BOOT).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ $^ $(SIMPLE_FAST_LD_FLAGS)
 
 install:
 	@mv -f $(TARGET1) $(SAMPLE_OUT_DIR)/bin
