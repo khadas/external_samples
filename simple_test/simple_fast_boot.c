@@ -53,7 +53,7 @@ static void *GetMediaBuffer0(void *arg) {
                     stFrame.u32Seq, stFrame.pstPack->u32Len, stFrame.pstPack->u64PTS, nowUs - stFrame.pstPack->u64PTS);
             if (fp) {
                 char str[128];
-                snprintf(str, sizeof(str), "pts:%llums\n", stFrame.pstPack->u64PTS / 1000);
+                snprintf(str, sizeof(str), "seq:%u, pts:%llums\n", stFrame.u32Seq, stFrame.pstPack->u64PTS / 1000);
                 fputs(str, fp);
                 fsync(fileno(fp));
             }
