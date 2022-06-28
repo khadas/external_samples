@@ -1,103 +1,69 @@
 # Rockchip sample Makefile
 
-SRCS := $(wildcard *.c)
-OBJS  := $(SRCS:%.c=%.o)
-TARGET := $(SRCS:%.c=%)
-#TARGETALL = $(patsubst %.c, %, ${SRCS})
-.PHONY : clean all
-
-TARGET1=$(subst simple_vi_rockiva, ,$(TARGET))
-all: $(TARGET1)
-
-# ${TARGETALL}:${COMM_OBJ} ${TARGETALL}.o
-	# @$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
-
-CONFIG_ROCKIVA=n
-#需要链接rockiva的库和h文件
-ifeq ($(CONFIG_ROCKIVA), y)
-TARGET1 = $(TARGET)
-RK_ROCKIVA_DIR := ${RK_MEDIA_OUTPUT}/../rockiva/librockiva/rockiva-rv1106-Linux
-IVE_INC_FLAGS := ${RK_ROCKIVE_DIR}/include
-IVE_LD_FLAGS := -L$(RK_ROCKIVE_DIR)/lib -lrockiva -lrknnmrt
-endif
-
-T_AO = simple_ao
-T_AI_AENC = simple_ai_aenc
-T_ADEC_AO = simple_adec_ao
-T_VI_GET_FRAME = simple_vi_get_frame
-T_VI_VENC = simple_vi_venc
-T_VENC_OSD = simple_venc_osd
-T_VI_IVS = simple_vi_ivs
-T_AI = simple_ai
-T_VI_VPSS_VENC = simple_vi_vpss_venc
-T_VENC_JPEG = simple_venc_jpeg
-T_VI_VENC_RTSP = simple_vi_venc_rtsp
-T_VI_VENC_WRAP = simple_vi_venc_wrap
-T_VI_VENC_CHANGE_RESOLUTION = simple_vi_venc_change_resolution
-
 T_FAST_BOOT = simple_fast_boot
 SIMPLE_FAST_LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic -lpthread -lrockit_tiny -lrockchip_mpp -lrkaiq \
-		  -lm -lrga -lstdc++ -Wl,-Bdynamic
-SIMPLE_FAST_LD_FLAGS += -L$(CURRENT_DIR)/lib/$(RK_MEDIA_CROSS) -Wl,-Bstatic -Wl,-Bdynamic -Wl,--gc-sections -Wl,--as-needed
+		  -lm -lrga -lstdc++ -Wl,-Bdynamic 
+SIMPLE_FAST_LD_FLAGS += -L$(SAMPLE_OUT_DIR) -lsample_comm
 
+SOURCES_C     = $(wildcard *.c)
+ifneq ($(CONFIG_ROCKIVA), y)
+SOURCES_C     = $(filter-out simple_vi_rockiva.c, $(wildcard *.c))
+endif
+OBJECTS       = $(basename $(SOURCES_C))
+
+all: $(OBJECTS)
+
+simple_adec_ao: simple_adec_ao.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
+
+simple_ai_aenc: simple_ai_aenc.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
+
+simple_ai: simple_ai.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
+
+simple_ao: simple_ao.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
+
+simple_fast_boot: simple_fast_boot.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(SIMPLE_FAST_LD_FLAGS)
+
+simple_venc_jpeg: simple_venc_jpeg.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
+
+simple_venc_osd: simple_venc_osd.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
+
+simple_vi_get_frame: simple_vi_get_frame.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
+
+simple_vi_ivs: simple_vi_ivs.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
+
+simple_vi_rockiva: simple_vi_rockiva.c
+	@echo "build iva simple"
 ifeq ($(CONFIG_ROCKIVA), y)
-T_VI_ROCKIVA = simple_vi_rockiva
+	@make -C $(RK_MEDIA_TOP_DIR)/iva
+	$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS) -DROCKIVA -lrockiva -lrknnmrt -I$(RK_MEDIA_OUTPUT)/include/rockiva
 endif
 
-$(T_AO):$(COMM_OBJ) $(T_AO).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
+simple_vi_venc: simple_vi_venc.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
 
-$(T_AI_AENC):$(COMM_OBJ) $(T_AI_AENC).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
+simple_vi_venc_change_resolution: simple_vi_venc_change_resolution.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
 
-$(T_ADEC_AO):$(COMM_OBJ) $(T_ADEC_AO).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
+simple_vi_venc_rtsp: simple_vi_venc_rtsp.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
 
-$(T_VI_GET_FRAME):$(COMM_OBJ) $(T_VI_GET_FRAME).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
+simple_vi_venc_wrap: simple_vi_venc_wrap.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
 
-$(T_VI_VENC):$(COMM_OBJ) $(T_VI_VENC).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
-
-$(T_VENC_OSD):$(COMM_OBJ) $(T_VENC_OSD).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
-
-$(T_VI_IVS):$(COMM_OBJ) $(T_VI_IVS).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
-
-$(T_AI):$(COMM_OBJ) $(T_AI).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
-
-$(T_VI_VPSS_VENC):$(COMM_OBJ) $(T_VI_VPSS_VENC).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
-
-$(T_VENC_JPEG):$(COMM_OBJ) $(T_VENC_JPEG).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
-
-$(T_VI_VENC_CHANGE_RESOLUTION):$(COMM_OBJ) $(T_VI_VENC_CHANGE_RESOLUTION).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
-
-ifeq ($(CONFIG_ROCKIVA), y)
-CFLAGS += -I$(IVE_INC_FLAGS)
-$(T_VI_ROCKIVA):$(COMM_OBJ) $(T_VI_ROCKIVA).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS) $(IVE_LD_FLAGS)
-endif
-
-$(T_VI_VENC_RTSP):$(COMM_OBJ) $(T_VI_VENC_RTSP).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
-
-$(T_VI_VENC_WRAP):$(COMM_OBJ) $(T_VI_VENC_WRAP).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
-
-$(T_FAST_BOOT):$(COMM_OBJ) $(T_FAST_BOOT).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(SIMPLE_FAST_LD_FLAGS)
+simple_vi_vpss_venc: simple_vi_vpss_venc.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
 
 install:
-	@mv -f $(TARGET1) $(SAMPLE_OUT_DIR)/bin
-	@rm -f $(OBJS)
+	@mv -f $(OBJECTS) $(SAMPLE_OUT_DIR)/bin
+
 clean:
-	@rm -f $(OBJS)
-	rm -f $(TARGET1)
-
-
-
+	@echo "clean simple"

@@ -1,22 +1,10 @@
 # Rockchip sample Makefile
 
-SRCS := $(wildcard *.c)
-OBJS  := $(SRCS:%.c=%.o)
-TARGET := $(SRCS:%.c=%)
-
-.PHONY : clean all
-
-TARGET1 = sample_vi_vpss_osd_venc
-
-all: $(TARGET1)
-
-$(TARGET1):$(COMM_OBJ) $(TARGET1).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
+all:
+	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_vi_vpss_osd_venc.c -o sample_vi_vpss_osd_venc $(LD_FLAGS)
 
 install:
-	@mv -f $(TARGET1) $(SAMPLE_OUT_DIR)/bin
+	@mv -f sample_vi_vpss_osd_venc $(SAMPLE_OUT_DIR)/bin
 
 clean:
-	@rm -f $(TARGET1)
-	@rm -f $(OBJS)
-
+	@echo "clean venc"

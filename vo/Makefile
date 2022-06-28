@@ -11,7 +11,7 @@ TARGET1 = sample_vi_vo
 all: $(TARGET1)
 
 $(TARGET1):$(COMM_OBJ) $(TARGET1).o
-	@$(CC) $(CFLAGS) -o $@ $^ $(LD_FLAGS)
+	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) -o $@ $^ $(LD_FLAGS)
 
 install:
 	@mv -f $(TARGET1) $(SAMPLE_OUT_DIR)/bin

@@ -22,7 +22,8 @@ else
 export BUILD_STATIC_LINK=n
 endif
 
-CC := $(RK_MEDIA_CROSS)-gcc
+SAMPLE_CC := $(RK_MEDIA_CROSS)-gcc
+SAMPLE_AR := $(RK_MEDIA_CROSS)-ar
 
 PKG_NAME := sample
 PKG_BIN ?= out
@@ -71,7 +72,8 @@ INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/xcore
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/algos
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/iq_parser
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/iq_parser_v2
-CFLAGS += -g -Wall $(INC_FLAGS) $(PKG_CONF_OPTS)
+SAMPLE_CFLAGS += -g -Wall $(INC_FLAGS) $(PKG_CONF_OPTS)
+LD_FLAGS += -L$(SAMPLE_OUT_DIR) -lsample_comm
 ifeq ($(BUILD_STATIC_LINK), y)
 LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic -lpthread -lrockit -lrockchip_mpp -lrkaiq \
 			-lrkaudio_detect -laec_bf_process  \
@@ -84,28 +86,28 @@ endif
 
 ifeq ($(RK_MEDIA_CHIP), rv1126)
 INC_FLAGS += -I$(COMM_DIR)/isp2.x
-CFLAGS += -DISP_HW_V20
+SAMPLE_CFLAGS += -DISP_HW_V20
 LD_FLAGS += -L$(RK_MEDIA_OUTPUT)/root/usr/lib -lasound
-CFLAGS += -DHAVE_VO
+SAMPLE_CFLAGS += -DHAVE_VO
 LD_FLAGS += -ldrm
 endif
 
 ifeq ($(RK_MEDIA_CHIP), rv1106)
 INC_FLAGS += -I$(COMM_DIR)/isp3.x
-CFLAGS += -DISP_HW_V30
+SAMPLE_CFLAGS += -DISP_HW_V30
 endif
 
 export SAMPLE_OUT_DIR=$(CURRENT_DIR)/out
 export PKG_CONF_OPTS
-export COMM_OBJ
-export CC
-export CFLAGS
+export COMM_OBJ COMM_SRC COMM_DIR
+export SAMPLE_CC SAMPLE_AR
+export SAMPLE_CFLAGS
 export LD_FLAGS
 
 all: $(PKG_TARGET)
 	@echo "build $(PKG_NAME) done";
 
-sample-build: libasound librkaiq librockit
+sample-build: libasound librkaiq librockit COMM_LIB
 	@mkdir -p $(SAMPLE_OUT_DIR)/bin
 	@make -C $(CURRENT_DIR)/audio;
 	@make -C $(CURRENT_DIR)/audio install;
@@ -122,6 +124,9 @@ endif
 	@make -C $(CURRENT_DIR)/test;
 	@make -C $(CURRENT_DIR)/test install;
 	@cp -rfa $(SAMPLE_OUT_DIR)/* $(RK_MEDIA_OUTPUT)
+
+COMM_LIB:
+	@make -C $(CURRENT_DIR)/common
 
 libasound:
 	@test ! -d $(RK_MEDIA_TOP_DIR)/alsa-lib || make -C $(RK_MEDIA_TOP_DIR)/alsa-lib
