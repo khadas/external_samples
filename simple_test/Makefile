@@ -1,9 +1,6 @@
 # Rockchip sample Makefile
 
-T_FAST_BOOT = simple_fast_boot
-SIMPLE_FAST_LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic -lpthread -lrockit_tiny -lrockchip_mpp -lrkaiq \
-		  -lm -lrga -lstdc++ -Wl,-Bdynamic 
-SIMPLE_FAST_LD_FLAGS += -L$(SAMPLE_OUT_DIR) -lsample_comm
+T_FAST_BOOT = simple_fast_service
 
 SOURCES_C     = $(wildcard *.c)
 ifneq ($(CONFIG_ROCKIVA), y)
@@ -25,8 +22,12 @@ simple_ai: simple_ai.c
 simple_ao: simple_ao.c
 	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
 
-simple_fast_boot: simple_fast_boot.c
-	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(SIMPLE_FAST_LD_FLAGS)
+simple_fast_service: simple_fast_service.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS)  $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic \
+	-lrockit_tiny -lrockchip_mpp \
+	-lm -lstdc++ \
+	-L$(SAMPLE_OUT_DIR) \
+	-Wl,-Bdynamic
 
 simple_venc_jpeg: simple_venc_jpeg.c
 	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
