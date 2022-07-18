@@ -13,10 +13,12 @@
 #include "rk_mpi_venc.h"
 #include "rk_mpi_vi.h"
 #include "rk_mpi_sys.h"
+#include "sample_comm.h"
 
 #include "rtsp_demo.h"
 
 //#define USE_SIMPLE_PROCESS
+#define ENABLE_RKAIQ             1
 
 #define SAVE_ENC_FRM_CNT_MAX     10
 #define RUN_TOTAL_CNT_MAX        1000000
@@ -40,7 +42,7 @@ RK_U64 TEST_COMM_GetNowUs() {
     return (RK_U64)time.tv_sec * 1000000 + (RK_U64)time.tv_nsec / 1000; /* microseconds */
 }
 
-static bool bStarted; // wifi have start flag.
+static int errCnt = 0;
 static void *GetMediaBuffer0(void *arg) {
     (void)arg;
     void *pData = RK_NULL;
@@ -48,7 +50,6 @@ static void *GetMediaBuffer0(void *arg) {
     int s32Ret;
     VENC_STREAM_S stFrame;
 
-    bStarted = false;
     FILE *fp = fopen("/tmp/pts.txt", "wb");
     stFrame.pstPack = malloc(sizeof(VENC_PACK_S));
 
@@ -75,11 +76,6 @@ static void *GetMediaBuffer0(void *arg) {
 
             // tx video to rtspls
             if (loopCount > SAVE_ENC_FRM_CNT_MAX) {
-                if (!bStarted) {
-                    // start wifi script
-                    // system("");
-                    bStarted = true;
-                }
                 if (g_rtsplive && g_rtsp_session) {
                     pData = RK_MPI_MB_Handle2VirAddr(stFrame.pstPack->pMbBlk);
                     rtsp_tx_video(g_rtsp_session, pData, stFrame.pstPack->u32Len,
@@ -88,10 +84,14 @@ static void *GetMediaBuffer0(void *arg) {
                 }
             }
 
+            errCnt = 0;
             s32Ret = RK_MPI_VENC_ReleaseStream(0, &stFrame);
 
         } else {
-            printf("RK_MPI_VENC_GetChnFrame fail %x\n", s32Ret);
+            if (errCnt < 10) {
+                printf("RK_MPI_VENC_GetChnFrame fail %x\n", s32Ret);
+            }
+            errCnt++;
         }
 
         if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt)) {
@@ -288,6 +288,17 @@ int main(int argc, char *argv[])
     }
 #endif
 
+#ifdef ENABLE_RKAIQ
+    //printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
+    RK_S64 s64AiqInitStart = TEST_COMM_GetNowUs();
+    rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
+
+    SAMPLE_COMM_ISP_Init(s32chnlId, hdr_mode, false, "/etc/iqfiles/");
+    SAMPLE_COMM_ISP_Run(s32chnlId);
+    RK_S64 s64AiqInitEnd = TEST_COMM_GetNowUs();
+    printf("Aiq:%lld us\n", s64AiqInitEnd - s64AiqInitStart);
+#endif
+
     // init rtsp
     g_rtsplive = create_rtsp_demo(554);
     g_rtsp_session = rtsp_new_session(g_rtsplive, "/live/0");
@@ -321,6 +332,10 @@ int main(int argc, char *argv[])
         rtsp_del_demo(g_rtsplive);
 
 __FAILED:
+#ifdef ENABLE_RKAIQ
+        SAMPLE_COMM_ISP_Stop(s32chnlId);
+#endif
+
     RK_MPI_SYS_Exit();
 
     return 0;
