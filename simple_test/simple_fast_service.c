@@ -1,4 +1,7 @@
-#include <fcntl.h>
+/* thunder boot service
+/1.aiq init & run
+/2.rockit vi & venc init, bind
+*/
 #include <stdio.h>
 #include <sys/poll.h>
 #include <errno.h>
@@ -10,6 +13,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <fcntl.h>
+
 #include "rk_type.h"
 #include "rk_debug.h"
 #include "rk_defines.h"
@@ -20,7 +25,7 @@
 #include <rk_aiq_user_api2_imgproc.h>
 #include <rk_aiq_user_api2_sysctl.h>
 
-
+#include "rk_meta_app_param.h"
 
 #define RKAIQ
 //#define ENABLE_GET_STREAM
@@ -38,9 +43,20 @@ static bool g_bWrap = false;
 static RK_U32 g_u32WrapLine = 0;
 static char *g_sEntityName = NULL;
 static bool quit = false;
+static struct app_param_info *g_pAppParam = NULL;
 
 static void sigterm_handler(int sig) {
     quit = true;
+}
+
+long get_cmd_val(const char *string, int len) {
+    char *addr;
+    long value;
+
+    addr = getenv(string);
+    value = strtol(addr, NULL, len);
+    printf("get %s value: 0x%0lx\n", string, value);
+    return value;
 }
 
 RK_U64 TEST_COMM_GetNowUs() {
@@ -51,6 +67,7 @@ RK_U64 TEST_COMM_GetNowUs() {
 
 #ifdef ENABLE_GET_STREAM
 
+// fast client to get media buffer.
 static void  *GetMediaBuffer0(void *arg) {
     (void)arg;
     void *pData = RK_NULL;
@@ -112,6 +129,12 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
     VENC_CHN_BUF_WRAP_S stVencChnBufWrap;
     VENC_CHN_REF_BUF_SHARE_S stVencChnRefBufShare;
     VENC_CHN_ATTR_S stAttr;
+    RK_U32 fps = 0;
+    RK_U32 gop = 0;
+
+    fps = (RK_U32)get_cmd_val("rk_cam_fps_denominator", 10) / ((RK_U32)get_cmd_val("rk_cam_fps_numerator", 10));
+    RK_ASSERT(fps > 0);
+    gop = fps * 2;
 
     memset(&stAttr,0,sizeof(VENC_CHN_ATTR_S));
     stVencChnBufWrap.bEnable = g_bWrap;
@@ -125,12 +148,12 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
 
     if (enType == RK_VIDEO_ID_AVC) {
         stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H264CBR;
-        stAttr.stRcAttr.stH264Cbr.u32BitRate = 2 * 1024;
-        stAttr.stRcAttr.stH264Cbr.u32Gop = 60;
+        stAttr.stRcAttr.stH264Cbr.u32BitRate = g_pAppParam->venc_bitrate;
+        stAttr.stRcAttr.stH264Cbr.u32Gop = gop;
     } else if (enType == RK_VIDEO_ID_HEVC) {
         stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H265CBR;
-        stAttr.stRcAttr.stH265Cbr.u32BitRate = 2 * 1024;
-        stAttr.stRcAttr.stH265Cbr.u32Gop = 60;
+        stAttr.stRcAttr.stH265Cbr.u32BitRate = g_pAppParam->venc_bitrate;
+        stAttr.stRcAttr.stH265Cbr.u32Gop = gop;
     }
 
     stAttr.stVencAttr.enType = enType;
@@ -143,7 +166,7 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
     stAttr.stVencAttr.u32PicHeight = height;
     stAttr.stVencAttr.u32VirWidth = width;
     stAttr.stVencAttr.u32VirHeight = height;
-    stAttr.stVencAttr.u32StreamBufCnt = 5;
+    stAttr.stVencAttr.u32StreamBufCnt = 4;
     stAttr.stVencAttr.u32BufSize = width * height / 2;
     stAttr.stVencAttr.enMirror = MIRROR_NONE;
 
@@ -154,7 +177,6 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
     memset(&stRecvParam, 0, sizeof(VENC_RECV_PIC_PARAM_S));
     stRecvParam.s32RecvPicNum = -1;
     RK_MPI_VENC_StartRecvFrame(chnId, &stRecvParam);
-
 
     return 0;
 }
@@ -234,16 +256,6 @@ int vi_chn_init(int channelId, int width, int height) {
     return ret;
 }
 
-long get_cmd_val(const char *string, int len) {
-    char *addr;
-    long value;
-
-    addr = getenv(string);
-    value = strtol(addr, NULL, len);
-    printf("get %s value: 0x%0x\n", string, value);
-    return value;
-}
-
 static int g_err_cnt = 0;
 static bool g_should_quit = false;
 
@@ -275,17 +287,66 @@ int main(int argc, char *argv[])
     klog("main");
 
     RK_S32 s32Ret = RK_FAILURE;
-    RK_U32 u32Width = 1920;
-    RK_U32 u32Height = 1080;
+    RK_U32 u32Width = 0;
+    RK_U32 u32Height = 0;
     RK_CHAR *pOutPath = NULL;
-    RK_CODEC_ID_E enCodecType = RK_VIDEO_ID_AVC;
     RK_CHAR *pCodecName = "H264";
+
+    RK_CODEC_ID_E enCodecType = RK_VIDEO_ID_Max;//RK_VIDEO_ID_HEVC;
     RK_S32 s32chnlId = 0;
+
+    int mem_fd = -1;
+    off_t appParamOffs = 0, metaAddr = 0;
+    void *metaVirmem = NULL, *appVirAddr = NULL;
+    RK_U32 metaSize = (RK_U32)get_cmd_val("meta_part_size", 16);
+    metaAddr = (off_t)get_cmd_val("meta_load_addr", 16);
+    if((mem_fd = open("/dev/mem", O_RDONLY)) < 0)
+    {
+        printf("cannot open /dev/mem.\n");
+        return -1;
+    }
+
+    metaVirmem = mmap(NULL , metaSize, PROT_READ, MAP_SHARED, mem_fd, metaAddr);
+    if (metaVirmem != MAP_FAILED) {
+        RK_U32 app_param_offset = (RK_U32)get_cmd_val(RK_APP_PARAM_OFFSET, 16);
+        appVirAddr = metaVirmem + app_param_offset;
+        g_pAppParam = (struct app_param_info *)(appVirAddr);
+        u32Width = g_pAppParam->venc_w;
+        u32Height = g_pAppParam->venc_h;
+        switch (g_pAppParam->venc_type)
+        {
+        case 1:
+            enCodecType = RK_VIDEO_ID_AVC; // h.264
+            break;
+        case 2:
+        default:
+            enCodecType = RK_VIDEO_ID_HEVC; // h.265
+            break;
+        }
+        printf("\n read from meta: w:%d, h:%d, bitrate:%d, venc type:%d\n",
+                g_pAppParam->venc_w, g_pAppParam->venc_h,
+                g_pAppParam->venc_bitrate, g_pAppParam->venc_type);
+    } else {
+        printf("mmap fail.\n");
+        return -1;
+    }
 
     g_bWrap = true;
     g_u32WrapLine = u32Height / 8; // 360   // 1080
     g_s32FrameCnt = 20;
     g_sEntityName = "/dev/video11";
+
+#ifdef ENABLE_GET_STREAM
+    pOutPath = "/tmp/venc-test.bin";
+    int c;
+
+    if (pOutPath) {
+        venc0_file = fopen(pOutPath, "w");
+        if (!venc0_file) {
+            return 0;
+        }
+    }
+#endif
 
     signal(SIGINT, sigterm_handler);
 
@@ -301,6 +362,7 @@ int main(int argc, char *argv[])
     vi_chn_init(s32chnlId, u32Width, u32Height);
     klog("vi_chn");
 
+    test_venc_init(s32chnlId, u32Width, u32Height, enCodecType);//RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
     // venc init, if is fast boot, must first init venc.
     test_venc_init(0, u32Width, u32Height, enCodecType);//RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
 
@@ -329,7 +391,7 @@ int main(int argc, char *argv[])
         while(1)
             usleep(1000 * 1000); //when client online
         printf("sub service exit main\n");
-        return;
+        return 0;
     }
 
     RK_MPI_VI_ResumeChn(0, s32chnlId);
@@ -461,6 +523,9 @@ int main(int argc, char *argv[])
     }
 #endif
 
+    munmap(metaVirmem, metaSize);
+    if (mem_fd >= 0) close(mem_fd);
+    if (fd >= 0) close(fd);
 __FAILED:
     //fclose(fd);
     //munmap(mem, MAP_SIZE_NIGHT);

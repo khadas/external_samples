@@ -510,6 +510,7 @@ int main(int argc, char *argv[])
         perror ("open error");
         return -1;
     }
+
     mem = mmap (0 , MAP_SIZE_NIGHT, PROT_READ | PROT_WRITE, MAP_SHARED, fd, bw_night_addr & ~MAP_MASK_NIGHT);
     vir_addr = mem + (bw_night_addr & MAP_MASK_NIGHT);
     is_bw_night = *((unsigned long *) vir_addr);
@@ -595,11 +596,11 @@ __FAILED:
     close(fd);
     munmap(mem, MAP_SIZE_NIGHT);
     munmap(iq_mem, file_size);
+
     rk_aiq_uapi2_sysctl_stop(aiq_ctx, false);
     rk_aiq_uapi2_sysctl_deinit(aiq_ctx);
 #endif
 
     RK_MPI_SYS_Exit();
-
     return 0;
 }
