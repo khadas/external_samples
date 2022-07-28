@@ -6,6 +6,9 @@
 #include <signal.h>
 #include <time.h>
 #include <stdbool.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "rk_type.h"
 #include "rk_debug.h"
@@ -19,6 +22,12 @@
 
 //#define USE_SIMPLE_PROCESS
 #define ENABLE_RKAIQ             1
+
+#define MAP_SIZE (4096UL * 50) //MAP_SIZE = 4 * 50 K
+#define MAP_MASK (MAP_SIZE - 1) //MAP_MASK = 0XFFF
+
+#define MAP_SIZE_NIGHT (4096UL) //MAP_SIZE = 4K
+#define MAP_MASK_NIGHT (MAP_SIZE_NIGHT - 1) //MAP_MASK = 0XFFF
 
 #define SAVE_ENC_FRM_CNT_MAX     10
 #define RUN_TOTAL_CNT_MAX        1000000
@@ -236,6 +245,16 @@ int vi_chn_init(int channelId, int width, int height) {
     return ret;
 }
 
+long get_cmd_val(const char *string, int len) {
+    char *addr;
+    long value;
+
+    addr = getenv(string);
+    value = strtol(addr, NULL, len);
+    printf("get %s value: 0x%0x\n", string, value);
+    return value;
+}
+
 int main(int argc, char *argv[])
 {
     RK_S32 s32Ret = RK_FAILURE;
@@ -249,7 +268,19 @@ int main(int argc, char *argv[])
     g_s32FrameCnt = RUN_TOTAL_CNT_MAX;
     g_sEntityName = "/dev/video11";
     pOutPath = "/tmp/venc-test.bin";
-    // int c;
+    int is_bw_night, file_size, fd, ret = 0;
+    void *mem, *vir_addr, *iq_mem, *vir_iqaddr;
+    off_t bw_night_addr, addr_iq;
+
+    bw_night_addr = (off_t)get_cmd_val("bw_night_addr", 16);
+    if((fd = open ("/dev/mem", O_RDWR | O_SYNC)) < 0)
+    {
+        perror ("open error");
+        return -1;
+    }
+    mem = mmap (0 , MAP_SIZE_NIGHT, PROT_READ | PROT_WRITE, MAP_SHARED, fd, bw_night_addr & ~MAP_MASK_NIGHT);
+    vir_addr = mem + (bw_night_addr & MAP_MASK_NIGHT);
+    is_bw_night = *((unsigned long *) vir_addr);
 
     if (pOutPath) {
         venc0_file = fopen(pOutPath, "w");
@@ -257,6 +288,12 @@ int main(int argc, char *argv[])
             return 0;
         }
     }
+
+    addr_iq = (off_t)get_cmd_val("rk_iqbin_addr", 16);
+    file_size = (int)get_cmd_val("rk_iqbin_size", 16);
+    iq_mem = mmap (0 , file_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, addr_iq & ~MAP_MASK);
+    vir_iqaddr = iq_mem + (addr_iq & MAP_MASK);
+
     signal(SIGINT, sigterm_handler);
 
     RK_S64 s64VencInitStart = TEST_COMM_GetNowUs();
@@ -294,12 +331,49 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef ENABLE_RKAIQ
-    //printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
     RK_S64 s64AiqInitStart = TEST_COMM_GetNowUs();
     rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
 
-    SAMPLE_COMM_ISP_Init(s32chnlId, hdr_mode, false, "/etc/iqfiles/");
-    SAMPLE_COMM_ISP_Run(s32chnlId);
+    rk_aiq_sys_ctx_t *aiq_ctx;
+    rk_aiq_static_info_t aiq_static_info;
+    rk_aiq_uapi2_sysctl_enumStaticMetas(s32chnlId, &aiq_static_info);
+
+    if (is_bw_night) {
+        printf("=====night mode=====\n");
+        ret = rk_aiq_uapi2_sysctl_preInit_scene(aiq_static_info.sensor_info.sensor_name, "normal", "night");
+        if (ret < 0) {
+            printf("%s: failed to set night scene\n", aiq_static_info.sensor_info.sensor_name);
+            return -1;	
+        }
+    } else {
+        printf("=====day mode=======\n");
+        ret = rk_aiq_uapi2_sysctl_preInit_scene(aiq_static_info.sensor_info.sensor_name, "normal", "day");
+        if (ret < 0) {
+            printf("%s: failed to set day scene\n", aiq_static_info.sensor_info.sensor_name);
+            return -1;	
+        }
+    }
+
+    ret = rk_aiq_uapi2_sysctl_preInit_iq_addr(aiq_static_info.sensor_info.sensor_name, vir_iqaddr, (size_t *)file_size);
+    if (ret < 0) {
+        printf("%s: failed to load binary iqfiles\n", aiq_static_info.sensor_info.sensor_name);
+    }
+
+    ret = aiq_ctx = rk_aiq_uapi2_sysctl_init(aiq_static_info.sensor_info.sensor_name,
+                                       "/etc/iqfiles/", NULL, NULL);
+    if (ret < 0) {
+        printf("%s: failed to init aiq\n", aiq_static_info.sensor_info.sensor_name);
+    }
+
+    if (rk_aiq_uapi2_sysctl_prepare(aiq_ctx, 0, 0, hdr_mode)) {
+        printf("rkaiq engine prepare failed !\n");
+        return -1;
+    }
+    if (rk_aiq_uapi2_sysctl_start(aiq_ctx)) {
+        printf("rk_aiq_uapi2_sysctl_start  failed\n");
+        return -1;
+    }
+
     RK_S64 s64AiqInitEnd = TEST_COMM_GetNowUs();
     printf("Aiq:%lld us\n", s64AiqInitEnd - s64AiqInitStart);
 #endif
@@ -319,7 +393,6 @@ int main(int argc, char *argv[])
 
     GetMediaBuffer0(NULL);
 
-
 #ifdef USE_SIMPLE_PROCESS
     s32Ret = RK_MPI_SYS_UnBind(&stSrcChn, &stDestChn);
     s32Ret = RK_MPI_VI_DisableChn(0, 0);
@@ -337,6 +410,9 @@ int main(int argc, char *argv[])
         rtsp_del_demo(g_rtsplive);
 
 __FAILED:
+    munmap(mem, MAP_SIZE_NIGHT);
+    munmap(iq_mem, file_size);
+    fclose(fd);
 #ifdef ENABLE_RKAIQ
         SAMPLE_COMM_ISP_Stop(s32chnlId);
 #endif
