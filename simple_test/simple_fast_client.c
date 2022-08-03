@@ -116,11 +116,15 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
 {
     VENC_RECV_PIC_PARAM_S stRecvParam;
     VENC_CHN_BUF_WRAP_S stVencChnBufWrap;
+    VENC_CHN_REF_BUF_SHARE_S stVencChnRefBufShare;
     VENC_CHN_ATTR_S stAttr;
 
     memset(&stAttr,0,sizeof(VENC_CHN_ATTR_S));
     stVencChnBufWrap.bEnable = false;
     stVencChnBufWrap.u32BufLine = 1080;
+
+    memset(&stVencChnRefBufShare, 0, sizeof(VENC_CHN_REF_BUF_SHARE_S));
+    stVencChnRefBufShare.bEnable = true;
 
     if (enType == RK_VIDEO_ID_AVC) {
         stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H264CBR;
@@ -143,11 +147,12 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
     stAttr.stVencAttr.u32VirWidth = width;
     stAttr.stVencAttr.u32VirHeight = height;
     stAttr.stVencAttr.u32StreamBufCnt = 5;
-    stAttr.stVencAttr.u32BufSize = width * height * 3 / 2;
+    stAttr.stVencAttr.u32BufSize = width * height / 2;
     stAttr.stVencAttr.enMirror = MIRROR_NONE;
 
     RK_MPI_VENC_CreateChn(chnId, &stAttr);
     RK_MPI_VENC_SetChnBufWrapAttr(chnId, &stVencChnBufWrap);
+    RK_MPI_VENC_SetChnRefBufShareAttr(chnId, &stVencChnRefBufShare);
 
     memset(&stRecvParam, 0, sizeof(VENC_RECV_PIC_PARAM_S));
     stRecvParam.s32RecvPicNum = -1;
