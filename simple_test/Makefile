@@ -76,6 +76,9 @@ simple_vi_venc_wrap: simple_vi_venc_wrap.c
 simple_vi_vpss_venc: simple_vi_vpss_venc.c
 	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
 
+simple_vi_rkaiq: simple_vi_rkaiq.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
+
 install:
 	@mv -f $(OBJECTS) $(SAMPLE_OUT_DIR)/bin
 
