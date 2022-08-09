@@ -55,6 +55,8 @@ typedef enum {
  //RK_AIQ_WORKING_MODE_SENSOR_HDR = 10, // sensor built-in hdr mode
 } rk_aiq_working_mode_t;
 */
+RK_BOOL SAMPLE_COMM_ISP_ShouldQuit();
+RK_S32 SAMPLE_COMM_ISP_GetSofCnt(void);
 RK_S32 SAMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL MultiCam,
                             const char *iq_file_dir);
 RK_S32

@@ -4,8 +4,9 @@ T_FAST_BOOT = simple_fast_service
 T_FAST_BOOT = simple_fast_client
 
 
-SIMPLE_FAST_CLIENT_LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic -lpthread -lrockit -lrockchip_mpp -lrkaiq \
-	-lrkaudio_detect -laec_bf_process  \
+SIMPLE_FAST_CLIENT_LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic -lpthread -lrockit \
+	-lrockchip_mpp -lrkaiq \
+	-lrkaudio_detect -laec_bf_process \
 	-lm -lrga -lstdc++ -Wl,-Bdynamic \
 	-L$(SAMPLE_OUT_DIR)/lib -lsample_comm
 SIMPLE_FAST_CLIENT_LD_FLAGS += -L$(SAMPLE_SRC_DIR)/../lib/$(RK_MEDIA_CROSS) -Wl,-Bstatic -lrtsp -Wl,-Bdynamic -Wl,--gc-sections -Wl,--as-needed
@@ -32,8 +33,8 @@ simple_ao: simple_ao.c
 	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
 
 simple_fast_service: simple_fast_service.c
-	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS)  $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic \
-	-lrockit_tiny -lrockchip_mpp \
+	@$(SAMPLE_CC) $^ -o $@ -O2 -mthumb -mthumb-interwork $(SAMPLE_CFLAGS) $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic \
+	-lrockit_tiny -lrockchip_mpp -lrkaiq \
 	-lm -lstdc++ \
 	-L$(SAMPLE_OUT_DIR)/lib \
 	-Wl,-Bdynamic

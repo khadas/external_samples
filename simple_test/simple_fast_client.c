@@ -20,8 +20,10 @@
 
 #include "rtsp_demo.h"
 
-//#define USE_SIMPLE_PROCESS
-#define ENABLE_RKAIQ             1
+#define ENABLE_RKAIQ               1
+#define ENABLE_RTSP                1
+#define ENABLE_SMALL_STREAM      1
+#define ENABLE_CHANGE_RESOLUTION    1
 
 #define MAP_SIZE (4096UL * 50) //MAP_SIZE = 4 * 50 K
 #define MAP_MASK (MAP_SIZE - 1) //MAP_MASK = 0XFFF
@@ -29,7 +31,7 @@
 #define MAP_SIZE_NIGHT (4096UL) //MAP_SIZE = 4K
 #define MAP_MASK_NIGHT (MAP_SIZE_NIGHT - 1) //MAP_MASK = 0XFFF
 
-#define SAVE_ENC_FRM_CNT_MAX     10
+#define SAVE_ENC_FRM_CNT_MAX     30
 #define RUN_TOTAL_CNT_MAX        1000000
 
 static FILE *venc0_file;
@@ -37,6 +39,10 @@ static RK_S32 g_s32FrameCnt = -1;
 // static RK_U32 g_u32WrapLine = 0;
 static char *g_sEntityName = NULL;
 static bool quit = false;
+static int venc_w[3] = {1920, 1280, 640};
+static int venc_h[3] = {1080, 720, 480};
+static int index_w_h = 1;
+static int index_num = 3;
 
 rtsp_demo_handle g_rtsplive = NULL;
 static rtsp_session_handle g_rtsp_session;
@@ -71,18 +77,17 @@ static void *GetMediaBuffer0(void *arg) {
                 fflush(venc0_file);
             }
             RK_U64 nowUs = TEST_COMM_GetNowUs();
-            if (loopCount < SAVE_ENC_FRM_CNT_MAX)
+            if (fp && (loopCount <=SAVE_ENC_FRM_CNT_MAX)) {
+                char str[128] = {0};
+                int len;
                 printf("chn:0, loopCount:%d enc->seq:%d wd:%d pts=%lld delay=%lldus\n", loopCount,
                     stFrame.u32Seq, stFrame.pstPack->u32Len, stFrame.pstPack->u64PTS, nowUs - stFrame.pstPack->u64PTS);
-            if (fp && loopCount <=SAVE_ENC_FRM_CNT_MAX) {
-                char str[128] = {0};
-                snprintf(str, sizeof(str), "seq:%u, pts:%llums\n", stFrame.u32Seq, stFrame.pstPack->u64PTS / 1000);
-                fputs(str, fp);
-                fsync(fileno(fp));
+                len = snprintf(str, sizeof(str), "seq:%u, pts:%llums\n", stFrame.u32Seq, stFrame.pstPack->u64PTS / 1000);
+                fwrite(str, 1, len, fp);
+                fflush(fp);
             }
-
             loopCount++;
-
+#if (ENABLE_RTSP)
             // tx video to rtspls
             if (loopCount > SAVE_ENC_FRM_CNT_MAX) {
                 if (g_rtsplive && g_rtsp_session) {
@@ -92,9 +97,77 @@ static void *GetMediaBuffer0(void *arg) {
                     rtsp_do_event(g_rtsplive);
                 }
             }
-
+#endif
             errCnt = 0;
             s32Ret = RK_MPI_VENC_ReleaseStream(0, &stFrame);
+
+#if (ENABLE_CHANGE_RESOLUTION)
+            if ((loopCount >= SAVE_ENC_FRM_CNT_MAX) && ((loopCount % SAVE_ENC_FRM_CNT_MAX)) == 0) {
+                MPP_CHN_S stSrcChn, stDestChn;
+                VENC_CHN_ATTR_S stAttr;
+                VI_CHN_ATTR_S stChnAttr;
+                // unbind venc from vi
+                stSrcChn.enModId    = RK_ID_VI;
+                stSrcChn.s32DevId   = 0;
+                stSrcChn.s32ChnId   = 0;
+
+                stDestChn.enModId   = RK_ID_VENC;
+                stDestChn.s32DevId  = 0;
+                stDestChn.s32ChnId  = 0;
+                s32Ret = RK_MPI_SYS_UnBind(&stSrcChn, &stDestChn);
+                if (s32Ret != RK_SUCCESS) {
+                    RK_LOGE("RK_MPI_SYS_UnBind fail %x", s32Ret);
+                    goto __FAILED;
+                }
+                s32Ret = RK_MPI_VENC_GetChnAttr(0, &stAttr);
+                if (s32Ret != RK_SUCCESS) {
+                    RK_LOGE("RK_MPI_VENC_GetChnAttr fail %x", s32Ret);
+                    goto __FAILED;
+                }
+                stAttr.stVencAttr.u32PicWidth = venc_w[index_w_h % index_num];
+                stAttr.stVencAttr.u32PicHeight = venc_h[index_w_h % index_num];
+                stAttr.stVencAttr.u32VirWidth = venc_w[index_w_h % index_num];
+                stAttr.stVencAttr.u32VirHeight = venc_h[index_w_h % index_num];
+                s32Ret = RK_MPI_VENC_SetChnAttr(0, &stAttr);
+                if (s32Ret != RK_SUCCESS) {
+                    RK_LOGE("RK_MPI_VENC_SetChnAttr fail %x", s32Ret);
+                    goto __FAILED;
+                }
+
+                stChnAttr.stIspOpt.stMaxSize.u32Width = venc_w[0];
+                stChnAttr.stIspOpt.stMaxSize.u32Height = venc_h[0];
+                stChnAttr.stSize.u32Width  = venc_w[index_w_h % index_num];
+                stChnAttr.stSize.u32Height = venc_h[index_w_h % index_num];
+                s32Ret = RK_MPI_VI_SetChnAttr(0, 0, &stChnAttr);
+                if (s32Ret != RK_SUCCESS) {
+                    RK_LOGE("RK_MPI_VI_SetChnAttr fail %x", s32Ret);
+                    goto __FAILED;
+                }
+
+                s32Ret = RK_MPI_SYS_Bind(&stSrcChn, &stDestChn);
+                if (s32Ret != RK_SUCCESS) {
+                    RK_LOGE("RK_MPI_SYS_Bind fail %x", s32Ret);
+                    goto __FAILED;
+                }
+                index_w_h++;
+            }
+#endif
+#if (ENABLE_RTSP)
+            if  (loopCount == SAVE_ENC_FRM_CNT_MAX) {
+                g_rtsplive = create_rtsp_demo(554);
+                if (g_rtsplive == NULL){
+                    printf("rtsp create fail");
+                    goto __FAILED;
+                }
+                g_rtsp_session = rtsp_new_session(g_rtsplive, "/live/0");
+                if (g_rtsp_session == NULL){
+                    printf("rtsp create session fail");
+                    goto __FAILED;
+                }
+                rtsp_set_video(g_rtsp_session, RTSP_CODEC_ID_VIDEO_H264, NULL, 0);
+                rtsp_sync_video_ts(g_rtsp_session, rtsp_get_reltime(), rtsp_get_ntptime());
+            }
+#endif
 
         } else {
             if (errCnt < 10) {
@@ -107,10 +180,9 @@ static void *GetMediaBuffer0(void *arg) {
             quit = true;
             break;
         }
-
-        usleep(10*1000);
     }
 
+__FAILED:
     if (venc0_file)
         fclose(venc0_file);
 
@@ -118,6 +190,56 @@ static void *GetMediaBuffer0(void *arg) {
         fclose(fp);
 
     free(stFrame.pstPack);
+    return NULL;
+}
+
+static void *GetMediaBuffer(void *arg) {
+    void *pData = RK_NULL;
+    int loopCount = 0;
+    int s32Ret;
+    VENC_STREAM_S stFrame;
+    int chn = (int)arg;
+    stFrame.pstPack = malloc(sizeof(VENC_PACK_S));
+    while (!quit) {
+        s32Ret = RK_MPI_VENC_GetStream(chn, &stFrame, 1000);
+        if (s32Ret == RK_SUCCESS) {
+            if (loopCount < SAVE_ENC_FRM_CNT_MAX)
+                printf("chn:%d, loopCount:%d enc->seq:%d,pts=%lld\n", chn, loopCount,
+                    stFrame.u32Seq, stFrame.pstPack->u32Len, stFrame.pstPack->u64PTS);
+            loopCount++;
+            s32Ret = RK_MPI_VENC_ReleaseStream(chn, &stFrame);
+        }
+        if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt)) {
+            quit = true;
+            break;
+        }
+    }
+    free(stFrame.pstPack);
+    return NULL;
+}
+
+static void *GetViBuffer(void *arg) {
+    void *pData = RK_NULL;
+    int loopCount = 0;
+    int s32Ret;
+    VIDEO_FRAME_INFO_S stFrame;
+    int chn = (int)arg;
+    int piple = ((int)arg >> 16);
+
+    while (!quit) {
+        s32Ret = RK_MPI_VI_GetChnFrame(piple, chn, &stFrame, 1000);
+        if (s32Ret == RK_SUCCESS) {
+            if (loopCount < SAVE_ENC_FRM_CNT_MAX)
+                printf("piple: %d, chn:%d, loopCount:%d vi->seq:%d pts=%lld\n", piple, chn, loopCount,
+                    stFrame.stVFrame.u32TimeRef, stFrame.stVFrame.u64PTS);
+            loopCount++;
+            s32Ret = RK_MPI_VI_ReleaseChnFrame(piple, chn, &stFrame);
+        }
+        if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt)) {
+            quit = true;
+            break;
+        }
+    }
     return NULL;
 }
 
@@ -171,12 +293,9 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
 }
 
 //demo板dev默认都是0，根据不同的channel 来选择不同的vi节点
-int vi_dev_init() {
+int vi_dev_init(int devId , int pipeId) {
     //printf("%s\n", __func__);
     int ret = 0;
-    int devId=0;
-    int pipeId = devId;
-
     VI_DEV_ATTR_S stDevAttr;
     VI_DEV_BIND_PIPE_S stBindPipe;
     memset(&stDevAttr, 0, sizeof(stDevAttr));
@@ -236,7 +355,7 @@ int vi_chn_init(int channelId, int width, int height) {
     printf("  vi en: %lld us\n", s64ViEnEnd - s64ViEnSta);
 
     if (ret) {
-        printf("ERROR: create VI error! ret=%d\n", ret);
+        printf("ERROR: create VI  %d, error! ret=%d\n", channelId, ret);
         return ret;
     }
 
@@ -259,16 +378,62 @@ int main(int argc, char *argv[])
     RK_U32 u32Width = 1920;
     RK_U32 u32Height = 1080;
     RK_CHAR *pOutPath = NULL;
-    RK_CODEC_ID_E enCodecType = RK_VIDEO_ID_HEVC;
+    RK_CODEC_ID_E enCodecType = RK_VIDEO_ID_AVC;
     RK_CHAR *pCodecName = "H264";
     RK_S32 s32chnlId = 0;
 
     g_s32FrameCnt = RUN_TOTAL_CNT_MAX;
-    g_sEntityName = "/dev/video11";
     pOutPath = "/tmp/venc-test.bin";
+
+    signal(SIGINT, sigterm_handler);
+    RK_S64 s64VencInitStart = TEST_COMM_GetNowUs();
+    if (RK_MPI_SYS_Init() != RK_SUCCESS) {
+        printf("rockit init fail");
+        goto __FAILED;
+    }
+
+    if (pOutPath) {
+        venc0_file = fopen(pOutPath, "w");
+        if (!venc0_file) {
+            return 0;
+        }
+    }
+
+#if (ENABLE_SMALL_STREAM)
+    // venc init, if is fast boot, must first init venc.
+    test_venc_init(1, 1280, 720, enCodecType);//RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
+    //vi_dev_init(0, 0);
+    vi_chn_init(1, 1280, 720);
+    vi_chn_init(2, 640, 360);
+
+    MPP_CHN_S stSrcChn, stDestChn;
+    // bind vi to venc
+    stSrcChn.enModId    = RK_ID_VI;
+    stSrcChn.s32DevId   = 0;
+    stSrcChn.s32ChnId   = 1;
+
+    stDestChn.enModId   = RK_ID_VENC;
+    stDestChn.s32DevId  = 0;
+    stDestChn.s32ChnId  = 1;
+    s32Ret = RK_MPI_SYS_Bind(&stSrcChn, &stDestChn);
+    if (s32Ret != RK_SUCCESS) {
+        goto __FAILED;
+    }
+
+    pthread_t main_thread1;
+	pthread_create(&main_thread1, NULL, GetMediaBuffer, 1);
+
+    pthread_t main_thread2;
+	pthread_create(&main_thread2, NULL, GetViBuffer, 0X0002);
+#endif
+
+#if (ENABLE_RKAIQ)
     int is_bw_night, file_size, fd, ret = 0;
     void *mem, *vir_addr, *iq_mem, *vir_iqaddr;
     off_t bw_night_addr, addr_iq;
+
+    RK_S64 s64AiqInitStart = TEST_COMM_GetNowUs();
+    rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
 
     bw_night_addr = (off_t)get_cmd_val("bw_night_addr", 16);
     if((fd = open ("/dev/mem", O_RDWR | O_SYNC)) < 0)
@@ -280,57 +445,10 @@ int main(int argc, char *argv[])
     vir_addr = mem + (bw_night_addr & MAP_MASK_NIGHT);
     is_bw_night = *((unsigned long *) vir_addr);
 
-    if (pOutPath) {
-        venc0_file = fopen(pOutPath, "w");
-        if (!venc0_file) {
-            return 0;
-        }
-    }
-
     addr_iq = (off_t)get_cmd_val("rk_iqbin_addr", 16);
     file_size = (int)get_cmd_val("rk_iqbin_size", 16);
     iq_mem = mmap (0 , file_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, addr_iq & ~MAP_MASK);
     vir_iqaddr = iq_mem + (addr_iq & MAP_MASK);
-
-    signal(SIGINT, sigterm_handler);
-
-    RK_S64 s64VencInitStart = TEST_COMM_GetNowUs();
-    if (RK_MPI_SYS_Init() != RK_SUCCESS) {
-        goto __FAILED;
-    }
-#ifdef USE_SIMPLE_PROCESS
-    // venc init, if is fast boot, must first init venc.
-    test_venc_init(0, u32Width, u32Height, enCodecType);//RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
-    RK_S64 s64VencInitEnd = TEST_COMM_GetNowUs();
-    printf("sys/venc:%lld us\n", s64VencInitEnd - s64VencInitStart);
-
-    RK_S64 s64ViInitStart = TEST_COMM_GetNowUs();
-    vi_dev_init();
-    RK_S64 s64ViDevEnd = TEST_COMM_GetNowUs();
-    printf("  vi dev:%lld us\n", s64ViDevEnd - s64ViInitStart);
-
-    vi_chn_init(s32chnlId, u32Width, u32Height);
-    RK_S64 s64ViInitEnd = TEST_COMM_GetNowUs();
-    printf("vi:%lld us\n", s64ViInitEnd - s64ViInitStart);
-
-    MPP_CHN_S stSrcChn, stDestChn;
-    // bind vi to venc
-    stSrcChn.enModId    = RK_ID_VI;
-    stSrcChn.s32DevId   = 0;
-    stSrcChn.s32ChnId   = 0;
-
-    stDestChn.enModId   = RK_ID_VENC;
-    stDestChn.s32DevId  = 0;
-    stDestChn.s32ChnId  = 0;
-    s32Ret = RK_MPI_SYS_Bind(&stSrcChn, &stDestChn);
-    if (s32Ret != RK_SUCCESS) {
-        goto __FAILED;
-    }
-#endif
-
-#ifdef ENABLE_RKAIQ
-    RK_S64 s64AiqInitStart = TEST_COMM_GetNowUs();
-    rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
 
     rk_aiq_sys_ctx_t *aiq_ctx;
     rk_aiq_static_info_t aiq_static_info;
@@ -341,14 +459,14 @@ int main(int argc, char *argv[])
         ret = rk_aiq_uapi2_sysctl_preInit_scene(aiq_static_info.sensor_info.sensor_name, "normal", "night");
         if (ret < 0) {
             printf("%s: failed to set night scene\n", aiq_static_info.sensor_info.sensor_name);
-            return -1;	
+            return -1;
         }
     } else {
         printf("=====day mode=======\n");
         ret = rk_aiq_uapi2_sysctl_preInit_scene(aiq_static_info.sensor_info.sensor_name, "normal", "day");
         if (ret < 0) {
             printf("%s: failed to set day scene\n", aiq_static_info.sensor_info.sensor_name);
-            return -1;	
+            return -1;
         }
     }
 
@@ -376,43 +494,36 @@ int main(int argc, char *argv[])
     printf("Aiq:%lld us\n", s64AiqInitEnd - s64AiqInitStart);
 #endif
 
-    // init rtsp
-    g_rtsplive = create_rtsp_demo(554);
-    g_rtsp_session = rtsp_new_session(g_rtsplive, "/live/0");
-    if (enCodecType == RK_VIDEO_ID_AVC) {
-        rtsp_set_video(g_rtsp_session, RTSP_CODEC_ID_VIDEO_H264, NULL, 0);
-    } else if (enCodecType == RK_VIDEO_ID_HEVC) {
-        rtsp_set_video(g_rtsp_session, RTSP_CODEC_ID_VIDEO_H265, NULL, 0);
-    } else {
-        printf("not support other type\n");
-        return -1;
-    }
-    rtsp_sync_video_ts(g_rtsp_session, rtsp_get_reltime(), rtsp_get_ntptime());
-
     GetMediaBuffer0(NULL);
 
-#ifdef USE_SIMPLE_PROCESS
-    s32Ret = RK_MPI_SYS_UnBind(&stSrcChn, &stDestChn);
-    s32Ret = RK_MPI_VI_DisableChn(0, 0);
+#if (ENABLE_SMALL_STREAM)
+    pthread_join(main_thread1, RK_NULL);
+    pthread_join(main_thread2, RK_NULL);
+    s32Ret |= RK_MPI_SYS_UnBind(&stSrcChn, &stDestChn);
+    s32Ret |= RK_MPI_VI_DisableChn(0, 1);
+    s32Ret |= RK_MPI_VI_DisableChn(0, 2);
 
-    s32Ret = RK_MPI_VENC_StopRecvFrame(0);
+    s32Ret |= RK_MPI_VENC_StopRecvFrame(1);
     if (s32Ret != RK_SUCCESS) {
         return s32Ret;
     }
 
-    s32Ret = RK_MPI_VENC_DestroyChn(0);
+    s32Ret = RK_MPI_VENC_DestroyChn(1);
     s32Ret = RK_MPI_VI_DisableDev(0);
 #endif
 
+#if (ENABLE_RTSP)
     if (g_rtsplive)
         rtsp_del_demo(g_rtsplive);
+#endif
 
 __FAILED:
+#if (ENABLE_RKAIQ)
+    fclose(fd);
     munmap(mem, MAP_SIZE_NIGHT);
     munmap(iq_mem, file_size);
-    fclose(fd);
-#ifdef ENABLE_RKAIQ
-        SAMPLE_COMM_ISP_Stop(s32chnlId);
+    rk_aiq_uapi2_sysctl_stop(aiq_ctx, false);
+    rk_aiq_uapi2_sysctl_deinit(aiq_ctx);
 #endif
 
     RK_MPI_SYS_Exit();

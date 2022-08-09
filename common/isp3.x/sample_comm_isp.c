@@ -79,8 +79,32 @@ typedef enum rk_HDR_MODE_E {
 	HDR_MODE_HDR3,
 } HDR_MODE_E;
 
+#include <stdatomic.h>
+static atomic_int g_sof_cnt = 0;
+static atomic_bool g_should_quit = false;
+
+static XCamReturn SAMPLE_COMM_ISP_SofCb(rk_aiq_metas_t* meta) {
+    g_sof_cnt++;
+    if (g_sof_cnt <= 2)
+        printf("=== %u ===\n", meta->frame_id);
+    return XCAM_RETURN_NO_ERROR;
+}
+
+RK_S32 SAMPLE_COMM_ISP_GetSofCnt(void) {
+    return g_sof_cnt;
+}
+
+static XCamReturn SAMPLE_COMM_ISP_ErrCb(rk_aiq_err_msg_t* msg) {
+    if (msg->err_code == XCAM_RETURN_BYPASS)
+        g_should_quit = true;
+}
+
+RK_BOOL SAMPLE_COMM_ISP_ShouldQuit() {
+    return g_should_quit;
+}
+
 RK_S32 SAMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL MultiCam,
-                            const char *iq_file_dir) {
+							const char *iq_file_dir) {
 	if (CamId >= MAX_AIQ_CTX) {
 		printf("%s : CamId is over 3\n", __FUNCTION__);
 		return -1;
@@ -104,10 +128,11 @@ RK_S32 SAMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL
 	rk_aiq_uapi2_sysctl_enumStaticMetas(CamId, &aiq_static_info);
 
 	printf("ID: %d, sensor_name is %s, iqfiles is %s\n", CamId,
-	       aiq_static_info.sensor_info.sensor_name, iq_file_dir);
+			aiq_static_info.sensor_info.sensor_name, iq_file_dir);
 
 	aiq_ctx = rk_aiq_uapi2_sysctl_init(aiq_static_info.sensor_info.sensor_name,
-	                                   iq_file_dir, NULL, NULL);
+									iq_file_dir, SAMPLE_COMM_ISP_ErrCb, SAMPLE_COMM_ISP_SofCb);
+
 	if (MultiCam)
 		rk_aiq_uapi2_sysctl_setMulCamConc(aiq_ctx, true);
 
@@ -156,7 +181,7 @@ RK_S32 SAMPLE_COMM_ISP_CamGroup_Init(RK_S32 CamGroupId, rk_aiq_working_mode_t WD
 
 RK_S32 SAMPLE_COMM_ISP_Stop(RK_S32 CamId) {
 	if (CamId >= MAX_AIQ_CTX || !g_aiq_ctx[CamId]) {
-		printf("%s : CamId is over 3 or not init\n", __FUNCTION__);
+		printf("%s : CamId is over 3 or not init g_aiq_ctx[%d] = %p\n", __FUNCTION__, CamId, g_aiq_ctx[CamId]);
 		return -1;
 	}
 	printf("rk_aiq_uapi2_sysctl_stop enter\n");

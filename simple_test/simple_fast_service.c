@@ -1,4 +1,4 @@
-
+#include <fcntl.h>
 #include <stdio.h>
 #include <sys/poll.h>
 #include <errno.h>
@@ -6,6 +6,9 @@
 #include <signal.h>
 #include <time.h>
 #include <stdbool.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "rk_type.h"
 #include "rk_debug.h"
@@ -13,15 +16,25 @@
 #include "rk_mpi_venc.h"
 #include "rk_mpi_vi.h"
 #include "rk_mpi_sys.h"
-#include "rk_aiq_user_api2_camgroup.h"
-#include "rk_aiq_user_api2_imgproc.h"
-#include "rk_aiq_user_api2_sysctl.h"
+#include <rk_aiq_user_api2_camgroup.h>
+#include <rk_aiq_user_api2_imgproc.h>
+#include <rk_aiq_user_api2_sysctl.h>
 
-//#define RKAIQ
+
+
+#define RKAIQ
 //#define ENABLE_GET_STREAM
+
+#define MAP_SIZE (4096UL * 50) //MAP_SIZE = 4 * 50 K
+#define MAP_MASK (MAP_SIZE - 1) //MAP_MASK = 0XFFF
+
+#define MAP_SIZE_NIGHT (4096UL) //MAP_SIZE = 4K
+#define MAP_MASK_NIGHT (MAP_SIZE_NIGHT - 1) //MAP_MASK = 0XFFF
 
 static FILE *venc0_file = NULL;
 static RK_S32 g_s32FrameCnt = -1;
+static VI_CHN_BUF_WRAP_S g_stViWrap;
+static bool g_bWrap = false;
 static RK_U32 g_u32WrapLine = 0;
 static char *g_sEntityName = NULL;
 static bool quit = false;
@@ -30,12 +43,13 @@ static void sigterm_handler(int sig) {
     quit = true;
 }
 
-#ifdef ENABLE_GET_STREAM
 RK_U64 TEST_COMM_GetNowUs() {
     struct timespec time = {0, 0};
     clock_gettime(CLOCK_MONOTONIC, &time);
     return (RK_U64)time.tv_sec * 1000000 + (RK_U64)time.tv_nsec / 1000; /* microseconds */
 }
+
+#ifdef ENABLE_GET_STREAM
 
 static void  *GetMediaBuffer0(void *arg) {
     (void)arg;
@@ -100,8 +114,11 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
     VENC_CHN_ATTR_S stAttr;
 
     memset(&stAttr,0,sizeof(VENC_CHN_ATTR_S));
-    stVencChnBufWrap.bEnable = false;
-    stVencChnBufWrap.u32BufLine = 1080;
+    stVencChnBufWrap.bEnable = g_bWrap;
+    stVencChnBufWrap.u32BufLine = g_u32WrapLine;
+
+    memset(&stVencChnRefBufShare, 0, sizeof(VENC_CHN_REF_BUF_SHARE_S));
+    stVencChnRefBufShare.bEnable = true;
 
     memset(&stVencChnRefBufShare, 0, sizeof(VENC_CHN_REF_BUF_SHARE_S));
     stVencChnRefBufShare.bEnable = true;
@@ -137,6 +154,7 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
     memset(&stRecvParam, 0, sizeof(VENC_RECV_PIC_PARAM_S));
     stRecvParam.s32RecvPicNum = -1;
     RK_MPI_VENC_StartRecvFrame(chnId, &stRecvParam);
+
 
     return 0;
 }
@@ -201,6 +219,12 @@ int vi_chn_init(int channelId, int width, int height) {
     if (g_sEntityName != NULL)
         memcpy(vi_chn_attr.stIspOpt.aEntityName, g_sEntityName, strlen(g_sEntityName));
     ret = RK_MPI_VI_SetChnAttr(0, channelId, &vi_chn_attr);
+
+    g_stViWrap.bEnable           = RK_TRUE;
+    g_stViWrap.u32BufLine        = g_u32WrapLine;
+    g_stViWrap.u32WrapBufferSize = g_stViWrap.u32BufLine * width * 3 / 2;
+    RK_MPI_VI_SetChnWrapBufAttr(0, channelId, &g_stViWrap);
+
     ret |= RK_MPI_VI_EnableChn(0, channelId);
     if (ret) {
         printf("ERROR: create VI error! ret=%d\n", ret);
@@ -210,42 +234,48 @@ int vi_chn_init(int channelId, int width, int height) {
     return ret;
 }
 
+long get_cmd_val(const char *string, int len) {
+    char *addr;
+    long value;
+
+    addr = getenv(string);
+    value = strtol(addr, NULL, len);
+    printf("get %s value: 0x%0x\n", string, value);
+    return value;
+}
+
+static int g_err_cnt = 0;
+static bool g_should_quit = false;
+
+static XCamReturn SAMPLE_COMM_ISP_ErrCb(rk_aiq_err_msg_t* msg) {
+	g_err_cnt++;
+    if (g_err_cnt <= 2)
+        printf("=== %u ===\n", msg->err_code);
+    if (msg->err_code == XCAM_RETURN_BYPASS)
+        g_should_quit = true;
+}
+
 int main(int argc, char *argv[])
 {
     RK_S32 s32Ret = RK_FAILURE;
     RK_U32 u32Width = 1920;
     RK_U32 u32Height = 1080;
     RK_CHAR *pOutPath = NULL;
-    RK_CODEC_ID_E enCodecType = RK_VIDEO_ID_HEVC;
+    RK_CODEC_ID_E enCodecType = RK_VIDEO_ID_AVC;
     RK_CHAR *pCodecName = "H264";
     RK_S32 s32chnlId = 0;
 
+    g_bWrap = true;
+    g_u32WrapLine = u32Height / 8; // 360   // 1080
     g_s32FrameCnt = 20;
     g_sEntityName = "/dev/video11";
-
-#ifdef RKAIQ
-        rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
-        SAMPLE_COMM_ISP_Init(s32chnlId, hdr_mode, false, "/etc/iqfiles");
-        SAMPLE_COMM_ISP_Run(s32chnlId);
-#endif
-
-#ifdef ENABLE_GET_STREAM
-    pOutPath = "/tmp/venc-test.bin";
-    int c;
-
-    if (pOutPath) {
-        venc0_file = fopen(pOutPath, "w");
-        if (!venc0_file) {
-            return 0;
-        }
-    }
-#endif
 
     signal(SIGINT, sigterm_handler);
 
     if (RK_MPI_SYS_Init() != RK_SUCCESS) {
         goto __FAILED;
     }
+    test_venc_init(0, u32Width, u32Height, enCodecType);//RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
 
     vi_dev_init();
     vi_chn_init(s32chnlId, u32Width, u32Height);
@@ -264,8 +294,109 @@ int main(int argc, char *argv[])
     stDestChn.s32ChnId  = 0;
     s32Ret = RK_MPI_SYS_Bind(&stSrcChn, &stDestChn);
     if (s32Ret != RK_SUCCESS) {
+        printf("111 RK_MPI_SYS_Bind fail\n");
         goto __FAILED;
     }
+
+    // venc init, if is fast boot, must first init venc.
+    if (fork() > 0) {
+
+    }
+    else {
+        while(1)
+            usleep(1000 * 1000); //when client online
+        printf("sub service exit main\n");
+        return;
+    }
+    RK_MPI_VI_ResumeChn(0, s32chnlId);
+
+#ifdef RKAIQ
+    int is_bw_night, file_size, fd, ret = 0;
+    void *mem, *vir_addr, *iq_mem, *vir_iqaddr;
+    off_t bw_night_addr, addr_iq;
+    RK_S64 s64AiqInitStart = TEST_COMM_GetNowUs();
+    bw_night_addr = (off_t)get_cmd_val("bw_night_addr", 16);
+    if((fd = open ("/dev/mem", O_RDWR | O_SYNC)) < 0)
+    {
+        perror ("open error");
+        return -1;
+    }
+    mem = mmap (0 , MAP_SIZE_NIGHT, PROT_READ | PROT_WRITE, MAP_SHARED, fd, bw_night_addr & ~MAP_MASK_NIGHT);
+    vir_addr = mem + (bw_night_addr & MAP_MASK_NIGHT);
+    is_bw_night = *((unsigned long *) vir_addr);
+
+    if (pOutPath) {
+        venc0_file = fopen(pOutPath, "w");
+        if (!venc0_file) {
+            return 0;
+        }
+    }
+
+    addr_iq = (off_t)get_cmd_val("rk_iqbin_addr", 16);
+    file_size = (int)get_cmd_val("rk_iqbin_size", 16);
+    iq_mem = mmap (0 , file_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, addr_iq & ~MAP_MASK);
+    vir_iqaddr = iq_mem + (addr_iq & MAP_MASK);
+
+    rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
+    rk_aiq_sys_ctx_t *aiq_ctx;
+    rk_aiq_static_info_t aiq_static_info;
+    rk_aiq_uapi2_sysctl_enumStaticMetas(s32chnlId, &aiq_static_info);
+
+    if (is_bw_night) {
+        printf("=====night mode=====\n");
+        ret = rk_aiq_uapi2_sysctl_preInit_scene(aiq_static_info.sensor_info.sensor_name, "normal", "night");
+        if (ret < 0) {
+            printf("%s: failed to set night scene\n", aiq_static_info.sensor_info.sensor_name);
+            return -1;
+        }
+    } else {
+        printf("=====day mode=======\n");
+        ret = rk_aiq_uapi2_sysctl_preInit_scene(aiq_static_info.sensor_info.sensor_name, "normal", "day");
+        if (ret < 0) {
+            printf("%s: failed to set day scene\n", aiq_static_info.sensor_info.sensor_name);
+            return -1;
+        }
+    }
+
+    ret = rk_aiq_uapi2_sysctl_preInit_iq_addr(aiq_static_info.sensor_info.sensor_name, vir_iqaddr, (size_t *)file_size);
+    if (ret < 0) {
+        printf("%s: failed to load binary iqfiles\n", aiq_static_info.sensor_info.sensor_name);
+    }
+
+    rk_aiq_tb_info_t tb_info;
+	tb_info.magic = sizeof(rk_aiq_tb_info_t) - 2;
+	tb_info.is_pre_aiq = true;
+	rk_aiq_uapi2_sysctl_preInit_tb_info(aiq_static_info.sensor_info.sensor_name, &tb_info);
+
+    ret = aiq_ctx = rk_aiq_uapi2_sysctl_init(aiq_static_info.sensor_info.sensor_name,
+                                       "/etc/iqfiles/", SAMPLE_COMM_ISP_ErrCb, NULL);
+    if (ret < 0) {
+        printf("%s: failed to init aiq\n", aiq_static_info.sensor_info.sensor_name);
+    }
+
+    if (rk_aiq_uapi2_sysctl_prepare(aiq_ctx, 0, 0, hdr_mode)) {
+        printf("rkaiq engine prepare failed !\n");
+        return -1;
+    }
+    if (rk_aiq_uapi2_sysctl_start(aiq_ctx)) {
+        printf("rk_aiq_uapi2_sysctl_start  failed\n");
+        return -1;
+    }
+    RK_S64 s64AiqInitEnd = TEST_COMM_GetNowUs();
+    printf("Aiq:%lld us\n", s64AiqInitEnd - s64AiqInitStart);
+#endif
+
+#ifdef ENABLE_GET_STREAM
+    pOutPath = "/tmp/venc-test.bin";
+    int c;
+
+    if (pOutPath) {
+        venc0_file = fopen(pOutPath, "w");
+        if (!venc0_file) {
+            return 0;
+        }
+    }
+#endif
 
 #ifdef ENABLE_GET_STREAM
     GetMediaBuffer0(NULL);
@@ -280,15 +411,23 @@ int main(int argc, char *argv[])
     s32Ret = RK_MPI_VENC_DestroyChn(0);
     s32Ret = RK_MPI_VI_DisableDev(0);
 #endif
-    if (fork() > 0) {
-        goto __FAILED;
-    }
-    else {
-        while (1) {
-            usleep(1000 * 1000); //when client online
+
+#ifdef RKAIQ
+    while (1) {
+        if (g_should_quit) {
+            rk_aiq_uapi2_sysctl_stop(aiq_ctx, false);
+            rk_aiq_uapi2_sysctl_deinit(aiq_ctx);
+            break;
         }
+        usleep(1 * 1000); //when client online
     }
+#endif
+
 __FAILED:
+    //fclose(fd);
+    //munmap(mem, MAP_SIZE_NIGHT);
+    //munmap(iq_mem, file_size);
     //RK_MPI_SYS_Exit();
+    printf("main service exit main\n");
     return 0;
 }
