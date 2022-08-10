@@ -241,7 +241,7 @@ int main(int argc, char *argv[]) {
 		ctx->vi[i].s32DevId = i;
 		ctx->vi[i].u32PipeId = i;
 		ctx->vi[i].s32ChnId = 0;
-		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 2;
+		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 3;
 		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
 		ctx->vi[i].stChnAttr.u32Depth = 2;
 		ctx->vi[i].stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
