@@ -73,7 +73,7 @@ INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/algos
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/iq_parser
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/iq_parser_v2
 SAMPLE_CFLAGS += -g -Wall $(INC_FLAGS) $(PKG_CONF_OPTS)
-LD_FLAGS += -L$(SAMPLE_OUT_DIR) -lsample_comm
+LD_FLAGS += -L$(SAMPLE_OUT_DIR)/lib -lsample_comm
 ifeq ($(BUILD_STATIC_LINK), y)
 LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic -lpthread -lrockit -lrockchip_mpp -lrkaiq \
 			-lrkaudio_detect -laec_bf_process  \
@@ -124,7 +124,7 @@ endif
 	@make -C $(CURRENT_DIR)/venc install;
 	@make -C $(CURRENT_DIR)/test;
 	@make -C $(CURRENT_DIR)/test install;
-	@cp -rfa $(SAMPLE_OUT_DIR)/* $(RK_MEDIA_OUTPUT)
+	$(call MAROC_COPY_PKG_TO_MEDIA_OUTPUT, $(RK_MEDIA_OUTPUT), $(PKG_BIN))
 
 COMM_LIB:
 	@make -C $(CURRENT_DIR)/common
