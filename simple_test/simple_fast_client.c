@@ -372,8 +372,23 @@ long get_cmd_val(const char *string, int len) {
     return value;
 }
 
+#if 1
+void klog(const char *log) {
+    FILE *fp = fopen("/dev/kmsg", "w");
+    if (NULL != fp) {
+        fprintf(fp, "[app-cli]: %s\n", log);
+        fclose(fp);
+    }
+}
+#else
+void klog(const char *log) {
+    return;
+}
+#endif
+
 int main(int argc, char *argv[])
 {
+    klog("main");
     RK_S32 s32Ret = RK_FAILURE;
     RK_U32 u32Width = 1920;
     RK_U32 u32Height = 1080;
@@ -392,6 +407,7 @@ int main(int argc, char *argv[])
         goto __FAILED;
     }
 
+    klog("SYS_Init");
     if (pOutPath) {
         venc0_file = fopen(pOutPath, "w");
         if (!venc0_file) {
@@ -402,9 +418,12 @@ int main(int argc, char *argv[])
 #if (ENABLE_SMALL_STREAM)
     // venc init, if is fast boot, must first init venc.
     test_venc_init(1, 1280, 720, enCodecType);//RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
+    klog("venc");
     //vi_dev_init(0, 0);
     vi_chn_init(1, 1280, 720);
+    klog("vi ch1");
     vi_chn_init(2, 640, 360);
+    klog("vi chn2");
 
     MPP_CHN_S stSrcChn, stDestChn;
     // bind vi to venc
@@ -419,6 +438,7 @@ int main(int argc, char *argv[])
     if (s32Ret != RK_SUCCESS) {
         goto __FAILED;
     }
+    klog("bind");
 
     pthread_t main_thread1;
 	pthread_create(&main_thread1, NULL, GetMediaBuffer, 1);
@@ -489,6 +509,7 @@ int main(int argc, char *argv[])
         printf("rk_aiq_uapi2_sysctl_start  failed\n");
         return -1;
     }
+    klog("aiq start");
 
     RK_S64 s64AiqInitEnd = TEST_COMM_GetNowUs();
     printf("Aiq:%lld us\n", s64AiqInitEnd - s64AiqInitStart);

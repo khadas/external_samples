@@ -255,8 +255,25 @@ static XCamReturn SAMPLE_COMM_ISP_ErrCb(rk_aiq_err_msg_t* msg) {
         g_should_quit = true;
 }
 
+#if 1
+void klog(const char *log) {
+    FILE *fp = fopen("/dev/kmsg", "w");
+    if (NULL != fp) {
+        fprintf(fp, "[app]: %s\n", log);
+        fclose(fp);
+    }
+}
+#else
+void klog(const char *log) {
+	return;
+}
+#endif
+
+
 int main(int argc, char *argv[])
 {
+    klog("main");
+
     RK_S32 s32Ret = RK_FAILURE;
     RK_U32 u32Width = 1920;
     RK_U32 u32Height = 1080;
@@ -275,10 +292,14 @@ int main(int argc, char *argv[])
     if (RK_MPI_SYS_Init() != RK_SUCCESS) {
         goto __FAILED;
     }
+    klog("sys_init");
     test_venc_init(0, u32Width, u32Height, enCodecType);//RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
+    klog("venc_init");
 
     vi_dev_init();
+    klog("vi_dev");
     vi_chn_init(s32chnlId, u32Width, u32Height);
+    klog("vi_chn");
 
     // venc init, if is fast boot, must first init venc.
     test_venc_init(0, u32Width, u32Height, enCodecType);//RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
@@ -297,7 +318,9 @@ int main(int argc, char *argv[])
         printf("111 RK_MPI_SYS_Bind fail\n");
         goto __FAILED;
     }
+    klog("bind");
 
+#if 1
     // venc init, if is fast boot, must first init venc.
     if (fork() > 0) {
 
@@ -308,7 +331,10 @@ int main(int argc, char *argv[])
         printf("sub service exit main\n");
         return;
     }
+
     RK_MPI_VI_ResumeChn(0, s32chnlId);
+    klog("vi resume");
+#endif
 
 #ifdef RKAIQ
     int is_bw_night, file_size, fd, ret = 0;
@@ -336,11 +362,13 @@ int main(int argc, char *argv[])
     file_size = (int)get_cmd_val("rk_iqbin_size", 16);
     iq_mem = mmap (0 , file_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, addr_iq & ~MAP_MASK);
     vir_iqaddr = iq_mem + (addr_iq & MAP_MASK);
+    klog("mmap iq mem");
 
     rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
     rk_aiq_sys_ctx_t *aiq_ctx;
     rk_aiq_static_info_t aiq_static_info;
     rk_aiq_uapi2_sysctl_enumStaticMetas(s32chnlId, &aiq_static_info);
+    klog("aiq enum");
 
     if (is_bw_night) {
         printf("=====night mode=====\n");
@@ -357,19 +385,23 @@ int main(int argc, char *argv[])
             return -1;
         }
     }
+    klog("preint scene");
 
     ret = rk_aiq_uapi2_sysctl_preInit_iq_addr(aiq_static_info.sensor_info.sensor_name, vir_iqaddr, (size_t *)file_size);
     if (ret < 0) {
         printf("%s: failed to load binary iqfiles\n", aiq_static_info.sensor_info.sensor_name);
     }
+    klog("preinit iq addr");
 
     rk_aiq_tb_info_t tb_info;
 	tb_info.magic = sizeof(rk_aiq_tb_info_t) - 2;
 	tb_info.is_pre_aiq = true;
 	rk_aiq_uapi2_sysctl_preInit_tb_info(aiq_static_info.sensor_info.sensor_name, &tb_info);
+    klog("preinit tb info");
 
     ret = aiq_ctx = rk_aiq_uapi2_sysctl_init(aiq_static_info.sensor_info.sensor_name,
                                        "/etc/iqfiles/", SAMPLE_COMM_ISP_ErrCb, NULL);
+    klog("sysctl init");
     if (ret < 0) {
         printf("%s: failed to init aiq\n", aiq_static_info.sensor_info.sensor_name);
     }
@@ -378,14 +410,17 @@ int main(int argc, char *argv[])
         printf("rkaiq engine prepare failed !\n");
         return -1;
     }
+    klog("sysctl prepare");
+
     if (rk_aiq_uapi2_sysctl_start(aiq_ctx)) {
         printf("rk_aiq_uapi2_sysctl_start  failed\n");
         return -1;
     }
+    klog("sysctl start");
     RK_S64 s64AiqInitEnd = TEST_COMM_GetNowUs();
     printf("Aiq:%lld us\n", s64AiqInitEnd - s64AiqInitStart);
 #endif
-
+    klog("aiq start");
 #ifdef ENABLE_GET_STREAM
     pOutPath = "/tmp/venc-test.bin";
     int c;
@@ -415,8 +450,11 @@ int main(int argc, char *argv[])
 #ifdef RKAIQ
     while (1) {
         if (g_should_quit) {
+            klog("should quit");
             rk_aiq_uapi2_sysctl_stop(aiq_ctx, false);
+            klog("aiq stop");
             rk_aiq_uapi2_sysctl_deinit(aiq_ctx);
+            klog("aiq deinit");
             break;
         }
         usleep(1 * 1000); //when client online
