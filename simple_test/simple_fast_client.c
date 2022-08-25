@@ -219,13 +219,11 @@ int vi_chn_init(int channelId, int width, int height) {
     VI_CHN_ATTR_S vi_chn_attr;
     memset(&vi_chn_attr, 0, sizeof(vi_chn_attr));
     vi_chn_attr.stIspOpt.u32BufCount = buf_cnt;
-    vi_chn_attr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;//VI_V4L2_MEMORY_TYPE_MMAP;
+    vi_chn_attr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
     vi_chn_attr.stSize.u32Width = width;
     vi_chn_attr.stSize.u32Height = height;
     vi_chn_attr.enPixelFormat = RK_FMT_YUV420SP;
-
-    if (channelId == 2)                                // FBCPATH
-        vi_chn_attr.enCompressMode = COMPRESS_MODE_NONE; // COMPRESS_AFBC_16x16;
+    vi_chn_attr.enCompressMode = COMPRESS_MODE_NONE;
     vi_chn_attr.u32Depth = 2;
 
     if (g_sEntityName != NULL)
