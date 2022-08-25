@@ -19,7 +19,7 @@ static void sigterm_handler(int sig) {
 
 static FILE *ao_file;
 
-RK_S32 ao_set_other(RK_S32 s32SetTrackMode, RK_S32 s32SetVolume)
+RK_S32 ao_set_other(RK_S32 s32SetVolume)
 {
 	printf("\n=======%s=======\n",__func__);
 	int s32DevId = 0;
@@ -30,11 +30,7 @@ RK_S32 ao_set_other(RK_S32 s32SetTrackMode, RK_S32 s32SetVolume)
 	RK_MPI_AO_GetVolume(s32DevId, &volume);
 	RK_LOGI("test info : get volume = %d", volume);
 
-	if (s32SetTrackMode) {
-		RK_LOGI("test info : set track mode = %d",s32SetTrackMode);
-		RK_MPI_AO_SetTrackMode(s32DevId, (AUDIO_TRACK_MODE_E)s32SetTrackMode);
-		s32SetTrackMode = 0;
-	}
+	RK_MPI_AO_SetTrackMode(s32DevId, AUDIO_TRACK_OUT_STEREO);
 
 	AUDIO_TRACK_MODE_E trackMode;
 	RK_MPI_AO_GetTrackMode(s32DevId, &trackMode);
@@ -44,7 +40,7 @@ RK_S32 ao_set_other(RK_S32 s32SetTrackMode, RK_S32 s32SetVolume)
 }
 
 
-RK_S32 test_open_device_ao(RK_S32 channel, RK_S32 s32ReSmpSampleRate, RK_S32 s32SampleRate, RK_S32 u32FrameCnt, RK_S32 track_mode)
+RK_S32 open_device_ao(RK_S32 s32ReSmpSampleRate, RK_S32 s32SampleRate, RK_S32 u32FrameCnt)
 {
 	printf("\n=======%s=======\n",__func__);
 	RK_S32 result = 0;
@@ -65,10 +61,10 @@ RK_S32 test_open_device_ao(RK_S32 channel, RK_S32 s32ReSmpSampleRate, RK_S32 s32
 	aoAttr.enBitwidth = AUDIO_BIT_WIDTH_16;                   //AUDIO_BIT_WIDTH_16
 	aoAttr.enSamplerate = (AUDIO_SAMPLE_RATE_E)s32SampleRate; //16000
 
-	aoAttr.enSoundmode = ((channel == 2) ? AUDIO_SOUND_MODE_STEREO : AUDIO_SOUND_MODE_MONO);
-	aoAttr.u32FrmNum = 4;
+	aoAttr.enSoundmode = AUDIO_SOUND_MODE_MONO;
 	aoAttr.u32PtNumPerFrm = u32FrameCnt;   //1024
-
+	//以下参数没有特殊需要，无需修改
+	aoAttr.u32FrmNum = 4;
 	aoAttr.u32EXFlag = 0;
 	aoAttr.u32ChnCnt = 2;
 
@@ -89,36 +85,34 @@ RK_S32 test_open_device_ao(RK_S32 channel, RK_S32 s32ReSmpSampleRate, RK_S32 s32
 	}
 	/*==============================================================================*/
 	// set sample rate of input data
-	printf("********RK_MPI_AO_EnableReSmp*********\n");
-	result = RK_MPI_AO_EnableReSmp(aoDevId, aoChn, (AUDIO_SAMPLE_RATE_E)s32ReSmpSampleRate);
-	if (result != 0) {
-		RK_LOGE("ao enable channel fail, reason = %x, aoChn = %d", result, aoChn);
-		return RK_FAILURE;
+	if(s32ReSmpSampleRate != s32SampleRate){
+		printf("********RK_MPI_AO_EnableReSmp*********\n");
+		result = RK_MPI_AO_EnableReSmp(aoDevId, aoChn, (AUDIO_SAMPLE_RATE_E)s32ReSmpSampleRate);
+		if (result != 0) {
+			RK_LOGE("ao enable channel fail, reason = %x, aoChn = %d", result, aoChn);
+			return RK_FAILURE;
+		}
 	}
 
-	ao_set_other(track_mode, 100);
+	ao_set_other(100);
 
 	return RK_SUCCESS;
 }
 
-static RK_CHAR optstr[] = "?::d:c:r:i:t:m:s:";
+static RK_CHAR optstr[] = "?::d:r:i:t:s:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
-	printf("\t%s -r 16000 -s 44100 -i /tmp/16000_2.pcm\n", name);				//让16000的音频重采样成44100播放,正常情况-r -s 配置成一样的就好
+	printf("\t%s -r 16000 -s 16000 -i /tmp/16000.pcm\n", name);				//正常情况-r -s 配置成一样的就好
 	printf("\t-r: Resample rate, Default:16000\n");
-	printf("\t-s: sample rate, Default:48000\n");
-	printf("\t-c: channel count, Default:2\n");
-	printf("\t-m: track_mode, Default:0\n");									//播放单声道需要设置为10
-	printf("\t-i: input path, Default:\"/tmp/44100_2.pcm\"\n");
+	printf("\t-s: sample rate, Default:16000\n");				
+	printf("\t-i: input path, Default:\"/tmp/16000.pcm\"\n");
 }
 
 int main(int argc, char *argv[]) {
-	RK_S32 u32SampleRate = 48000;				//device samplerate
+	RK_S32 u32SampleRate = 16000;				//device samplerate
 	RK_S32 s32ReSmpSampleRate = 16000;	//input pcm samplerate
-	RK_U32 u32ChnCnt = 2;
 	RK_U32 u32FrameCnt = 1024;
-	RK_CHAR *pInPath = "/tmp/44100_2.pcm";
-	int track_mode=0;
+	RK_CHAR *pInPath = "/tmp/16000.pcm";
 	int c;
 
 	while ((c = getopt(argc, argv, optstr)) != -1) {
@@ -129,14 +123,8 @@ int main(int argc, char *argv[]) {
 		case 's':
 			u32SampleRate = atoi(optarg);
 			break;
-		case 'c':
-			u32ChnCnt = atoi(optarg);
-			break;
 		case 'i':
 			pInPath = optarg;
-			break;
-		case 'm':
-			track_mode = atoi(optarg);
 			break;
 		case '?':
 		default:
@@ -147,9 +135,7 @@ int main(int argc, char *argv[]) {
 
 	printf("#SampleRate: %d\n", u32SampleRate);
 	printf("#s32ReSmpSampleRate: %d\n", s32ReSmpSampleRate);
-	printf("#Channel Count: %d\n", u32ChnCnt);
 	printf("#Frame Count: %d\n", u32FrameCnt);
-	printf("#track_mode: %d\n", track_mode);
 	printf("#Input Path: %s\n", pInPath);
 
 	if (pInPath) {
@@ -163,7 +149,7 @@ int main(int argc, char *argv[]) {
 	signal(SIGINT, sigterm_handler);
 
 	RK_MPI_SYS_Init();
-	test_open_device_ao(u32ChnCnt, s32ReSmpSampleRate, u32SampleRate, u32FrameCnt, track_mode);
+	open_device_ao(s32ReSmpSampleRate, u32SampleRate, u32FrameCnt);
 
 	printf("%s initial finish\n", __func__);
 
@@ -182,7 +168,7 @@ int main(int argc, char *argv[]) {
 		frame.u32Len = srcSize;
 		frame.u64TimeStamp = timeStamp++;
 		frame.enBitWidth = AUDIO_BIT_WIDTH_16;
-		frame.enSoundMode = ((u32ChnCnt == 2) ? AUDIO_SOUND_MODE_STEREO : AUDIO_SOUND_MODE_MONO);
+		frame.enSoundMode = AUDIO_SOUND_MODE_MONO;
 		frame.bBypassMbBlk = RK_FALSE;
 
 		MB_EXT_CONFIG_S extConfig;

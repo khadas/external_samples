@@ -21,22 +21,17 @@ static RK_U32 code_type = RK_AUDIO_ID_ADPCM_G726;
 
 static FILE *adec_file;
 
-RK_S32 ao_set_other(RK_S32 s32SetTrackMode, RK_S32 s32SetVolume)
+RK_S32 ao_set_other(RK_S32 s32SetVolume)
 {
 	printf("\n=======%s=======\n",__func__);
 	int s32DevId = 0;
 	RK_S32 volume = 0;
 
 	RK_MPI_AO_SetVolume(s32DevId, s32SetVolume);
-
 	RK_MPI_AO_GetVolume(s32DevId, &volume);
 	RK_LOGI("test info : get volume = %d", volume);
 
-	if (s32SetTrackMode) {
-		RK_LOGI("test info : set track mode = %d",s32SetTrackMode);
-		RK_MPI_AO_SetTrackMode(s32DevId, (AUDIO_TRACK_MODE_E)s32SetTrackMode);
-		s32SetTrackMode = 0;
-	}
+	RK_MPI_AO_SetTrackMode(s32DevId, AUDIO_TRACK_OUT_STEREO);
 
 	AUDIO_TRACK_MODE_E trackMode;
 	RK_MPI_AO_GetTrackMode(s32DevId, &trackMode);
@@ -46,7 +41,7 @@ RK_S32 ao_set_other(RK_S32 s32SetTrackMode, RK_S32 s32SetVolume)
 }
 
 
-RK_S32 test_open_device_ao(RK_S32 channel, RK_S32 s32SampleRate, RK_S32 u32FrameCnt, RK_S32 track_mode)
+RK_S32 open_device_ao(RK_S32 s32SampleRate, RK_S32 u32FrameCnt)
 {
 	printf("\n=======%s=======\n",__func__);
 	RK_S32 result = 0;
@@ -67,10 +62,10 @@ RK_S32 test_open_device_ao(RK_S32 channel, RK_S32 s32SampleRate, RK_S32 u32Frame
 	aoAttr.enBitwidth = AUDIO_BIT_WIDTH_16;                   //AUDIO_BIT_WIDTH_16
 	aoAttr.enSamplerate = (AUDIO_SAMPLE_RATE_E)s32SampleRate; //16000
 
-	aoAttr.enSoundmode = ((channel == 2) ? AUDIO_SOUND_MODE_STEREO : AUDIO_SOUND_MODE_MONO);
-	aoAttr.u32FrmNum = 4;
+	aoAttr.enSoundmode = AUDIO_SOUND_MODE_MONO;
 	aoAttr.u32PtNumPerFrm = u32FrameCnt;   //1024
-
+	//以下参数没有特殊需要，无需修改
+	aoAttr.u32FrmNum = 4;
 	aoAttr.u32EXFlag = 0;
 	aoAttr.u32ChnCnt = 2;
 
@@ -97,13 +92,13 @@ RK_S32 test_open_device_ao(RK_S32 channel, RK_S32 s32SampleRate, RK_S32 u32Frame
 		return RK_FAILURE;
 	}
 
-	ao_set_other(track_mode, 100);
+	ao_set_other(100);
 
 	return RK_SUCCESS;
 }
 
 
-RK_S32 test_init_mpi_adec(RK_S32 channel, RK_S32 s32SampleRate)
+RK_S32 init_mpi_adec(RK_S32 s32SampleRate)
 {
 	printf("\n=======%s=======\n",__func__);
 	RK_S32 s32ret = 0;
@@ -112,7 +107,7 @@ RK_S32 test_init_mpi_adec(RK_S32 channel, RK_S32 s32SampleRate)
 	memset(&pstChnAttr, 0, sizeof(ADEC_CHN_ATTR_S));
 
 	pstChnAttr.stCodecAttr.enType = (RK_CODEC_ID_E)code_type;
-	pstChnAttr.stCodecAttr.u32Channels = channel;
+	pstChnAttr.stCodecAttr.u32Channels = 1;					//default 1
 	pstChnAttr.stCodecAttr.u32SampleRate = s32SampleRate;
 	pstChnAttr.stCodecAttr.u32BitPerCodedSample = 4;
 
@@ -136,24 +131,20 @@ static RK_S32 adec_data_free(void *opaque) {
 	return 0;
 }
 
-static RK_CHAR optstr[] = "?::d:c:r:i:t:m:";
+static RK_CHAR optstr[] = "?::d:r:i:t:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
-	printf("\t%s -r 8000 -c 1 -m 10 -i /tmp/aenc.g726\n", name);
+	printf("\t%s -r 8000 -t g726 -i /tmp/aenc.g726\n", name);
 	printf("\t-r: sample rate, Default:16000\n");
-	printf("\t-c: channel count, Default:2\n");
-	printf("\t-m: track_mode, Default:0\n");
 	printf("\t-t: --decode: decode type, Default:g726, Value:g711a, g711u, g726\n");
 	printf("\t-i: input path, Default:\"/tmp/aenc.g726\"\n");
 }
 
 int main(int argc, char *argv[]) {
 	RK_S32 u32SampleRate = 16000;
-	RK_U32 u32ChnCnt = 2;
 	RK_U32 u32FrameCnt = 1024;
 	RK_CHAR *pInPath = "/tmp/aenc.g726";
 	RK_CHAR *pCodecName = "g726";
-	int track_mode=0;
 	int ret = 0;
 	int c;
 
@@ -162,14 +153,8 @@ int main(int argc, char *argv[]) {
 		case 'r':
 			u32SampleRate = atoi(optarg);
 			break;
-		case 'c':
-			u32ChnCnt = atoi(optarg);
-			break;
 		case 'i':
 			pInPath = optarg;
-			break;
-			case 'm':
-			track_mode = atoi(optarg);
 			break;
 			case 't':
 				if (!strcmp(optarg, "g711a")) {
@@ -194,9 +179,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	printf("#SampleRate: %d\n", u32SampleRate);
-	printf("#Channel Count: %d\n", u32ChnCnt);
 	printf("#Frame Count: %d\n", u32FrameCnt);
-	printf("#track_mode: %d\n", track_mode);
 	printf("#CodecName:%s\n", pCodecName);
 	printf("#Input Path: %s\n", pInPath);
 
@@ -211,8 +194,8 @@ int main(int argc, char *argv[]) {
 	signal(SIGINT, sigterm_handler);
 
 	RK_MPI_SYS_Init();
-	test_open_device_ao(u32ChnCnt, u32SampleRate, u32FrameCnt, track_mode);
-	test_init_mpi_adec(u32ChnCnt, u32SampleRate);
+	open_device_ao(u32SampleRate, u32FrameCnt);
+	init_mpi_adec(u32SampleRate);
 
 
 	//adec bind ao

@@ -22,7 +22,7 @@ static RK_U32 code_type = RK_AUDIO_ID_ADPCM_G726;
 static FILE *save_file;
 
 //声音质量增强
-RK_S32 test_init_ai_vqe(RK_S32 s32SampleRate) {
+RK_S32 init_ai_vqe(RK_S32 s32SampleRate) {
 	AI_VQE_CONFIG_S stAiVqeConfig, stAiVqeConfig2;
 	RK_S32 result;
 	RK_S32 s32VqeGapMs = 16;
@@ -74,19 +74,15 @@ RK_S32 test_init_ai_vqe(RK_S32 s32SampleRate) {
 	return RK_SUCCESS;
 }
 
-RK_S32 ai_set_other(RK_S32 s32SetTrackMode, RK_S32 s32SetVolume)
+RK_S32 ai_set_other(RK_S32 s32SetVolume)
 {
 	printf("\n=======%s=======\n",__func__);
 	int s32DevId = 0;
 
 	RK_MPI_AI_SetVolume(s32DevId, s32SetVolume);
 
-	if (s32SetTrackMode) {
-		RK_LOGI("test info : set track mode = %d",s32SetTrackMode);
-		RK_MPI_AI_SetTrackMode(s32DevId, (AUDIO_TRACK_MODE_E)s32SetTrackMode);
-		s32SetTrackMode = 0;
-	}
-
+	//左声道，无需修改
+	RK_MPI_AI_SetTrackMode(s32DevId, AUDIO_TRACK_FRONT_LEFT);
 	AUDIO_TRACK_MODE_E trackMode;
 	RK_MPI_AI_GetTrackMode(s32DevId, &trackMode);
 	RK_LOGI("test info : get track mode = %d", trackMode);
@@ -94,7 +90,7 @@ RK_S32 ai_set_other(RK_S32 s32SetTrackMode, RK_S32 s32SetVolume)
 	return 0;
 }
 
-RK_S32 test_open_device_ai(int s32Channel, RK_S32 s32DeviceSampleRate, RK_S32 s32SampleRate ,RK_S32 u32FrameCnt, RK_S32 track_mode)
+RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate ,RK_S32 u32FrameCnt)
 {
 	printf("\n=======%s=======\n",__func__);
 	AIO_ATTR_S aiAttr;
@@ -104,34 +100,34 @@ RK_S32 test_open_device_ai(int s32Channel, RK_S32 s32DeviceSampleRate, RK_S32 s3
 	int aiChn = 0;
 	memset(&aiAttr, 0, sizeof(AIO_ATTR_S));
 
-	RK_BOOL needResample = (s32DeviceSampleRate != s32SampleRate) ? RK_TRUE : RK_FALSE;
+	RK_BOOL needResample = (InputSampleRate != OutputSampleRate) ? RK_TRUE : RK_FALSE;
 
 	sprintf((char *)aiAttr.u8CardName, "%s","hw:0,0");
 
-	//s32DeviceSampleRate和s32SampleRate,s32SampleRate可以使用其他采样率，需要调用重采样函数。默认一样采样率。
+	//s32DeviceSampleRate 和 OutputSampleRate,OutputSampleRate 可以使用其他采样率，需要调用重采样函数。默认一样采样率。
 	aiAttr.soundCard.channels = 2;
-	aiAttr.soundCard.sampleRate = s32DeviceSampleRate;
+	aiAttr.soundCard.sampleRate = InputSampleRate;
 	aiAttr.soundCard.bitWidth = AUDIO_BIT_WIDTH_16;
 	aiAttr.enBitwidth = AUDIO_BIT_WIDTH_16;
-	aiAttr.enSamplerate = (AUDIO_SAMPLE_RATE_E)s32SampleRate;
+	aiAttr.enSamplerate = (AUDIO_SAMPLE_RATE_E)OutputSampleRate;
 
-	aiAttr.enSoundmode = ((s32Channel == 2) ? AUDIO_SOUND_MODE_STEREO : AUDIO_SOUND_MODE_MONO);//AUDIO_SOUND_MODE_STEREO;  //AUDIO_SOUND_MODE_MONO
-	aiAttr.u32FrmNum = 4;
+	aiAttr.enSoundmode = AUDIO_SOUND_MODE_MONO;
 	aiAttr.u32PtNumPerFrm = u32FrameCnt;
-
+	//以下参数无特殊需求，无需变动，保持默认值即可
+	aiAttr.u32FrmNum = 4;
 	aiAttr.u32EXFlag = 0;
 	aiAttr.u32ChnCnt = 2;
 
 	result = RK_MPI_AI_SetPubAttr(aiDevId, &aiAttr);
 	if (result != 0) {
-			RK_LOGE("ai set attr fail, reason = %d", result);
-			goto __FAILED;
+		RK_LOGE("ai set attr fail, reason = %d", result);
+		goto __FAILED;
 	}
 
 	result = RK_MPI_AI_Enable(aiDevId);
 	if (result != 0) {
-			RK_LOGE("ai enable fail, reason = %d", result);
-			goto __FAILED;
+		RK_LOGE("ai enable fail, reason = %d", result);
+		goto __FAILED;
 	}
 
 	memset(&pstParams, 0, sizeof(AI_CHN_PARAM_S));
@@ -139,29 +135,29 @@ RK_S32 test_open_device_ai(int s32Channel, RK_S32 s32DeviceSampleRate, RK_S32 s3
 	pstParams.s32UsrFrmDepth = 1;
 	result = RK_MPI_AI_SetChnParam(aiDevId, aiChn, &pstParams);
 	if (result != RK_SUCCESS) {
-			RK_LOGE("ai set channel params, aiChn = %d", aiChn);
-			return RK_FAILURE;
+		RK_LOGE("ai set channel params, aiChn = %d", aiChn);
+		return RK_FAILURE;
 	}
 
-	//test_init_ai_vqe(s32SampleRate);
+	//init_ai_vqe(OutputSampleRate);
 
 	result =  RK_MPI_AI_EnableChn(aiDevId, aiChn);
 	if (result != 0) {
-			RK_LOGE("ai enable channel fail, aiChn = %d, reason = %x", aiChn, result);
-			return RK_FAILURE;
+		RK_LOGE("ai enable channel fail, aiChn = %d, reason = %x", aiChn, result);
+		return RK_FAILURE;
 	}
 
 
 	if (needResample == RK_TRUE) {
-		RK_LOGI("need to resample %d -> %d", s32DeviceSampleRate, s32SampleRate);
-		result = RK_MPI_AI_EnableReSmp(aiDevId, aiChn, (AUDIO_SAMPLE_RATE_E)s32SampleRate);
+		RK_LOGI("need to resample %d -> %d", InputSampleRate, OutputSampleRate);
+		result = RK_MPI_AI_EnableReSmp(aiDevId, aiChn, (AUDIO_SAMPLE_RATE_E)OutputSampleRate);
 		if (result != 0) {
 			RK_LOGE("ai enable channel fail, reason = %x, aiChn = %d", result,aiChn);
 			return RK_FAILURE;
 		}
 	}
 
-	ai_set_other(track_mode, 100);
+	ai_set_other(100);
 
 	return RK_SUCCESS;
 __FAILED:
@@ -169,8 +165,7 @@ __FAILED:
 
 }
 
-
-RK_S32 test_init_mpi_aenc(int s32Channel, RK_S32 s32SampleRate)
+RK_S32 init_mpi_aenc(RK_S32 s32SampleRate)
 {
 	printf("\n=======%s=======\n",__func__);
 	RK_S32 s32ret = 0;
@@ -182,29 +177,27 @@ RK_S32 test_init_mpi_aenc(int s32Channel, RK_S32 s32SampleRate)
 
 	printf("codecId=%d\n",(int)enCodecId);
 
-	pstChnAttr.stCodecAttr.enType		= enCodecId;
-	pstChnAttr.stCodecAttr.u32Channels	= s32Channel;
-	pstChnAttr.stCodecAttr.u32SampleRate	= s32SampleRate;
-	pstChnAttr.stCodecAttr.enBitwidth	= enBitwidth;
-	pstChnAttr.stCodecAttr.pstResv		= RK_NULL;
+	pstChnAttr.stCodecAttr.enType = enCodecId;
+	pstChnAttr.stCodecAttr.u32Channels = 1;				//default MONO
+	pstChnAttr.stCodecAttr.u32SampleRate = s32SampleRate;
+	pstChnAttr.stCodecAttr.enBitwidth = enBitwidth;
+	pstChnAttr.stCodecAttr.pstResv = RK_NULL;
 
-	pstChnAttr.enType		= enCodecId;
-	pstChnAttr.u32BufCount	= 4;
+	pstChnAttr.enType = enCodecId;
+	pstChnAttr.u32BufCount = 4;
 
 	s32ret = RK_MPI_AENC_CreateChn(0, &pstChnAttr);
 	if (s32ret) {
-			RK_LOGE("create aenc chn %d err:0x%x\n", enCodecId, s32ret);
+		RK_LOGE("create aenc chn %d err:0x%x\n", enCodecId, s32ret);
 	}
 	return s32ret;
 }
 
-static RK_CHAR optstr[] = "?::d:c:r:o:t:m:";
+static RK_CHAR optstr[] = "?::r:o:t:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
-	printf("\t%s [-r 8000] [-c 1] [-m 8] -o /tmp/aenc.g726\n", name);
+	printf("\t%s [-r 8000] [-t g726] -o /tmp/aenc.g726\n", name);
 	printf("\t-r: sample rate, Default:16000\n");
-	printf("\t-c: channel count, Default:2\n");
-	printf("\t-m: track_mode, Default:0\n");
 	printf("\t-t: --encode: encode type, Default:g726, Value:g711a, g711u, g726\n");
 	printf("\t-o: output path, Default:\"/tmp/aenc.g726\"\n");
 }
@@ -213,11 +206,9 @@ static void print_usage(const RK_CHAR *name) {
 // 编码g726的时候，只支持8000 单声道，所以需要设置所以需要设置track_mode为8
 int main(int argc, char *argv[]) {
 	RK_S32 u32SampleRate = 16000;
-	RK_U32 u32ChnCnt = 2;
 	RK_U32 u32FrameCnt = 1024;
 	RK_CHAR *pOutPath = "/tmp/aenc.g726";
 	RK_CHAR *pCodecName = "g726";
-	int track_mode=0;
 	int ret = 0;
 	int c;
 
@@ -226,14 +217,8 @@ int main(int argc, char *argv[]) {
 		case 'r':
 			u32SampleRate = atoi(optarg);
 			break;
-		case 'c':
-			u32ChnCnt = atoi(optarg);
-			break;
 		case 'o':
 			pOutPath = optarg;
-			break;
-			case 'm':
-			track_mode = atoi(optarg);
 			break;
 		case 't':
 			if (!strcmp(optarg, "g711a")) {
@@ -258,9 +243,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	printf("#SampleRate: %d\n", u32SampleRate);
-	printf("#Channel Count: %d\n", u32ChnCnt);
 	printf("#Frame Count: %d\n", u32FrameCnt);
-	printf("#track_mode: %d\n", track_mode);
 	printf("#CodecName:%s\n", pCodecName);
 	printf("#Output Path: %s\n", pOutPath);
 
@@ -276,9 +259,9 @@ int main(int argc, char *argv[]) {
 
 	RK_MPI_SYS_Init();
 
-	test_open_device_ai(u32ChnCnt, u32SampleRate, u32SampleRate, u32FrameCnt, track_mode);
+	open_device_ai(u32SampleRate, u32SampleRate, u32FrameCnt);
 
-	test_init_mpi_aenc(u32ChnCnt, u32SampleRate);
+	init_mpi_aenc(u32SampleRate);
 
 
 	//ai bind aenc
@@ -331,7 +314,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	RK_MPI_SYS_UnBind(&stSrcChn, &stDestChn);
-	RK_MPI_AI_DisableVqe(0, 0);
+	//RK_MPI_AI_DisableVqe(0, 0);
 	RK_MPI_AI_DisableChn(0, 0);
 	RK_MPI_AI_Disable(0);
 	RK_MPI_AENC_DestroyChn(0);
