@@ -16,6 +16,7 @@ extern "C" {
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #include "sample_comm.h"
 
@@ -226,6 +227,32 @@ RK_S32 SAMPLE_COMM_ISP_Run(RK_S32 CamId) {
 	return 0;
 }
 
+RK_S32 SAMPLE_COMM_ISP_SetFrameRate(RK_S32 CamId, RK_U32 uFps) {
+	if (CamId >= MAX_AIQ_CTX || !g_aiq_ctx[CamId]) {
+		printf("%s : CamId is over 3 or not init\n", __FUNCTION__);
+		return -1;
+	}
+	int ret;
+	Uapi_ExpSwAttrV2_t expSwAttr;
+	ret = rk_aiq_user_api2_ae_getExpSwAttr(g_aiq_ctx[CamId], &expSwAttr);
+	if (uFps == 0) {
+		expSwAttr.stAuto.stFrmRate.isFpsFix = false;
+	} else {
+		expSwAttr.stAuto.stFrmRate.isFpsFix = true;
+		expSwAttr.stAuto.stFrmRate.FpsValue = uFps;
+	}
+
+	ret = rk_aiq_user_api2_ae_setExpSwAttr(g_aiq_ctx[CamId], expSwAttr);
+	return ret;
+}
+
+RK_S32 SAMPLE_COMM_ISP_SetMirrorFlip(int CamId, int mirror, int flip) {
+	if (CamId >= MAX_AIQ_CTX || !g_aiq_ctx[CamId]) {
+		printf("%s : CamId is over 3 or not init\n", __FUNCTION__);
+		return -1;
+	}
+	return rk_aiq_uapi2_setMirrorFlip(g_aiq_ctx[CamId], mirror, flip, 4); //skip 4 frame
+}
 #ifdef __cplusplus
 #if __cplusplus
 }

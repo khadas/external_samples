@@ -66,6 +66,8 @@ SAMPLE_COMM_ISP_CamGroup_Init(RK_S32 CamGroupId, rk_aiq_working_mode_t WDRMode,
 RK_S32 SAMPLE_COMM_ISP_Stop(RK_S32 CamId);
 RK_S32 SAMPLE_COMM_ISP_Run(RK_S32 CamId); // isp stop before vi streamoff
 RK_S32 SAMPLE_COMM_ISP_CamGroup_Stop(RK_S32 CamGroupId);
+RK_S32 SAMPLE_COMM_ISP_SetFrameRate(RK_S32 CamId, RK_U32 uFps);
+RK_S32 SAMPLE_COMM_ISP_SetMirrorFlip(int cam_id, int mirror, int flip);
 
 #ifdef __cplusplus
 #if __cplusplus
