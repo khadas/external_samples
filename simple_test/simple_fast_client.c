@@ -22,8 +22,8 @@
 
 #define ENABLE_RKAIQ               1
 #define ENABLE_RTSP                1
-#define ENABLE_SMALL_STREAM      1
-#define ENABLE_CHANGE_RESOLUTION    1
+#define ENABLE_SMALL_STREAM        1
+#define ENABLE_CHANGE_RESOLUTION   1
 
 #define MAP_SIZE (4096UL * 50) //MAP_SIZE = 4 * 50 K
 #define MAP_MASK (MAP_SIZE - 1) //MAP_MASK = 0XFFF
@@ -540,7 +540,7 @@ int main(int argc, char *argv[])
 
 __FAILED:
 #if (ENABLE_RKAIQ)
-    fclose(fd);
+    close(fd);
     munmap(mem, MAP_SIZE_NIGHT);
     munmap(iq_mem, file_size);
     rk_aiq_uapi2_sysctl_stop(aiq_ctx, false);
