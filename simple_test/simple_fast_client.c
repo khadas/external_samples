@@ -124,6 +124,7 @@ static void *GetMediaBuffer0(void *arg) {
                     RK_LOGE("RK_MPI_VENC_GetChnAttr fail %x", s32Ret);
                     goto __FAILED;
                 }
+                usleep(66 * 1000);
                 stAttr.stVencAttr.u32PicWidth = venc_w[index_w_h % index_num];
                 stAttr.stVencAttr.u32PicHeight = venc_h[index_w_h % index_num];
                 stAttr.stVencAttr.u32VirWidth = venc_w[index_w_h % index_num];
@@ -418,6 +419,7 @@ int main(int argc, char *argv[])
 #if (ENABLE_SMALL_STREAM)
     // venc init, if is fast boot, must first init venc.
     test_venc_init(1, 1280, 720, enCodecType);//RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
+    test_venc_init(2, 640, 360, enCodecType);//RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
     klog("venc");
     //vi_dev_init(0, 0);
     vi_chn_init(1, 1280, 720);
@@ -438,13 +440,22 @@ int main(int argc, char *argv[])
     if (s32Ret != RK_SUCCESS) {
         goto __FAILED;
     }
-    klog("bind");
+    klog("bind chn 1");
+
+    stSrcChn.s32ChnId   = 2;
+    stDestChn.s32ChnId  = 2;
+    s32Ret = RK_MPI_SYS_Bind(&stSrcChn, &stDestChn);
+    if (s32Ret != RK_SUCCESS) {
+        goto __FAILED;
+    }
+    klog("bind chn 2");
+
 
     pthread_t main_thread1;
 	pthread_create(&main_thread1, NULL, GetMediaBuffer, 1);
 
     pthread_t main_thread2;
-	pthread_create(&main_thread2, NULL, GetViBuffer, 0X0002);
+	pthread_create(&main_thread2, NULL, GetMediaBuffer, 2);
 #endif
 
 #if (ENABLE_RKAIQ)
