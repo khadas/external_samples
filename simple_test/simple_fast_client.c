@@ -226,6 +226,7 @@ static void *GetViBuffer(void *arg) {
     VIDEO_FRAME_INFO_S stFrame;
     int chn = (int)arg;
     int piple = ((int)arg >> 16);
+    void *pVirAddr;
 
     while (!quit) {
         s32Ret = RK_MPI_VI_GetChnFrame(piple, chn, &stFrame, 1000);
@@ -234,6 +235,7 @@ static void *GetViBuffer(void *arg) {
                 printf("piple: %d, chn:%d, loopCount:%d vi->seq:%d pts=%lld\n", piple, chn, loopCount,
                     stFrame.stVFrame.u32TimeRef, stFrame.stVFrame.u64PTS);
             loopCount++;
+            pVirAddr = RK_MPI_MB_Handle2VirAddr(stFrame.stVFrame.pMbBlk);
             s32Ret = RK_MPI_VI_ReleaseChnFrame(piple, chn, &stFrame);
         }
         if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt)) {
@@ -242,6 +244,40 @@ static void *GetViBuffer(void *arg) {
         }
     }
     return NULL;
+}
+
+static RK_S32 test_jpeg_init(int chnId, int width, int height, RK_CODEC_ID_E enType)
+{
+    VENC_CHN_ATTR_S stJpegChnAttr;
+    VENC_JPEG_PARAM_S stJpegParam;
+    VENC_RECV_PIC_PARAM_S stRecvParam;
+    // memset(&stJpegChnAttr,0,sizeof(VENC_JPEG_PARAM_S));
+
+    stJpegChnAttr.stVencAttr.enType = enType;
+    stJpegChnAttr.stVencAttr.enPixelFormat = RK_FMT_YUV420SP;
+    stJpegChnAttr.stVencAttr.u32PicWidth = width;
+    stJpegChnAttr.stVencAttr.u32PicHeight = height;
+    stJpegChnAttr.stVencAttr.u32VirWidth = width;
+    stJpegChnAttr.stVencAttr.u32VirHeight = height;
+    stJpegChnAttr.stVencAttr.u32StreamBufCnt = 1;
+    stJpegChnAttr.stVencAttr.u32BufSize = width * height / 8;
+
+    stJpegChnAttr.stRcAttr.enRcMode = VENC_RC_MODE_MJPEGCBR;
+    stJpegChnAttr.stRcAttr.stMjpegCbr.u32BitRate = 64;
+    stJpegChnAttr.stRcAttr.stMjpegCbr.fr32DstFrameRateDen = 1;
+    stJpegChnAttr.stRcAttr.stMjpegCbr.fr32DstFrameRateNum = 1;
+    stJpegChnAttr.stRcAttr.stMjpegCbr.u32SrcFrameRateDen = 1;
+    stJpegChnAttr.stRcAttr.stMjpegCbr.u32SrcFrameRateNum = 1;
+    //stJpegChnAttr.stVencAttr.u32Depth = 1;
+    RK_MPI_VENC_CreateChn(chnId, &stJpegChnAttr);
+    stJpegParam.u32Qfactor = 75;
+    RK_MPI_VENC_SetJpegParam(chnId, &stJpegParam);
+
+    memset(&stRecvParam, 0, sizeof(VENC_RECV_PIC_PARAM_S));
+    stRecvParam.s32RecvPicNum = -1;
+    RK_MPI_VENC_StartRecvFrame(chnId, &stRecvParam);
+
+    return 0;
 }
 
 static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enType)
@@ -333,7 +369,7 @@ int vi_dev_init(int devId , int pipeId) {
 
 int vi_chn_init(int channelId, int width, int height) {
     int ret;
-    int buf_cnt = 1;
+    int buf_cnt = 3;
 
     // VI init
     VI_CHN_ATTR_S vi_chn_attr;
@@ -419,8 +455,9 @@ int main(int argc, char *argv[])
 #if (ENABLE_SMALL_STREAM)
     // venc init, if is fast boot, must first init venc.
     test_venc_init(1, 1280, 720, enCodecType);//RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
-    test_venc_init(2, 640, 360, enCodecType);//RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
-    klog("venc");
+    klog("venc chn1");
+    test_jpeg_init(2, 640, 360, RK_VIDEO_ID_MJPEG);//RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
+    klog("venc chn2");
     //vi_dev_init(0, 0);
     vi_chn_init(1, 1280, 720);
     klog("vi ch1");
@@ -452,10 +489,11 @@ int main(int argc, char *argv[])
 
 
     pthread_t main_thread1;
-	pthread_create(&main_thread1, NULL, GetMediaBuffer, 1);
-
+    pthread_create(&main_thread1, NULL, GetMediaBuffer, 1);
     pthread_t main_thread2;
-	pthread_create(&main_thread2, NULL, GetMediaBuffer, 2);
+    pthread_create(&main_thread2, NULL, GetViBuffer, 2);
+    pthread_t main_thread3;
+    pthread_create(&main_thread3, NULL, GetMediaBuffer, 2);
 #endif
 
 #if (ENABLE_RKAIQ)
@@ -531,16 +569,19 @@ int main(int argc, char *argv[])
 #if (ENABLE_SMALL_STREAM)
     pthread_join(main_thread1, RK_NULL);
     pthread_join(main_thread2, RK_NULL);
+    pthread_join(main_thread3, RK_NULL);
     s32Ret |= RK_MPI_SYS_UnBind(&stSrcChn, &stDestChn);
     s32Ret |= RK_MPI_VI_DisableChn(0, 1);
     s32Ret |= RK_MPI_VI_DisableChn(0, 2);
 
     s32Ret |= RK_MPI_VENC_StopRecvFrame(1);
+    s32Ret |= RK_MPI_VENC_StopRecvFrame(2);
     if (s32Ret != RK_SUCCESS) {
         return s32Ret;
     }
 
     s32Ret = RK_MPI_VENC_DestroyChn(1);
+    s32Ret = RK_MPI_VENC_DestroyChn(2);
     s32Ret = RK_MPI_VI_DisableDev(0);
 #endif
 
