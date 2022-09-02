@@ -329,9 +329,7 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
     return 0;
 }
 
-//demo板dev默认都是0，根据不同的channel 来选择不同的vi节点
 int vi_dev_init(int devId , int pipeId) {
-    //printf("%s\n", __func__);
     int ret = 0;
     VI_DEV_ATTR_S stDevAttr;
     VI_DEV_BIND_PIPE_S stBindPipe;
@@ -369,7 +367,7 @@ int vi_dev_init(int devId , int pipeId) {
 
 int vi_chn_init(int channelId, int width, int height) {
     int ret;
-    int buf_cnt = 3;
+    int buf_cnt = 2;
 
     // VI init
     VI_CHN_ATTR_S vi_chn_attr;
