@@ -124,7 +124,6 @@ static void *GetMediaBuffer0(void *arg) {
                     RK_LOGE("RK_MPI_VENC_GetChnAttr fail %x", s32Ret);
                     goto __FAILED;
                 }
-                usleep(66 * 1000);
                 stAttr.stVencAttr.u32PicWidth = venc_w[index_w_h % index_num];
                 stAttr.stVencAttr.u32PicHeight = venc_h[index_w_h % index_num];
                 stAttr.stVencAttr.u32VirWidth = venc_w[index_w_h % index_num];
@@ -134,7 +133,7 @@ static void *GetMediaBuffer0(void *arg) {
                     RK_LOGE("RK_MPI_VENC_SetChnAttr fail %x", s32Ret);
                     goto __FAILED;
                 }
-
+                usleep(80 * 1000);
                 stChnAttr.stIspOpt.stMaxSize.u32Width = venc_w[0];
                 stChnAttr.stIspOpt.stMaxSize.u32Height = venc_h[0];
                 stChnAttr.stSize.u32Width  = venc_w[index_w_h % index_num];
@@ -165,7 +164,16 @@ static void *GetMediaBuffer0(void *arg) {
                     printf("rtsp create session fail");
                     goto __FAILED;
                 }
-                rtsp_set_video(g_rtsp_session, RTSP_CODEC_ID_VIDEO_H264, NULL, 0);
+                VENC_CHN_ATTR_S stAttr;
+                s32Ret = RK_MPI_VENC_GetChnAttr(0, &stAttr);
+                if (s32Ret != RK_SUCCESS) {
+                    RK_LOGE("RK_MPI_VENC_GetChnAttr fail %x", s32Ret);
+                    goto __FAILED;
+                }
+                if (stAttr.stVencAttr.enType == RK_VIDEO_ID_AVC)
+                    rtsp_set_video(g_rtsp_session, RTSP_CODEC_ID_VIDEO_H264, NULL, 0);
+                else if (stAttr.stVencAttr.enType == RK_VIDEO_ID_HEVC)
+                    rtsp_set_video(g_rtsp_session, RTSP_CODEC_ID_VIDEO_H265, NULL, 0);
                 rtsp_sync_video_ts(g_rtsp_session, rtsp_get_reltime(), rtsp_get_ntptime());
             }
 #endif
@@ -367,7 +375,7 @@ int vi_dev_init(int devId , int pipeId) {
 
 int vi_chn_init(int channelId, int width, int height) {
     int ret;
-    int buf_cnt = 2;
+    int buf_cnt = 4;
 
     // VI init
     VI_CHN_ATTR_S vi_chn_attr;
@@ -429,7 +437,6 @@ int main(int argc, char *argv[])
     RK_U32 u32Height = 1080;
     RK_CHAR *pOutPath = NULL;
     RK_CODEC_ID_E enCodecType = RK_VIDEO_ID_AVC;
-    RK_CHAR *pCodecName = "H264";
     RK_S32 s32chnlId = 0;
 
     g_s32FrameCnt = RUN_TOTAL_CNT_MAX;

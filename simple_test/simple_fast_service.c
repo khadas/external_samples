@@ -332,7 +332,7 @@ int main(int argc, char *argv[])
     }
 
     g_bWrap = true;
-    g_u32WrapLine = u32Height / 8; // 360   // 1080
+    g_u32WrapLine = u32Height / 4; // 360   // 1080
     g_s32FrameCnt = 20;
     g_sEntityName = "/dev/video11";
 
