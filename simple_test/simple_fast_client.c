@@ -23,7 +23,7 @@
 #define ENABLE_RKAIQ               1
 #define ENABLE_RTSP                1
 #define ENABLE_SMALL_STREAM        1
-#define ENABLE_CHANGE_RESOLUTION   1
+#define ENABLE_CHANGE_RESOLUTION   0
 
 #define MAP_SIZE (4096UL * 50) //MAP_SIZE = 4 * 50 K
 #define MAP_MASK (MAP_SIZE - 1) //MAP_MASK = 0XFFF
@@ -375,7 +375,7 @@ int vi_dev_init(int devId , int pipeId) {
 
 int vi_chn_init(int channelId, int width, int height) {
     int ret;
-    int buf_cnt = 4;
+    int buf_cnt = 1;
 
     // VI init
     VI_CHN_ATTR_S vi_chn_attr;
