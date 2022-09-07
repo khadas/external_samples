@@ -1,6 +1,5 @@
 # Rockchip sample Makefile
 
-T_FAST_BOOT = simple_fast_service
 T_FAST_BOOT = simple_fast_client
 
 
@@ -31,13 +30,6 @@ simple_ai: simple_ai.c
 
 simple_ao: simple_ao.c
 	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
-
-simple_fast_service: simple_fast_service.c
-	@$(SAMPLE_CC) $^ -o $@ -O2 -mthumb -mthumb-interwork $(SAMPLE_CFLAGS) $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic \
-	-lrockit_tiny -lrockchip_mpp \
-	-Wl,-Bdynamic \
-	-L$(SAMPLE_OUT_DIR)/ -lrkaiq -lstdc++ -lm
-
 
 simple_fast_client: simple_fast_client.c
 	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(SIMPLE_FAST_CLIENT_LD_FLAGS)
