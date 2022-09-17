@@ -10,6 +10,7 @@
 #include "rtsp_demo.h"
 
 static RK_S32 g_s32FrameCnt = -1;
+static RK_U32 g_u32Bitrate = 10 * 1024;
 static bool quit = false;
 
 rtsp_demo_handle g_rtsplive = NULL;
@@ -80,7 +81,7 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
 	memset(&stAttr,0,sizeof(VENC_CHN_ATTR_S));
 
 	stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H264CBR;
-	stAttr.stRcAttr.stH264Cbr.u32BitRate = 10 * 1024;
+	stAttr.stRcAttr.stH264Cbr.u32BitRate = g_u32Bitrate;
 	stAttr.stRcAttr.stH264Cbr.u32Gop = 60;
 
 	stAttr.stVencAttr.enType = enType;
@@ -103,7 +104,6 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
 	return 0;
 }
 
-//demo板dev默认都是0，根据不同的channel 来选择不同的vi节点
 int vi_dev_init() {
 	printf("%s\n", __func__);
 	int ret = 0;
@@ -173,15 +173,16 @@ int vi_chn_init(int channelId, int width, int height) {
 	return ret;
 }
 
-static RK_CHAR optstr[] = "?::w:h:c:I:e:";
+static RK_CHAR optstr[] = "?::w:h:c:I:e:b:";
 static void print_usage(const RK_CHAR *name) {
-	printf("usage example:\n");
+	printf("Usage example:\n");
 	printf("\t%s -I 0 -w 1920 -h 1080 (rtsp://ip/live/0)\n", name);
 	printf("\t-w | --width: VI width, Default:1920\n");
 	printf("\t-h | --heght: VI height, Default:1080\n");
 	printf("\t-c | --frame_cnt: frame number of output, Default:150\n");
 	printf("\t-I | --camid: camera ctx id, Default 0. 0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
 	printf("\t-e | --encode: encode type, Default:h264, Value:h264, h265\n");
+	printf("\t-b | --bitrate: set bitrate (Kbps), Default: 10Mbps\n");
 }
 
 int main(int argc, char *argv[])
@@ -220,6 +221,9 @@ int main(int argc, char *argv[])
 				printf("ERROR: Invalid encoder type.\n");
 				return 0;
 			}
+			break;
+		case 'b':
+			g_u32Bitrate = atoi(optarg);
 			break;
 		case '?':
 		default:
