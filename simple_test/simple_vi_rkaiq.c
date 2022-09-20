@@ -147,7 +147,7 @@ int vi_chn_init(int channelId, int width, int height) {
 	return ret;
 }
 
-static RK_CHAR optstr[] = "?::a::w:h:c:I:o:m:";
+static RK_CHAR optstr[] = "?::a::w:h:c:I:o:m:d:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s -I 0 -w 1920 -h 1080 -o 1\n", name);
@@ -156,7 +156,8 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-h | --heght: VI height, Default:1080\n");
 	printf("\t-c | --frame_cnt: frame number of output, Default:-1\n");
 	printf("\t-I | --camid: camera ctx id, Default 0. 0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
-	printf("\t-m | --hdr_mode: Default:0, 0:normal,1:hdr2\n");
+	printf("\t-d | --hdr_mode: Default:0, 0:normal,1:hdr2\n");
+	printf("\t-m | --multiple sensor: Default:0 \n");
 	printf("\t-o: output path, Default:0  0 or 1 /data/test_0.yuv\n");
 }
 
@@ -171,6 +172,7 @@ int main(int argc, char *argv[])
 	char *iq_dir = NULL;
 	VI_SAVE_FILE_INFO_S stDebugFile;
 	int hdr = 0;
+	int multi_sensor = RK_FALSE;
 
 	while ((c = getopt(argc, argv, optstr)) != -1) {
 		switch (c) {
@@ -195,8 +197,11 @@ int main(int argc, char *argv[])
 		case 'o':
 			savefile = atoi(optarg);
 			break;
-		case 'm':
+		case 'd':
 			hdr = atoi(optarg);
+			break;
+		case 'm':
+			multi_sensor = atoi(optarg);
 			break;
 		case '?':
 		default:
@@ -212,7 +217,7 @@ int main(int argc, char *argv[])
     if (hdr == 1)
         hdr_mode = RK_AIQ_WORKING_MODE_ISP_HDR2;
     //int fps = 30;
-    SAMPLE_COMM_ISP_Init(0, hdr_mode, RK_TRUE, iq_dir);
+    SAMPLE_COMM_ISP_Init(0, hdr_mode, multi_sensor, iq_dir);
     SAMPLE_COMM_ISP_Run(0);
     //SAMPLE_COMM_ISP_SetFrameRate(0, fps);
 #endif
