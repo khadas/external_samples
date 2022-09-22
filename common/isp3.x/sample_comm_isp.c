@@ -253,6 +253,15 @@ RK_S32 SAMPLE_COMM_ISP_SetMirrorFlip(int CamId, int mirror, int flip) {
 	}
 	return rk_aiq_uapi2_setMirrorFlip(g_aiq_ctx[CamId], mirror, flip, 4); //skip 4 frame
 }
+
+RK_S32 SAMPLE_comm_ISP_SWITCH_SCENE(int CamId, const char* main_scene, const char* sub_scene) {
+	if (CamId >= MAX_AIQ_CTX || !g_aiq_ctx[CamId]) {
+		printf("%s : CamId is over 3 or not init\n", __FUNCTION__);
+		return -1;
+	}
+	return rk_aiq_uapi2_sysctl_switch_scene(g_aiq_ctx[CamId], main_scene, sub_scene);
+}
+
 #ifdef __cplusplus
 #if __cplusplus
 }
