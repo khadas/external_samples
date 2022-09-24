@@ -405,13 +405,44 @@ int vi_chn_init(int channelId, int width, int height) {
     return ret;
 }
 
+static int read_cmdline_to_buf(void *buf, int len)
+{
+    int fd;
+    int ret;
+    if(buf == NULL || len < 0){
+        printf("%s: illegal para\n", __func__);
+        return -1;
+    }
+    memset(buf, 0, len);
+    fd = open("/proc/cmdline", O_RDONLY);
+    if(fd < 0){
+        perror("open:");
+        return -1;
+    }
+    ret = read(fd, buf, len);
+    close(fd);
+    return ret;
+}
+
 long get_cmd_val(const char *string, int len) {
     char *addr;
-    long value;
+    long value = 0;
+    char key_equal[16];
+    static char cmdline[1024];
+    static char cmd_init = 0;
 
-    addr = getenv(string);
-    value = strtol(addr, NULL, len);
-    printf("get %s value: 0x%0x\n", string, value);
+    if (cmd_init == 0) {
+        cmd_init = 1;
+        memset(cmdline, 0, sizeof(cmdline));
+        read_cmdline_to_buf(cmdline, sizeof(cmdline));
+    }
+
+    snprintf(key_equal, sizeof(key_equal), "%s=", string);
+    addr = strstr(cmdline, string);
+    if (addr) {
+        value = strtol(addr + strlen(string) + 1, NULL, len);
+        printf("get %s value: 0x%0lx\n", string, value);
+    }
     return value;
 }
 
@@ -507,7 +538,9 @@ int main(int argc, char *argv[])
     off_t bw_night_addr, addr_iq;
 
     RK_S64 s64AiqInitStart = TEST_COMM_GetNowUs();
-    rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
+
+    int cam_hdr = (int)get_cmd_val("rk_cam_hdr", 0);
+    rk_aiq_working_mode_t hdr_mode = (cam_hdr == 5) ? RK_AIQ_WORKING_MODE_ISP_HDR2 : RK_AIQ_WORKING_MODE_NORMAL;
 
     bw_night_addr = (off_t)get_cmd_val("bw_night_addr", 16);
     if((fd = open ("/dev/mem", O_RDWR | O_SYNC)) < 0)
@@ -556,6 +589,8 @@ int main(int argc, char *argv[])
         printf("%s: failed to init aiq\n", aiq_static_info.sensor_info.sensor_name);
     }
 
+    if (hdr_mode == RK_AIQ_WORKING_MODE_ISP_HDR2)
+        klog("aiq in hdr mode");
     if (rk_aiq_uapi2_sysctl_prepare(aiq_ctx, 0, 0, hdr_mode)) {
         printf("rkaiq engine prepare failed !\n");
         return -1;
