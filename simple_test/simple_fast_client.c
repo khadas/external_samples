@@ -185,10 +185,12 @@ static void *GetMediaBuffer0(void *arg) {
             errCnt++;
         }
 
+#if 0
         if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt)) {
             quit = true;
             break;
         }
+#endif
     }
 
 __FAILED:
