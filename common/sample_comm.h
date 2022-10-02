@@ -153,6 +153,7 @@ typedef struct _rkMpiVENCCtx {
 	MB_POOL pool;
 	RK_CHAR *srcFilePath;
 	RK_CHAR *dstFilePath;
+	RK_U32 enable_buf_share;
 } SAMPLE_VENC_CTX_S;
 
 typedef struct _rkMpiAENCCtx {

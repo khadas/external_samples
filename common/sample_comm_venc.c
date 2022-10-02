@@ -138,6 +138,15 @@ RK_S32 SAMPLE_COMM_VENC_CreateChn(SAMPLE_VENC_CTX_S *ctx) {
 		RK_LOGE("RK_MPI_VENC_CreateChn failed %x", s32Ret);
 		return s32Ret;
 	}
+	if (ctx->enable_buf_share) {
+		VENC_CHN_REF_BUF_SHARE_S stVencChnRefBufShare;
+		memset(&stVencChnRefBufShare, 0, sizeof(VENC_CHN_REF_BUF_SHARE_S));
+		stVencChnRefBufShare.bEnable = 1;
+		s32Ret = RK_MPI_VENC_SetChnRefBufShareAttr(ctx->s32ChnId, &stVencChnRefBufShare);
+		if (s32Ret != RK_SUCCESS) {
+			printf("RK_MPI_VENC_SetChnRefBufShareAttr failed,ret=%#x\n", s32Ret);
+		}
+	}
 
 	if (ctx->bWrapIfEnable) {
 		memset(&stVencChnBufWrap, 0, sizeof(stVencChnBufWrap));

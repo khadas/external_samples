@@ -80,6 +80,9 @@ simple_vi_venc_combo: simple_vi_venc_combo.c
 simple_vi_eptz_test: simple_vi_eptz_test.c
 	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
 
+simple_dual_camera: simple_dual_camera.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS) -DROCKIVA -lrockiva -lrknnmrt -I$(RK_MEDIA_OUTPUT)/include/rockiva
+
 install:
 	@mv -f $(OBJECTS) $(SAMPLE_OUT_DIR)/bin
 

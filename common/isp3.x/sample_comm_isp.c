@@ -125,7 +125,7 @@ RK_S32 SAMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL
 
 	printf("ID: %d, sensor_name is %s, iqfiles is %s\n", CamId,
 	       aiq_static_info.sensor_info.sensor_name, iq_file_dir);
-
+	rk_aiq_uapi2_sysctl_preInit_devBufCnt(aiq_static_info.sensor_info.sensor_name, "rkraw_rx", 2);
 	aiq_ctx =
 	    rk_aiq_uapi2_sysctl_init(aiq_static_info.sensor_info.sensor_name, iq_file_dir,
 	                             SAMPLE_COMM_ISP_ErrCb, SAMPLE_COMM_ISP_SofCb);
