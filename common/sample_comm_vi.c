@@ -116,6 +116,7 @@ RK_S32 SAMPLE_COMM_VI_GetChnFrame(SAMPLE_VI_CTX_S *ctx, void **pdata) {
 		        ctx->stChnStatus.u32VbFail);
 	} else {
 		RK_LOGE("RK_MPI_VI_GetChnFrame DevId %d timeout %x", ctx->s32DevId, s32Ret);
+		return RK_FAILURE;
 	}
 
 	return RK_SUCCESS;
