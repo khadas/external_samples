@@ -270,7 +270,7 @@ static RK_S32 test_jpeg_init(int chnId, int width, int height, RK_CODEC_ID_E enT
     stJpegChnAttr.stVencAttr.u32VirWidth = width;
     stJpegChnAttr.stVencAttr.u32VirHeight = height;
     stJpegChnAttr.stVencAttr.u32StreamBufCnt = 1;
-    stJpegChnAttr.stVencAttr.u32BufSize = width * height / 8;
+    stJpegChnAttr.stVencAttr.u32BufSize = width * height;
 
     stJpegChnAttr.stRcAttr.enRcMode = VENC_RC_MODE_MJPEGCBR;
     stJpegChnAttr.stRcAttr.stMjpegCbr.u32BitRate = 64;
