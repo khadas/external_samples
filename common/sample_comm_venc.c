@@ -31,6 +31,9 @@ extern "C" {
 RK_S32 SAMPLE_COMM_VENC_CreateChn(SAMPLE_VENC_CTX_S *ctx) {
 	RK_S32 s32Ret = RK_FAILURE;
 	VENC_RECV_PIC_PARAM_S stRecvParam;
+	VENC_RC_PARAM_S pstRcParam;
+	VENC_CHN_BUF_WRAP_S stVencChnBufWrap;
+	VENC_CHN_REF_BUF_SHARE_S stVencChnRefBufShare;
 
 	switch (ctx->enCodecType) {
 	case RK_CODEC_TYPE_H265:
@@ -103,16 +106,69 @@ RK_S32 SAMPLE_COMM_VENC_CreateChn(SAMPLE_VENC_CTX_S *ctx) {
 	}
 
 	ctx->stChnAttr.stVencAttr.enPixelFormat = RK_FMT_YUV420SP;
+	ctx->stChnAttr.stVencAttr.u32MaxPicWidth = ctx->u32Width;
+	ctx->stChnAttr.stVencAttr.u32MaxPicHeight = ctx->u32Height;
 	ctx->stChnAttr.stVencAttr.u32PicWidth = ctx->u32Width;
 	ctx->stChnAttr.stVencAttr.u32PicHeight = ctx->u32Height;
-	ctx->stChnAttr.stVencAttr.u32VirWidth = ctx->u32Width;
-	ctx->stChnAttr.stVencAttr.u32VirHeight = ctx->u32Height;
+	ctx->stChnAttr.stVencAttr.u32VirWidth = RK_ALIGN_2(ctx->u32Width);
+	ctx->stChnAttr.stVencAttr.u32VirHeight = RK_ALIGN_2(ctx->u32Height);
 	ctx->stChnAttr.stVencAttr.u32StreamBufCnt = 5;
 	ctx->stChnAttr.stVencAttr.u32BufSize = ctx->u32Width * ctx->u32Height * 3 / 2;
 
 	s32Ret = RK_MPI_VENC_CreateChn(ctx->s32ChnId, &ctx->stChnAttr);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_VENC_CreateChn failed %x", s32Ret);
+		return s32Ret;
+	}
+
+	if (ctx->bWrapIfEnable) {
+		memset(&stVencChnBufWrap, 0, sizeof(stVencChnBufWrap));
+		stVencChnBufWrap.bEnable = RK_TRUE;
+		stVencChnBufWrap.u32BufLine = ctx->u32BufferLine;
+
+		memset(&stVencChnRefBufShare, 0, sizeof(VENC_CHN_REF_BUF_SHARE_S));
+		stVencChnRefBufShare.bEnable = RK_TRUE;
+
+		s32Ret = RK_MPI_VENC_SetChnBufWrapAttr(ctx->s32ChnId, &stVencChnBufWrap);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VENC_SetChnBufWrapAttr failure:%X", s32Ret);
+			return RK_FAILURE;
+		}
+		RK_MPI_VENC_SetChnRefBufShareAttr(ctx->s32ChnId, &stVencChnRefBufShare);
+	}
+
+	memset(&pstRcParam, 0, sizeof(VENC_RC_PARAM_S));
+	if (ctx->enCodecType == RK_CODEC_TYPE_H264) {
+		pstRcParam.stParamH264.u32MinQp = 10;
+		pstRcParam.stParamH264.u32MaxQp = 51;
+		pstRcParam.stParamH264.u32MinIQp = 10;
+		pstRcParam.stParamH264.u32MaxIQp = 51;
+		pstRcParam.stParamH264.u32FrmMinQp = 28;
+		pstRcParam.stParamH264.u32FrmMinIQp = 28;
+	} else if (ctx->enCodecType == RK_CODEC_TYPE_H265) {
+		pstRcParam.stParamH265.u32MinQp = 10;
+		pstRcParam.stParamH265.u32MaxQp = 51;
+		pstRcParam.stParamH265.u32MinIQp = 10;
+		pstRcParam.stParamH265.u32MaxIQp = 51;
+		pstRcParam.stParamH265.u32FrmMinQp = 28;
+		pstRcParam.stParamH265.u32FrmMinIQp = 28;
+	}
+	s32Ret = RK_MPI_VENC_SetRcParam(ctx->s32ChnId, &pstRcParam);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("RK_MPI_VENC_SetRcParam failed %X", s32Ret);
+		return s32Ret;
+	}
+
+	/* ifenable Svc */
+	s32Ret = RK_MPI_VENC_EnableSvc(ctx->s32ChnId, ctx->bSvcIfEnable);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("RK_MPI_VENC_EnableSvc failed %X", s32Ret);
+		return s32Ret;
+	}
+	/* ifenable Motion Deblur */
+	s32Ret = RK_MPI_VENC_EnableMotionDeblur(ctx->s32ChnId, ctx->bMotionDeblurIfEnable);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("RK_MPI_VENC_EnableSvc failed %X", s32Ret);
 		return s32Ret;
 	}
 

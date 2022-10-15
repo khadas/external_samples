@@ -30,6 +30,7 @@ extern "C" {
 
 RK_S32 SAMPLE_COMM_VI_CreateChn(SAMPLE_VI_CTX_S *ctx) {
 	RK_S32 s32Ret = RK_FAILURE;
+	VI_CHN_BUF_WRAP_S stViWrap;
 
 	// 0.get dev config status
 	s32Ret = RK_MPI_VI_GetDevAttr(ctx->s32DevId, &ctx->stDevAttr);
@@ -72,6 +73,22 @@ RK_S32 SAMPLE_COMM_VI_CreateChn(SAMPLE_VI_CTX_S *ctx) {
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_VI_SetChnAttr failed with %#x!\n", s32Ret);
 		goto __FAILED2;
+	}
+
+	if (ctx->bWrapIfEnable) {
+		memset(&stViWrap, 0, sizeof(VI_CHN_BUF_WRAP_S));
+		if (ctx->u32BufferLine < 128 || ctx->u32BufferLine > ctx->u32Height) {
+			RK_LOGE("wrap mode buffer line must between [128, %d]", ctx->u32Height);
+			return RK_FAILURE;
+		}
+		stViWrap.bEnable = RK_TRUE;
+		stViWrap.u32BufLine = ctx->u32BufferLine;
+		stViWrap.u32WrapBufferSize = stViWrap.u32BufLine * ctx->u32Width * 3 / 2;
+		s32Ret = RK_MPI_VI_SetChnWrapBufAttr(ctx->u32PipeId, ctx->s32ChnId, &stViWrap);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VI_SetChnWrapBufAttr failure:%X", s32Ret);
+			return RK_FAILURE;
+		}
 	}
 
 	// 3.enable channel

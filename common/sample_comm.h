@@ -32,6 +32,7 @@ extern "C" {
 #include "rk_mpi_ao.h"
 #include "rk_mpi_avs.h"
 #include "rk_mpi_cal.h"
+#include "rk_mpi_ivs.h"
 #include "rk_mpi_mb.h"
 #include "rk_mpi_rgn.h"
 #include "rk_mpi_sys.h"
@@ -41,13 +42,15 @@ extern "C" {
 #include "rk_mpi_vi.h"
 #include "rk_mpi_vo.h"
 #include "rk_mpi_vpss.h"
-#include "rk_mpi_ivs.h"
 #include "sample_comm_isp.h"
 
 /*******************************************************
     macro define
 *******************************************************/
 #define RKAIQ
+#define RK_ALIGN(x, a) (((x) + (a)-1) & ~((a)-1))
+#define RK_ALIGN_2(x) RK_ALIGN(x, 2)
+#define RK_ALIGN_32(x) RK_ALIGN(x, 32)
 typedef void *(*Thread_Func)(void *param);
 
 /*******************************************************
@@ -90,6 +93,8 @@ typedef struct _rkMpiAOCtx {
 } SAMPLE_AO_CTX_S;
 
 typedef struct _rkMpiVICtx {
+	RK_BOOL bWrapIfEnable;
+	RK_U32 u32BufferLine;
 	RK_U32 u32Width;
 	RK_U32 u32Height;
 	RK_S32 s32loopCount;
@@ -117,6 +122,10 @@ typedef struct _rkMpiVOCtx {
 } SAMPLE_VO_CTX_S;
 
 typedef struct _rkMpiVENCCtx {
+	RK_BOOL bSvcIfEnable;
+	RK_BOOL bMotionDeblurIfEnable;
+	RK_BOOL bWrapIfEnable;
+	RK_U32 u32BufferLine;
 	RK_U32 u32Width;
 	RK_U32 u32Height;
 	RK_U32 u32Fps;
