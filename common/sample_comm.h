@@ -50,6 +50,7 @@ extern "C" {
 #define RKAIQ
 #define RK_ALIGN(x, a) (((x) + (a)-1) & ~((a)-1))
 #define RK_ALIGN_2(x) RK_ALIGN(x, 2)
+#define RK_ALIGN_16(x) RK_ALIGN(x, 16)
 #define RK_ALIGN_32(x) RK_ALIGN(x, 32)
 typedef void *(*Thread_Func)(void *param);
 

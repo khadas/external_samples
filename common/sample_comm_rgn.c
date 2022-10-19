@@ -89,9 +89,9 @@ RK_S32 SAMPLE_COMM_RGN_CreateChn(SAMPLE_RGN_CTX_S *ctx) {
 		ctx->stRgnChnAttr.enType = OVERLAY_RGN;
 		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.stPoint.s32X = ctx->stRegion.s32X;
 		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.stPoint.s32Y = ctx->stRegion.s32Y;
-		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.u32BgAlpha = 128;
-		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.u32FgAlpha = 128;
-		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.u32Layer = 0;
+		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.u32BgAlpha = ctx->u32BgAlpha;
+		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.u32FgAlpha = ctx->u32FgAlpha;
+		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.u32Layer = ctx->u32Layer;
 	} break;
 	case COVER_RGN: {
 		ctx->stRgnAttr.enType = COVER_RGN;
@@ -101,8 +101,19 @@ RK_S32 SAMPLE_COMM_RGN_CreateChn(SAMPLE_RGN_CTX_S *ctx) {
 		ctx->stRgnChnAttr.unChnAttr.stCoverChn.stRect.s32Y = ctx->stRegion.s32Y;
 		ctx->stRgnChnAttr.unChnAttr.stCoverChn.stRect.u32Width = ctx->stRegion.u32Width;
 		ctx->stRgnChnAttr.unChnAttr.stCoverChn.stRect.u32Height = ctx->stRegion.u32Height;
-		ctx->stRgnChnAttr.unChnAttr.stCoverChn.u32Color = 0xffffff;
-		ctx->stRgnChnAttr.unChnAttr.stCoverChn.u32Layer = 0;
+		ctx->stRgnChnAttr.unChnAttr.stCoverChn.u32Color = ctx->u32Color;
+		ctx->stRgnChnAttr.unChnAttr.stCoverChn.u32Layer = ctx->u32Layer;
+	} break;
+	case MOSAIC_RGN: {
+		ctx->stRgnAttr.enType = MOSAIC_RGN;
+		ctx->stRgnChnAttr.bShow = RK_TRUE;
+		ctx->stRgnChnAttr.enType = MOSAIC_RGN;
+		ctx->stRgnChnAttr.unChnAttr.stCoverChn.stRect.s32X = ctx->stRegion.s32X;
+		ctx->stRgnChnAttr.unChnAttr.stCoverChn.stRect.s32Y = ctx->stRegion.s32Y;
+		ctx->stRgnChnAttr.unChnAttr.stCoverChn.stRect.u32Width = ctx->stRegion.u32Width;
+		ctx->stRgnChnAttr.unChnAttr.stCoverChn.stRect.u32Height = ctx->stRegion.u32Height;
+		ctx->stRgnChnAttr.unChnAttr.stMosaicChn.enBlkSize = MOSAIC_BLK_SIZE_8;
+		ctx->stRgnChnAttr.unChnAttr.stCoverChn.u32Layer = ctx->u32Layer;
 	} break;
 	default:
 		RK_LOGE("unsupport type %d.", ctx->stRgnAttr.enType);
@@ -182,6 +193,16 @@ RK_S32 SAMPLE_COMM_RGN_CreateChn(SAMPLE_RGN_CTX_S *ctx) {
 		        ctx->stRgnChnAttr.unChnAttr.stCoverChn.stRect.u32Width,
 		        ctx->stRgnChnAttr.unChnAttr.stCoverChn.stRect.u32Height,
 		        ctx->stRgnChnAttr.unChnAttr.stCoverChn.u32Color);
+	} break;
+	case MOSAIC_RGN: {
+		ctx->stRgnChnAttr.bShow = RK_TRUE;
+		ctx->stRgnChnAttr.enType = MOSAIC_RGN;
+		ctx->stRgnChnAttr.unChnAttr.stCoverChn.stRect.s32X = ctx->stRegion.s32X;
+		ctx->stRgnChnAttr.unChnAttr.stCoverChn.stRect.s32Y = ctx->stRegion.s32Y;
+		ctx->stRgnChnAttr.unChnAttr.stCoverChn.stRect.u32Width = ctx->stRegion.u32Width;
+		ctx->stRgnChnAttr.unChnAttr.stCoverChn.stRect.u32Height = ctx->stRegion.u32Height;
+		ctx->stRgnChnAttr.unChnAttr.stMosaicChn.enBlkSize = MOSAIC_BLK_SIZE_8;
+		ctx->stRgnChnAttr.unChnAttr.stCoverChn.u32Layer = ctx->u32Layer;
 	} break;
 	default:
 		RK_LOGE("unsupport type %d.", ctx->stRgnAttr.enType);
