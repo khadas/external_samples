@@ -173,12 +173,13 @@ int vi_chn_init(int channelId, int width, int height) {
 	return ret;
 }
 
-static RK_CHAR optstr[] = "?::w:h:c:I:e:b:";
+static RK_CHAR optstr[] = "?::a::w:h:c:I:e:b:";
 static void print_usage(const RK_CHAR *name) {
 	printf("Usage example:\n");
 	printf("\t%s -I 0 -w 1920 -h 1080 (rtsp://ip/live/0)\n", name);
 	printf("\t-w | --width: VI width, Default:1920\n");
 	printf("\t-h | --heght: VI height, Default:1080\n");
+	printf("\t-a | --aiq: iq file path, Default:/etc/iqfiles\n");
 	printf("\t-c | --frame_cnt: frame number of output, Default:150\n");
 	printf("\t-I | --camid: camera ctx id, Default 0. 0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
 	printf("\t-e | --encode: encode type, Default:h264, Value:h264, h265\n");
@@ -194,10 +195,15 @@ int main(int argc, char *argv[])
 	RK_CODEC_ID_E enCodecType = RK_VIDEO_ID_AVC;
 	RK_CHAR *pCodecName = "H264";
 	RK_S32 s32chnlId = 0;
+	char *iq_dir = "/etc/iqfiles";
 	int c;
 
 	while ((c = getopt(argc, argv, optstr)) != -1) {
 		switch (c) {
+		case 'a':
+			if(optarg)
+				iq_dir = optarg;
+			break;
 		case 'w':
 			u32Width = atoi(optarg);
 			break;
@@ -238,6 +244,15 @@ int main(int argc, char *argv[])
 	printf("#Frame Count to save: %d\n", g_s32FrameCnt);
 
 	signal(SIGINT, sigterm_handler);
+
+	if (iq_dir) {
+#ifdef RKAIQ
+		printf("ISP IQ file path: %s\n\n", iq_dir);
+		SAMPLE_COMM_ISP_Init(0, RK_AIQ_WORKING_MODE_NORMAL, 0, iq_dir);
+		SAMPLE_COMM_ISP_Run(0);
+		//SAMPLE_COMM_ISP_SetFrameRate(0, fps);
+#endif
+	}
 
 	// init rtsp
 	g_rtsplive = create_rtsp_demo(554);
@@ -313,6 +328,10 @@ int main(int argc, char *argv[])
 __FAILED:
 	RK_LOGE("test running exit:%d", s32Ret);
 	RK_MPI_SYS_Exit();
+
+#ifdef RKAIQ
+	SAMPLE_COMM_ISP_Stop(0);
+#endif
 
 	return 0;
 }
