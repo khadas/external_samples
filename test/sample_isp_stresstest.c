@@ -39,6 +39,7 @@ extern "C" {
 #include "sample_comm.h"
 
 #define BUFFER_SIZE 255
+#define LDCH_MAX_CORRECT_LEVEL 255
 #define MODULE_TEST_DELAY_SECOND_TIME 3 //(unit: second)
 
 typedef struct _rkModeTest {
@@ -123,7 +124,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-l | --loop_count : loop count, Default: -1\n");
 	printf("\t-f | --fps : isp output fps, Default: -1\n");
 	printf("\t-m | --mode_test_type : test type, 0:none, 1:P/N switch test, 2:HDR switch "
-	       "test, 3:frame rate switch test. Default: 0\n");
+	       "test, 3:frame rate switch test, 4: LDCH mode test. Default: 0\n");
 	printf("\t--pixel_format : camera Format, Value:nv12,nv16,yuyv,uyvy,afbc. Default: "
 	       "nv12\n");
 	printf("\t--hdr_mode : set camera hdr mode, 0: normal, 1: HDR2. Default: "
@@ -346,6 +347,47 @@ static void frameRate_switch_test(RK_U32 test_loop) {
 	return;
 }
 
+static void ldch_mode_test(RK_U32 test_loop) {
+	RK_BOOL bIfLDCHEnable = RK_FALSE;
+	RK_S32 s32Ret = RK_FAILURE;
+	RK_U32 u32LdchLevel = 0;
+	RK_U32 test_count = 0;
+
+	while (!gModeTest->bModuleTestThreadQuit) {
+
+		s32Ret =
+		    SAMPLE_COMM_ISP_SetLDCH(gModeTest->s32CamId, u32LdchLevel, bIfLDCHEnable);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("SAMPLE_COMM_ISP_SetLDCH failure");
+			program_handle_error(__func__, __LINE__);
+			break;
+		}
+
+		if (bIfLDCHEnable) {
+			u32LdchLevel++;
+			if (u32LdchLevel > LDCH_MAX_CORRECT_LEVEL) {
+				u32LdchLevel = 0;
+			}
+		}
+		bIfLDCHEnable = !bIfLDCHEnable;
+		wait_module_test_switch_success();
+		test_count++;
+
+		RK_LOGE("-----------------LDCH state: %d(0:close 1:open)  level:%d",
+		        bIfLDCHEnable, u32LdchLevel);
+		RK_LOGE("-----------------------------LDCH switch success total:%d now count:%d",
+		        test_loop, test_count);
+		if (test_loop > 0 && test_count >= test_loop) {
+			RK_LOGE("--------------LDCH switch success test end total:%d", test_loop);
+			gModeTest->bModuleTestIfopen = RK_FALSE;
+			program_normal_exit(__func__, __LINE__);
+			break;
+		}
+	}
+	RK_LOGE("ldch_mode_test exit");
+	return;
+}
+
 static void *sample_isp_stress_test(void *pArgs) {
 
 	prctl(PR_SET_NAME, "isp_stress_test");
@@ -360,6 +402,9 @@ static void *sample_isp_stress_test(void *pArgs) {
 		break;
 	case 3:
 		frameRate_switch_test(gModeTest->u32ModuleTestLoop);
+		break;
+	case 4:
+		ldch_mode_test(gModeTest->u32ModuleTestLoop);
 		break;
 	default:
 		RK_LOGE("mode test type:%d is unsupported", gModeTest->s32ModuleTestType);

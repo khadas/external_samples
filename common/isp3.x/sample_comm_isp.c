@@ -16,7 +16,6 @@ extern "C" {
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-#include <stdbool.h>
 
 #include "sample_comm.h"
 
@@ -84,28 +83,24 @@ typedef enum rk_HDR_MODE_E {
 static atomic_int g_sof_cnt = 0;
 static atomic_bool g_should_quit = false;
 
-static XCamReturn SAMPLE_COMM_ISP_SofCb(rk_aiq_metas_t* meta) {
-    g_sof_cnt++;
-    if (g_sof_cnt <= 2)
-        printf("=== %u ===\n", meta->frame_id);
-    return XCAM_RETURN_NO_ERROR;
+static XCamReturn SAMPLE_COMM_ISP_SofCb(rk_aiq_metas_t *meta) {
+	g_sof_cnt++;
+	if (g_sof_cnt <= 2)
+		printf("=== %u ===\n", meta->frame_id);
+	return XCAM_RETURN_NO_ERROR;
 }
 
-RK_S32 SAMPLE_COMM_ISP_GetSofCnt(void) {
-    return g_sof_cnt;
+RK_S32 SAMPLE_COMM_ISP_GetSofCnt(void) { return g_sof_cnt; }
+
+static XCamReturn SAMPLE_COMM_ISP_ErrCb(rk_aiq_err_msg_t *msg) {
+	if (msg->err_code == XCAM_RETURN_BYPASS)
+		g_should_quit = true;
 }
 
-static XCamReturn SAMPLE_COMM_ISP_ErrCb(rk_aiq_err_msg_t* msg) {
-    if (msg->err_code == XCAM_RETURN_BYPASS)
-        g_should_quit = true;
-}
-
-RK_BOOL SAMPLE_COMM_ISP_ShouldQuit() {
-    return g_should_quit;
-}
+RK_BOOL SAMPLE_COMM_ISP_ShouldQuit() { return g_should_quit; }
 
 RK_S32 SAMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL MultiCam,
-							const char *iq_file_dir) {
+                            const char *iq_file_dir) {
 	if (CamId >= MAX_AIQ_CTX) {
 		printf("%s : CamId is over 3\n", __FUNCTION__);
 		return -1;
@@ -129,10 +124,11 @@ RK_S32 SAMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL
 	rk_aiq_uapi2_sysctl_enumStaticMetas(CamId, &aiq_static_info);
 
 	printf("ID: %d, sensor_name is %s, iqfiles is %s\n", CamId,
-			aiq_static_info.sensor_info.sensor_name, iq_file_dir);
+	       aiq_static_info.sensor_info.sensor_name, iq_file_dir);
 
-	aiq_ctx = rk_aiq_uapi2_sysctl_init(aiq_static_info.sensor_info.sensor_name,
-									iq_file_dir, SAMPLE_COMM_ISP_ErrCb, SAMPLE_COMM_ISP_SofCb);
+	aiq_ctx =
+	    rk_aiq_uapi2_sysctl_init(aiq_static_info.sensor_info.sensor_name, iq_file_dir,
+	                             SAMPLE_COMM_ISP_ErrCb, SAMPLE_COMM_ISP_SofCb);
 
 	if (MultiCam)
 		rk_aiq_uapi2_sysctl_setMulCamConc(aiq_ctx, true);
@@ -182,7 +178,8 @@ RK_S32 SAMPLE_COMM_ISP_CamGroup_Init(RK_S32 CamGroupId, rk_aiq_working_mode_t WD
 
 RK_S32 SAMPLE_COMM_ISP_Stop(RK_S32 CamId) {
 	if (CamId >= MAX_AIQ_CTX || !g_aiq_ctx[CamId]) {
-		printf("%s : CamId is over 3 or not init g_aiq_ctx[%d] = %p\n", __FUNCTION__, CamId, g_aiq_ctx[CamId]);
+		printf("%s : CamId is over 3 or not init g_aiq_ctx[%d] = %p\n", __FUNCTION__,
+		       CamId, g_aiq_ctx[CamId]);
 		return -1;
 	}
 	printf("rk_aiq_uapi2_sysctl_stop enter\n");
@@ -251,15 +248,40 @@ RK_S32 SAMPLE_COMM_ISP_SetMirrorFlip(int CamId, int mirror, int flip) {
 		printf("%s : CamId is over 3 or not init\n", __FUNCTION__);
 		return -1;
 	}
-	return rk_aiq_uapi2_setMirrorFlip(g_aiq_ctx[CamId], mirror, flip, 4); //skip 4 frame
+	return rk_aiq_uapi2_setMirrorFlip(g_aiq_ctx[CamId], mirror, flip, 4); // skip 4 frame
 }
 
-RK_S32 SAMPLE_comm_ISP_SWITCH_SCENE(int CamId, const char* main_scene, const char* sub_scene) {
+RK_S32 SAMPLE_comm_ISP_SWITCH_SCENE(int CamId, const char *main_scene,
+                                    const char *sub_scene) {
 	if (CamId >= MAX_AIQ_CTX || !g_aiq_ctx[CamId]) {
 		printf("%s : CamId is over 3 or not init\n", __FUNCTION__);
 		return -1;
 	}
 	return rk_aiq_uapi2_sysctl_switch_scene(g_aiq_ctx[CamId], main_scene, sub_scene);
+}
+
+RK_S32 SAMPLE_COMM_ISP_SetLDCH(RK_U32 CamId, RK_U32 u32Level, RK_BOOL bIfEnable) {
+	RK_S32 s32Ret = RK_FAILURE;
+	rk_aiq_ldch_v21_attrib_t ldchAttr;
+	memset(&ldchAttr, 0, sizeof(rk_aiq_ldch_v21_attrib_t));
+	if (CamId >= MAX_AIQ_CTX || !g_aiq_ctx[CamId]) {
+		printf("%s : CamId is over %d or not init\n", __FUNCTION__, MAX_AIQ_CTX);
+		return RK_FAILURE;
+	}
+	s32Ret = rk_aiq_user_api2_aldch_v21_GetAttrib(g_aiq_ctx[CamId], &ldchAttr);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("rk_aiq_user_api2_aldch_v21_GetAttrib FAILURE:%X", s32Ret);
+		return s32Ret;
+	}
+	ldchAttr.en = bIfEnable;
+	ldchAttr.correct_level = u32Level;
+	s32Ret = rk_aiq_user_api2_aldch_v21_SetAttrib(g_aiq_ctx[CamId], &ldchAttr);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("rk_aiq_user_api2_aldch_v21_SetAttrib FAILURE:%X", s32Ret);
+		return s32Ret;
+	}
+
+	return RK_SUCCESS;
 }
 
 #ifdef __cplusplus
