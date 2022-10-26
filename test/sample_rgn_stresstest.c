@@ -849,7 +849,7 @@ __FAILED2:
 	global_param_deinit();
 
 __PARAM_INIT_FAILED:
-	return 0;
+	return g_exit_result;
 }
 
 #ifdef __cplusplus
