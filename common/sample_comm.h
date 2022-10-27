@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Rockchip Electronics Co. LTD
+ * Copyright 2022 Rockchip Electronics Co. LTD
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,11 @@ extern "C" {
 #include "rk_mpi_vi.h"
 #include "rk_mpi_vo.h"
 #include "rk_mpi_vpss.h"
+#include "rockiva/rockiva_ba_api.h"
+#include "rockiva/rockiva_common.h"
+#include "rockiva/rockiva_det_api.h"
+#include "rockiva/rockiva_face_api.h"
+#include "rockiva/rockiva_image.h"
 #include "sample_comm_isp.h"
 
 /*******************************************************
@@ -126,12 +131,17 @@ typedef struct _rkMpiVENCCtx {
 	RK_BOOL bSvcIfEnable;
 	RK_BOOL bMotionDeblurIfEnable;
 	RK_BOOL bWrapIfEnable;
+	RK_BOOL bComboIfEnable;
 	RK_U32 u32BufferLine;
 	RK_U32 u32Width;
 	RK_U32 u32Height;
 	RK_U32 u32Fps;
 	RK_U32 u32Gop;
 	RK_U32 u32BitRate;
+	RK_U32 u32Qfactor;
+	RK_U32 u32ComboChnId;
+	RK_U32 u32StreamBufCnt;
+	RK_U32 u32BuffSize;
 	RK_S32 s32loopCount;
 	CODEC_TYPE_E enCodecType;
 	VENC_RC_MODE_E enRcMode;
@@ -200,6 +210,48 @@ typedef struct _rkMpiAVSCtx {
 	RK_CHAR *dstFilePath;
 } SAMPLE_AVS_CTX_S;
 
+typedef struct _rkMpiTDECtx {
+	RK_U32 u32ChnId;
+	RK_U32 u32TdeWidth;
+	RK_U32 u32TdeHeight;
+	RK_U32 u32SrcWidth;
+	RK_U32 u32SrcHeight;
+	PIXEL_FORMAT_E enSrcPixelFormat;
+	COMPRESS_MODE_E enSrcCompMode;
+	RK_U32 u32buffersize;
+	RK_U32 u32BufferPoolCnt;
+	TDE_HANDLE hHandle;
+	TDE_SURFACE_S pstSrc;
+	TDE_RECT_S pstSrcRect;
+	TDE_SURFACE_S pstDst;
+	TDE_RECT_S pstDstRect;
+	MB_POOL tde_frame_pool;
+	VIDEO_FRAME_INFO_S stVideoFrames;
+} SAMPLE_TDE_CTX_S;
+
+typedef struct _rkMpiIvsCtx {
+	RK_S32 s32ChnId;
+	IVS_CHN_ATTR_S stIvsAttr;
+} SAMPLE_IVS_CTX_S;
+
+typedef struct _rkMpiIvaCtx {
+	RK_U32 u32ImageWidth;
+	RK_U32 u32ImageHeight;
+	RK_U32 u32DetectStartX;
+	RK_U32 u32DetectStartY;
+	RK_U32 u32DetectWidth;
+	RK_U32 u32DetectHight;
+	RK_U32 u32IvaDetectFrameRate;
+	RockIvaHandle ivahandle;
+	RockIvaImageTransform eImageTransform;
+	RockIvaImageFormat eImageFormat;
+	RockIvaObjectType eModeType;
+	RockIvaBaTaskParams baParams;
+	RockIvaFaceTaskParams faceParams;
+	RockIvaInitParam commonParams;
+	ROCKIVA_BA_ResultCallback resultCallback;
+} SAMPLE_IVA_CTX_S;
+
 /*******************************************************
     function announce
 *******************************************************/
@@ -245,6 +297,20 @@ RK_S32 SAMPLE_COMM_RGN_DestroyChn(SAMPLE_RGN_CTX_S *ctx);
 
 RK_S32 SAMPLE_COMM_Bind(const MPP_CHN_S *pstSrcChn, const MPP_CHN_S *pstDestChn);
 RK_S32 SAMPLE_COMM_UnBind(const MPP_CHN_S *pstSrcChn, const MPP_CHN_S *pstDestChn);
+
+RK_S32 SAMPLE_COMM_GetBmpResolution(RK_CHAR *pBmpFile, RK_U32 *width, RK_U32 *height);
+
+RK_S32 SAMPLE_COMM_IVA_Create(SAMPLE_IVA_CTX_S *ctx);
+RK_S32 SAMPLE_COMM_IVA_Destroy(SAMPLE_IVA_CTX_S *ctx);
+
+RK_S32 SAMPLE_COMM_IVS_Create(SAMPLE_IVS_CTX_S *ctx);
+RK_S32 SAMPLE_COMM_IVS_Destroy(RK_S32 s32IvsChnid);
+
+RK_S32 SAMPLE_COMM_TDE_Create(SAMPLE_TDE_CTX_S *ctx);
+RK_S32 SAMPLE_COMM_TDE_Handle(SAMPLE_TDE_CTX_S *ctx, VIDEO_FRAME_S *pStVFrame);
+RK_S32 SAMPLE_COMM_TDE_GetMB(SAMPLE_TDE_CTX_S *ctx);
+RK_S32 SAMPLE_COMM_TDE_ReleaseMB(SAMPLE_TDE_CTX_S *ctx);
+RK_S32 SAMPLE_COMM_TDE_Destroy(SAMPLE_TDE_CTX_S *ctx);
 
 #ifdef __cplusplus
 #if __cplusplus

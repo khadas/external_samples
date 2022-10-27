@@ -59,7 +59,7 @@ RK_S32 SAMPLE_COMM_VENC_CreateChn(SAMPLE_VENC_CTX_S *ctx) {
 		}
 		break;
 	case RK_CODEC_TYPE_MJPEG:
-		ctx->stChnAttr.stVencAttr.enType = RK_VIDEO_ID_MPEG4;
+		ctx->stChnAttr.stVencAttr.enType = RK_VIDEO_ID_MJPEG;
 		if (ctx->enRcMode == VENC_RC_MODE_MJPEGCBR) {
 			ctx->stChnAttr.stRcAttr.enRcMode = VENC_RC_MODE_MJPEGCBR;
 			// frame rate: in u32Fps/1, out u32Fps/1.
@@ -79,6 +79,14 @@ RK_S32 SAMPLE_COMM_VENC_CreateChn(SAMPLE_VENC_CTX_S *ctx) {
 			ctx->stChnAttr.stRcAttr.stMjpegVbr.u32BitRate =
 			    ctx->u32Width * ctx->u32Height * 8;
 		}
+		break;
+	case RK_CODEC_TYPE_JPEG:
+		RK_LOGE("RK_CODEC_TYPE_JPEG setting");
+		ctx->stChnAttr.stRcAttr.enRcMode = VENC_RC_MODE_MJPEGCBR;
+		ctx->stChnAttr.stVencAttr.enType = RK_VIDEO_ID_JPEG;
+		ctx->stChnAttr.stVencAttr.stAttrJpege.bSupportDCF = RK_FALSE;
+		ctx->stChnAttr.stVencAttr.stAttrJpege.stMPFCfg.u8LargeThumbNailNum = 0;
+		ctx->stChnAttr.stVencAttr.stAttrJpege.enReceiveMode = VENC_PIC_RECEIVE_SINGLE;
 		break;
 	case RK_CODEC_TYPE_H264:
 	default:
@@ -112,8 +120,18 @@ RK_S32 SAMPLE_COMM_VENC_CreateChn(SAMPLE_VENC_CTX_S *ctx) {
 	ctx->stChnAttr.stVencAttr.u32PicHeight = ctx->u32Height;
 	ctx->stChnAttr.stVencAttr.u32VirWidth = RK_ALIGN_2(ctx->u32Width);
 	ctx->stChnAttr.stVencAttr.u32VirHeight = RK_ALIGN_2(ctx->u32Height);
-	ctx->stChnAttr.stVencAttr.u32StreamBufCnt = 5;
-	ctx->stChnAttr.stVencAttr.u32BufSize = ctx->u32Width * ctx->u32Height * 3 / 2;
+	if (ctx->u32StreamBufCnt) {
+		ctx->stChnAttr.stVencAttr.u32StreamBufCnt = ctx->u32StreamBufCnt;
+	} else {
+		ctx->stChnAttr.stVencAttr.u32StreamBufCnt = 3;
+	}
+	RK_LOGE("V_C:%d bufferCnt:%d", ctx->s32ChnId,
+	        ctx->stChnAttr.stVencAttr.u32StreamBufCnt);
+	if (ctx->u32BuffSize) {
+		ctx->stChnAttr.stVencAttr.u32BufSize = ctx->u32BuffSize;
+	} else {
+		ctx->stChnAttr.stVencAttr.u32BufSize = ctx->u32Width * ctx->u32Height * 3 / 2;
+	}
 
 	s32Ret = RK_MPI_VENC_CreateChn(ctx->s32ChnId, &ctx->stChnAttr);
 	if (s32Ret != RK_SUCCESS) {
@@ -177,6 +195,33 @@ RK_S32 SAMPLE_COMM_VENC_CreateChn(SAMPLE_VENC_CTX_S *ctx) {
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("create %d ch venc failed", ctx->s32ChnId);
 		return s32Ret;
+	}
+
+	if (ctx->stChnAttr.stVencAttr.enType == RK_VIDEO_ID_JPEG) {
+		VENC_JPEG_PARAM_S stJpegParam;
+		memset(&stJpegParam, 0, sizeof(VENC_JPEG_PARAM_S));
+		stJpegParam.u32Qfactor = ctx->u32Qfactor;
+		s32Ret = RK_MPI_VENC_SetJpegParam(ctx->s32ChnId, &stJpegParam);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VENC_SetJpegParam failure:%X", s32Ret);
+			return s32Ret;
+		}
+	} else if (ctx->stChnAttr.stVencAttr.enType == RK_VIDEO_ID_MJPEG) {
+		VENC_MJPEG_PARAM_S stMjpegParam;
+		memset(&stMjpegParam, 0, sizeof(stMjpegParam));
+		memset(&stMjpegParam.u8YQt, 1, sizeof(stMjpegParam.u8YQt));
+		memset(&stMjpegParam.u8CbQt, 1, sizeof(stMjpegParam.u8CbQt));
+		memset(&stMjpegParam.u8CrQt, 1, sizeof(stMjpegParam.u8CrQt));
+		stMjpegParam.u32MCUPerECS = 100;
+		RK_MPI_VENC_SetMjpegParam(ctx->s32ChnId, &stMjpegParam);
+	}
+
+	if (ctx->bComboIfEnable) {
+		VENC_COMBO_ATTR_S stComboAttr;
+		memset(&stComboAttr, 0, sizeof(VENC_COMBO_ATTR_S));
+		stComboAttr.bEnable = RK_TRUE;
+		stComboAttr.s32ChnId = ctx->u32ComboChnId;
+		RK_MPI_VENC_SetComboAttr(ctx->s32ChnId, &stComboAttr);
 	}
 
 	if (ctx->getStreamCbFunc) {

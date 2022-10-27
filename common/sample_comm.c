@@ -95,6 +95,44 @@ RK_S32 SAMPLE_COMM_UnBind(const MPP_CHN_S *pstSrcChn, const MPP_CHN_S *pstDestCh
 	return RK_SUCCESS;
 }
 
+RK_S32 SAMPLE_COMM_GetBmpResolution(RK_CHAR *pBmpFile, RK_U32 *width, RK_U32 *height) {
+
+	FILE *fp = RK_NULL;
+	RK_U16 bfType;
+	OSD_BITMAPINFO pBmpInfo;
+
+	if (pBmpFile == RK_NULL) {
+		RK_LOGE("bmp file not exist");
+		return RK_FAILURE;
+	}
+
+	fp = fopen(pBmpFile, "rb");
+	if (fp == RK_NULL) {
+		RK_LOGE("open file:%s failure", pBmpFile);
+		return RK_FAILURE;
+	}
+
+	(void)fread(&bfType, 1, sizeof(bfType), fp);
+	if (bfType != 0x4d42) {
+		RK_LOGE("is not bmp file");
+		fclose(fp);
+		return RK_FAILURE;
+	}
+	fseek(fp, sizeof(OSD_BITMAPFILEHEADER), SEEK_CUR);
+	(void)fread(&pBmpInfo, 1, sizeof(OSD_BITMAPINFO), fp);
+
+	*width = pBmpInfo.bmiHeader.biWidth;
+	*height = pBmpInfo.bmiHeader.biHeight;
+	RK_LOGE("SAMPLE_GET_bmpResolution w:%d  h:%d", *width, *height);
+
+	if (fp) {
+		fclose(fp);
+		fp = RK_NULL;
+	}
+
+	return RK_SUCCESS;
+}
+
 #ifdef __cplusplus
 #if __cplusplus
 }

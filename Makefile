@@ -81,7 +81,7 @@ LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic -lpthread -lr
 LD_FLAGS += -L$(CURRENT_DIR)/lib/$(RK_MEDIA_CROSS) -Wl,-Bstatic -lrtsp -Wl,-Bdynamic -Wl,--gc-sections -Wl,--as-needed
 else
 LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib  -lrockit -lrockchip_mpp -lrkaiq -lpthread -lm -ldl
-LD_FLAGS += -L$(CURRENT_DIR)/lib/$(RK_MEDIA_CROSS) -lrtsp
+LD_FLAGS += -L$(CURRENT_DIR)/lib/$(RK_MEDIA_CROSS) -lrtsp -lrockiva
 endif
 
 ifeq ($(RK_MEDIA_CHIP), rv1126)
@@ -108,7 +108,7 @@ export LD_FLAGS
 all: $(PKG_TARGET)
 	@echo "build $(PKG_NAME) done";
 
-sample-build: libasound librkaiq librockit COMM_LIB
+sample-build: libasound librkaiq librockit librockiva COMM_LIB
 	@mkdir -p $(SAMPLE_OUT_DIR)/bin
 	@make -C $(CURRENT_DIR)/audio;
 	@make -C $(CURRENT_DIR)/audio install;
@@ -124,6 +124,8 @@ endif
 	@make -C $(CURRENT_DIR)/venc install;
 	@make -C $(CURRENT_DIR)/test;
 	@make -C $(CURRENT_DIR)/test install;
+	@make -C $(CURRENT_DIR)/demo;
+	@make -C $(CURRENT_DIR)/demo install;
 	$(call MAROC_COPY_PKG_TO_MEDIA_OUTPUT, $(RK_MEDIA_OUTPUT), $(PKG_BIN))
 
 COMM_LIB:
@@ -138,6 +140,9 @@ librkaiq:
 librockit:
 	@test ! -d $(RK_MEDIA_TOP_DIR)/rockit || make -C $(RK_MEDIA_TOP_DIR)/rockit
 
+librockiva:
+	@test ! -d $(RK_MEDIA_TOP_DIR)/iva || make -C $(RK_MEDIA_TOP_DIR)/iva
+
 clean:
 	@make -C $(CURRENT_DIR)/common clean
 	@make -C $(CURRENT_DIR)/audio clean
@@ -146,6 +151,7 @@ clean:
 	@make -C $(CURRENT_DIR)/venc clean
 	@make -C $(CURRENT_DIR)/simple_test clean
 	@make -C $(CURRENT_DIR)/test clean
+	@make -C $(CURRENT_DIR)/demo clean
 	@rm -rf $(SAMPLE_OUT_DIR)
 
 help:
