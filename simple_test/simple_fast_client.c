@@ -535,25 +535,25 @@ int main(int argc, char *argv[])
 #endif
 
 #if (ENABLE_RKAIQ)
-    int is_bw_night, file_size, fd, ret = 0;
+    int rk_color_mode, file_size, fd, ret = 0;
     void *mem, *vir_addr, *iq_mem, *vir_iqaddr;
-    off_t bw_night_addr, addr_iq;
+    off_t rk_color_mode_addr, addr_iq;
 
     RK_S64 s64AiqInitStart = TEST_COMM_GetNowUs();
 
     int cam_hdr = (int)get_cmd_val("rk_cam_hdr", 0);
     rk_aiq_working_mode_t hdr_mode = (cam_hdr == 5) ? RK_AIQ_WORKING_MODE_ISP_HDR2 : RK_AIQ_WORKING_MODE_NORMAL;
 
-    bw_night_addr = (off_t)get_cmd_val("bw_night_addr", 16);
+    rk_color_mode_addr = (off_t)get_cmd_val("rk_color_mode", 16);
     if((fd = open ("/dev/mem", O_RDWR | O_SYNC)) < 0)
     {
         perror ("open error");
         return -1;
     }
 
-    mem = mmap (0 , MAP_SIZE_NIGHT, PROT_READ | PROT_WRITE, MAP_SHARED, fd, bw_night_addr & ~MAP_MASK_NIGHT);
-    vir_addr = mem + (bw_night_addr & MAP_MASK_NIGHT);
-    is_bw_night = *((unsigned long *) vir_addr);
+    mem = mmap (0 , MAP_SIZE_NIGHT, PROT_READ | PROT_WRITE, MAP_SHARED, fd, rk_color_mode_addr & ~MAP_MASK_NIGHT);
+    vir_addr = mem + (rk_color_mode_addr & MAP_MASK_NIGHT);
+    rk_color_mode = *((unsigned long *) vir_addr);
 
     addr_iq = (off_t)get_cmd_val("rk_iqbin_addr", 16);
     file_size = (int)get_cmd_val("rk_iqbin_size", 16);
@@ -564,7 +564,7 @@ int main(int argc, char *argv[])
     rk_aiq_static_info_t aiq_static_info;
     rk_aiq_uapi2_sysctl_enumStaticMetas(s32chnlId, &aiq_static_info);
 
-    if (is_bw_night) {
+    if (rk_color_mode) {
         printf("=====night mode=====\n");
         ret = rk_aiq_uapi2_sysctl_preInit_scene(aiq_static_info.sensor_info.sensor_name, "normal", "night");
         if (ret < 0) {
@@ -580,7 +580,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    ret = rk_aiq_uapi2_sysctl_preInit_iq_addr(aiq_static_info.sensor_info.sensor_name, vir_iqaddr, (size_t *)file_size);
+    ret = rk_aiq_uapi2_sysctl_preInit_iq_addr(aiq_static_info.sensor_info.sensor_name, vir_iqaddr, file_size);
     if (ret < 0) {
         printf("%s: failed to load binary iqfiles\n", aiq_static_info.sensor_info.sensor_name);
     }
@@ -635,9 +635,9 @@ int main(int argc, char *argv[])
 
 __FAILED:
 #if (ENABLE_RKAIQ)
-    close(fd);
-    munmap(mem, MAP_SIZE_NIGHT);
-    munmap(iq_mem, file_size);
+    if (fd > 0) close(fd);
+    if (mem != MAP_FAILED) munmap(mem, MAP_SIZE_NIGHT);
+    if (iq_mem != MAP_FAILED) munmap(iq_mem, file_size);
 
     rk_aiq_uapi2_sysctl_stop(aiq_ctx, false);
     rk_aiq_uapi2_sysctl_deinit(aiq_ctx);
