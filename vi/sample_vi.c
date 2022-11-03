@@ -25,7 +25,6 @@ extern "C" {
 #include <fcntl.h>
 #include <getopt.h>
 #include <pthread.h>
-#include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -37,7 +36,9 @@ extern "C" {
 
 #include "sample_comm.h"
 
-typedef struct _rkMpiCtx { SAMPLE_VI_CTX_S vi; } SAMPLE_MPI_CTX_S;
+typedef struct _rkMpiCtx {
+	SAMPLE_VI_CTX_S vi;
+} SAMPLE_MPI_CTX_S;
 
 static bool quit = false;
 static void sigterm_handler(int sig) {
@@ -64,8 +65,8 @@ static const struct option long_options[] = {
 };
 
 /******************************************************************************
-* function : show usage
-******************************************************************************/
+ * function : show usage
+ ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s -w 2560 -h 1520 -a /etc/iqfiles/ -l 10 -o /data/\n", name);
@@ -86,11 +87,12 @@ static void print_usage(const RK_CHAR *name) {
 	       "Value:nv12,nv16,yuyv,uyvy,afbc\n");
 	printf("\t-l | --loop_count: loop count, Default -1\n");
 	printf("\t-o | --output_path: vi output file path, Default NULL\n");
+	printf("\t--hdr_mode: set hdr mode, 0: normal 1: HDR2, 2: HDR3, Default: 0\n");
 }
 
 /******************************************************************************
-* function : vi thread
-******************************************************************************/
+ * function : vi thread
+ ******************************************************************************/
 static void *vi_get_stream(void *pArgs) {
 	SAMPLE_VI_CTX_S *ctx = (SAMPLE_VI_CTX_S *)(pArgs);
 	RK_S32 s32Ret = RK_FAILURE;
@@ -113,8 +115,8 @@ static void *vi_get_stream(void *pArgs) {
 		s32Ret = SAMPLE_COMM_VI_GetChnFrame(ctx, &pData);
 		if (s32Ret == RK_SUCCESS) {
 			if (ctx->stViFrame.stVFrame.u64PrivateData <= 0) {
-			    //SAMPLE_COMM_VI_ReleaseChnFrame(ctx);
-				//continue;
+				// SAMPLE_COMM_VI_ReleaseChnFrame(ctx);
+				// continue;
 			}
 			// exit when complete
 			if (ctx->s32loopCount > 0) {
@@ -150,9 +152,9 @@ static void *vi_get_stream(void *pArgs) {
 }
 
 /******************************************************************************
-* function    : main()
-* Description : main
-******************************************************************************/
+ * function    : main()
+ * Description : main
+ ******************************************************************************/
 int main(int argc, char *argv[]) {
 	RK_S32 s32Ret = RK_FAILURE;
 	SAMPLE_MPI_CTX_S *ctx;
@@ -166,6 +168,7 @@ int main(int argc, char *argv[]) {
 	RK_S32 s32loopCnt = -1;
 	PIXEL_FORMAT_E PixelFormat = RK_FMT_YUV420SP;
 	COMPRESS_MODE_E CompressMode = COMPRESS_MODE_NONE;
+	rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
 	MPP_CHN_S stSrcChn, stDestChn;
 	pthread_t vi_thread_id;
 
@@ -238,6 +241,19 @@ int main(int argc, char *argv[]) {
 		case 'o':
 			pOutPath = optarg;
 			break;
+		case 'h' + 'm':
+			if (atoi(optarg) == 0) {
+				hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
+			} else if (atoi(optarg) == 1) {
+				hdr_mode = RK_AIQ_WORKING_MODE_ISP_HDR2;
+			} else if (atoi(optarg) == 2) {
+				hdr_mode = RK_AIQ_WORKING_MODE_ISP_HDR3;
+			} else {
+				RK_LOGE("input hdr_mode is not support(error)");
+				print_usage(argv[0]);
+				goto __FAILED2;
+			}
+			break;
 #ifdef RKAIQ
 		case 'M':
 			if (atoi(optarg)) {
@@ -260,7 +276,6 @@ int main(int argc, char *argv[]) {
 #ifdef RKAIQ
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
-		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
 
 		SAMPLE_COMM_ISP_Init(s32CamId, hdr_mode, bMultictx, iq_file_dir);
 		SAMPLE_COMM_ISP_Run(s32CamId);
