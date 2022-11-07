@@ -248,6 +248,7 @@ static void *venc_get_stream(void *pArgs) {
 	SAMPLE_VENC_CTX_S *ctx = (SAMPLE_VENC_CTX_S *)pArgs;
 	RK_S32 s32Ret = RK_FAILURE;
 	FILE *fp = RK_NULL;
+	RK_S32 s32fd = 0;
 	RK_S32 loopCount = 0;
 	RK_VOID *pData = RK_NULL;
 	RK_CHAR name[BUFFER_SIZE] = {0};
@@ -266,6 +267,7 @@ static void *venc_get_stream(void *pArgs) {
 			program_handle_error(__func__, __LINE__);
 			return RK_NULL;
 		}
+		s32fd = fileno(fp);
 	}
 	while (!gModeTest->bIfVencThreadQuit[ctx->s32ChnId]) {
 		s32Ret = SAMPLE_COMM_VENC_GetStream(ctx, &pData);
@@ -316,7 +318,7 @@ static void *venc_get_stream(void *pArgs) {
 	}
 
 	if (fp) {
-		fsync(fp);
+		fsync(s32fd);
 		fclose(fp);
 		fp = RK_NULL;
 	}
