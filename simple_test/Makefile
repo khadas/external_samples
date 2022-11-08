@@ -101,6 +101,9 @@ simple_vi_venc_change_resolution: simple_vi_venc_change_resolution.c
 simple_vi_venc_rtsp: simple_vi_venc_rtsp.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
 
+simple_vi_venc_svc_rtsp: simple_vi_venc_svc_rtsp.c
+	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
+
 simple_vi_venc_wrap: simple_vi_venc_wrap.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
