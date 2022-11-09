@@ -178,7 +178,11 @@ static void vi_venc_thread_error_handle(const char *func, RK_U32 line, MB_BLK mb
 
 	RK_MPI_VI_ReleaseChnFrame(ctx->vi[0].u32PipeId, ctx->vi[0].s32ChnId,
 	                          &ctx->vi[0].stViFrame);
-	program_handle_error(func, line);
+	if (gModeTest->bIfMainThreadQuit) {
+		program_normal_exit(func, line);
+	} else {
+		program_handle_error(func, line);
+	}
 }
 
 /* vi get stream send tde and tde send venc*/
@@ -575,6 +579,12 @@ static RK_S32 vencResolution_switchTest(SAMPLE_TDE_CTX_S *pTdeCtx,
 	VI_CHN_ATTR_S vipstChnAttr;
 	MPP_CHN_S stSrcChn, stDestChn;
 
+	/* rgn detach */
+	for (RK_S32 i = 0; i < VENC_RGN_NUM; i++) {
+		RK_MPI_RGN_DetachFromChn(ctx->rgn[i + VI_RGN_NUM].rgnHandle,
+		                         &ctx->rgn[i + VI_RGN_NUM].stMppChn);
+	}
+
 	// unBind vi and venc
 	stSrcChn.enModId = RK_ID_VI;
 	stSrcChn.s32DevId = pViCtx->s32DevId;
@@ -654,6 +664,12 @@ static RK_S32 vencResolution_switchTest(SAMPLE_TDE_CTX_S *pTdeCtx,
 		RK_LOGE("vi devid:%d chnid:%d band to venc chnid:%d failure", pViCtx->s32DevId,
 		        pViCtx->s32ChnId, pVencCtx->s32ChnId);
 		return s32Ret;
+	}
+	/* rgn attach */
+	for (RK_S32 i = 0; i < VENC_RGN_NUM; i++) {
+		RK_MPI_RGN_AttachToChn(ctx->rgn[i + VI_RGN_NUM].rgnHandle,
+		                       &ctx->rgn[i + VI_RGN_NUM].stMppChn,
+		                       &ctx->rgn[i + VI_RGN_NUM].stRgnChnAttr);
 	}
 
 	RK_LOGE("------------------------Venc resolution switch to %dx%d",

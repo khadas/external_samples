@@ -50,8 +50,8 @@ RK_S32 SAMPLE_COMM_TDE_Create(SAMPLE_TDE_CTX_S *ctx) {
 
 	memset(&stMbPoolCfg, 0, sizeof(MB_POOL_CONFIG_S));
 	stMbPoolCfg.u64MBSize = stMbPicCalResult.u32MBSize;
-	if (ctx->u32buffersize) {
-		stMbPoolCfg.u32MBCnt = ctx->u32buffersize;
+	if (ctx->u32BufferPoolCnt) {
+		stMbPoolCfg.u32MBCnt = ctx->u32BufferPoolCnt;
 	} else {
 		stMbPoolCfg.u32MBCnt = 1;
 	}
