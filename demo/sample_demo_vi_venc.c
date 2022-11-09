@@ -107,7 +107,7 @@ static void sigterm_handler(int sig) {
 	program_normal_exit(__func__, __LINE__);
 }
 
-static RK_CHAR optstr[] = "?::a::w:h:o:l:m:e:r:f:t:i:I:p:b:c:d:";
+static RK_CHAR optstr[] = "?::a::w:h:o:l:m:e:r:f:t:i:I:p:v:c:d:";
 static const struct option long_options[] = {
     {"aiq", optional_argument, RK_NULL, 'a'},
     {"width", required_argument, RK_NULL, 'w'},
@@ -121,7 +121,7 @@ static const struct option long_options[] = {
     {"inputBmp1Path", required_argument, RK_NULL, 'i'},
     {"inputBmp2Path", required_argument, RK_NULL, 'I'},
     {"smartP", required_argument, RK_NULL, 'p'},
-    {"venc_buffer", required_argument, RK_NULL, 'b'},
+    {"vi_buff_cnt", required_argument, RK_NULL, 'v'},
     {"mode_test_loop", required_argument, RK_NULL, 't' + 'l'},
     {"test_frame_count", required_argument, RK_NULL, 'c'},
     {"iva_detect_speed", required_argument, RK_NULL, 'd'},
@@ -163,7 +163,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-I | --inputBmp2Path : input bmp file path. default: RK_NULL\n");
 	printf("\t-p | --smartP : smartp mode for mainStream, 0: Disable 1: Enable. Default: "
 	       "0\n");
-	printf("\t-b | --venc_buffer : Encoder buffer num, Default: 4\n");
+	printf("\t-v | --vi_buff_cnt : main stream vi buffer num, Default: 2\n");
 	printf("\t--mode_test_loop : module test loop, default: -1\n");
 	printf("\t--test_frame_count : when encoder outputs frameCount equal to "
 	       "<test_frame_count>, mode_test start next loop, default: 500\n");
@@ -1598,7 +1598,7 @@ int main(int argc, char *argv[]) {
 	RK_U32 u32IvaDetectFrameRate = 10;
 	RK_U32 u32VencFps = 25;
 	RK_U32 u32BitRate = 2 * 1024;
-	RK_U32 u32VencBuffCnt = 4;
+	RK_U32 u32ViBuffCnt = 2;
 	RK_CHAR *pOutPathVenc = RK_NULL;
 	RK_CHAR *pIqFileDir = RK_NULL;
 	RK_BOOL bMultictx = RK_FALSE;
@@ -1703,8 +1703,8 @@ int main(int argc, char *argv[]) {
 				bIfSmartpEnable = RK_FALSE;
 			}
 			break;
-		case 'b':
-			u32VencBuffCnt = atoi(optarg);
+		case 'v':
+			u32ViBuffCnt = atoi(optarg);
 			break;
 		case 't' + 'l':
 			gModeTest->u32ModuleTestLoop = atoi(optarg);
@@ -1763,7 +1763,7 @@ int main(int argc, char *argv[]) {
 	ctx->vi[0].s32ChnId = 0;
 	ctx->vi[0].stChnAttr.stIspOpt.stMaxSize.u32Width = u32VideoWidth;
 	ctx->vi[0].stChnAttr.stIspOpt.stMaxSize.u32Height = u32VideoHeight;
-	ctx->vi[0].stChnAttr.stIspOpt.u32BufCount = 2;
+	ctx->vi[0].stChnAttr.stIspOpt.u32BufCount = u32ViBuffCnt;
 	ctx->vi[0].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
 	ctx->vi[0].stChnAttr.u32Depth = 1;
 	ctx->vi[0].stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
@@ -1771,7 +1771,7 @@ int main(int argc, char *argv[]) {
 	ctx->vi[0].stChnAttr.stFrameRate.s32SrcFrameRate = -1;
 	ctx->vi[0].stChnAttr.stFrameRate.s32DstFrameRate = -1;
 	ctx->vi[0].bWrapIfEnable = bWrapIfEnable;
-	ctx->vi[0].u32BufferLine = ctx->vi[0].u32Height / 2;
+	ctx->vi[0].u32BufferLine = ctx->vi[0].u32Height / 4;
 	s32Ret = SAMPLE_COMM_VI_CreateChn(&ctx->vi[0]);
 	if (s32Ret != RK_SUCCESS) {
 		g_exit_result = RK_FAILURE;
@@ -1872,8 +1872,7 @@ int main(int argc, char *argv[]) {
 	ctx->venc[0].s32loopCount = s32LoopCnt;
 	ctx->venc[0].dstFilePath = pOutPathVenc;
 	ctx->venc[0].bWrapIfEnable = bWrapIfEnable;
-	ctx->venc[0].u32BufferLine = ctx->venc[0].u32Height / 2;
-	ctx->venc[0].u32StreamBufCnt = u32VencBuffCnt;
+	ctx->venc[0].u32BufferLine = ctx->venc[0].u32Height / 4;
 	ctx->venc[0].u32BuffSize = u32VideoWidth * u32VideoHeight / 2;
 	/*
 	H264  66：Baseline  77：Main Profile 100：High Profile
@@ -1907,7 +1906,6 @@ int main(int argc, char *argv[]) {
 	ctx->venc[1].s32loopCount = s32LoopCnt;
 	ctx->venc[1].dstFilePath = pOutPathVenc;
 	ctx->venc[1].bWrapIfEnable = RK_FALSE;
-	ctx->venc[1].u32StreamBufCnt = u32VencBuffCnt;
 	ctx->venc[1].u32BuffSize = u32VideoWidth * u32VideoHeight / 2;
 	/*
 	H264  66：Baseline  77：Main Profile 100：High Profile
@@ -1942,7 +1940,6 @@ int main(int argc, char *argv[]) {
 	ctx->venc[2].s32loopCount = s32LoopCnt;
 	ctx->venc[2].dstFilePath = pOutPathVenc;
 	ctx->venc[2].bWrapIfEnable = RK_FALSE;
-	ctx->venc[2].u32StreamBufCnt = u32VencBuffCnt;
 	ctx->venc[2].u32BuffSize = u32VideoWidth * u32VideoHeight / 2;
 	/*
 	H264  66：Baseline  77：Main Profile 100：High Profile
@@ -1974,15 +1971,10 @@ int main(int argc, char *argv[]) {
 	ctx->venc[3].s32loopCount = s32LoopCnt;
 	ctx->venc[3].dstFilePath = pOutPathVenc;
 	ctx->venc[3].bWrapIfEnable = bWrapIfEnable;
-	ctx->venc[3].u32BufferLine = ctx->venc[3].u32Height / 2;
+	ctx->venc[3].u32BufferLine = ctx->venc[3].u32Height / 4;
 	ctx->venc[3].bComboIfEnable = RK_TRUE;
 	ctx->venc[3].u32ComboChnId = ctx->venc[0].s32ChnId;
 	ctx->venc[3].u32BuffSize = u32VideoWidth * u32VideoHeight / 2;
-	if (bWrapIfEnable) {
-		ctx->venc[3].u32StreamBufCnt = 2;
-	} else {
-		ctx->venc[3].u32StreamBufCnt = u32VencBuffCnt;
-	}
 
 	/*
 	H264  66：Baseline  77：Main Profile 100：High Profile
