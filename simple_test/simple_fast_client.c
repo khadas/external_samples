@@ -1,5 +1,5 @@
-
 #include <errno.h>
+#include <getopt.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -18,8 +18,10 @@
 #include "rk_type.h"
 #include "sample_comm.h"
 
+#include "rk_gpio.h"
+#include "rk_pwm.h"
 #include "rtsp_demo.h"
-
+#include <rk_smart_ir_api.h>
 #define ENABLE_RKAIQ 1
 #define ENABLE_RTSP 1
 #define ENABLE_SMALL_STREAM 1
@@ -44,15 +46,177 @@ static int venc_h[3] = {1080, 720, 480};
 static int index_w_h = 1;
 static int index_num = 3;
 
+// SmartIr Params
+#define ircut_on_gpio GPIO(RK_GPIO1, RK_PD1)
+#define ircut_off_gpio GPIO(RK_GPIO1, RK_PD3)
+#define irled_enable_gpio GPIO(RK_GPIO1, RK_PD0)
+#define irled_pwm_channel 11
+#define irled_pwm_period 5000
+#define irled_pwm_duty 5000
+static float d2n_envL_th = 0.04f;
+static float n2d_envL_th = 0.20f;
+static float rggain_base = 1.0f;
+static float bggain_base = 1.0f;
+static float awbgain_rad = 0.10f;
+static float awbgain_dis = 0.22f;
+
 rtsp_demo_handle g_rtsplive = NULL;
 static rtsp_session_handle g_rtsp_session;
 
+typedef struct rk_smart_ir_ctx_s {
+	const rk_aiq_sys_ctx_t *aiq_ctx;
+	int cur_working_mode;
+	rk_smart_ir_params_t ir_configs;
+	RK_SMART_IR_STATUS_t state;
+	uint16_t switch_cnts;
+	bool awbgain_update;
+} rk_smart_ir_ctx_t;
+
+typedef struct sample_smartIr_s {
+	pthread_t tid;
+	bool tquit;
+	bool started;
+	const rk_aiq_sys_ctx_t *aiq_ctx;
+	rk_smart_ir_ctx_t *ir_ctx;
+	rk_smart_ir_params_t ir_configs;
+	rk_smart_ir_result_t ir_res;
+	rk_aiq_isp_stats_t *isp_status;
+} sample_smartIr_t;
+static sample_smartIr_t g_sample_smartIr_ctx;
+
 static void sigterm_handler(int sig) { quit = true; }
+
+static RK_CHAR optstr[] = "?::d:n:s:B:b:R:r:";
+static const struct option long_options[] = {
+    {"d2n", required_argument, NULL, 'd'},
+    {"n2d", required_argument, NULL, 'n'},
+    {"switch_cnt", required_argument, NULL, 's'},
+    {"bg_max", required_argument, NULL, 'B'},
+    {"bg_min", required_argument, NULL, 'b'},
+    {"rg_max", required_argument, NULL, 'R'},
+    {"rg_min", optional_argument, NULL, 'r'},
+    {"help", optional_argument, NULL, '?'},
+    {NULL, 0, NULL, 0},
+};
 
 RK_U64 TEST_COMM_GetNowUs() {
 	struct timespec time = {0, 0};
 	clock_gettime(CLOCK_MONOTONIC, &time);
 	return (RK_U64)time.tv_sec * 1000000 + (RK_U64)time.tv_nsec / 1000; /* microseconds */
+}
+
+int rk_isp_enable_ircut(bool on) {
+
+	if (on) {
+		rk_gpio_set_value(ircut_on_gpio, 1);
+		usleep(100 * 1000);
+		rk_gpio_set_value(ircut_on_gpio, 0);
+
+	} else {
+		rk_gpio_set_value(ircut_off_gpio, 1);
+		usleep(100 * 1000);
+		rk_gpio_set_value(ircut_off_gpio, 0);
+	}
+}
+
+static void load_ir_configs(float d2n, float n2d, float rbase, float bbase, float rad,
+                            float dis, int switch_cnt) {
+	sample_smartIr_t *smartIr_ctx = &g_sample_smartIr_ctx;
+
+	smartIr_ctx->ir_configs.d2n_envL_th = d2n;
+	smartIr_ctx->ir_configs.n2d_envL_th = n2d;
+	smartIr_ctx->ir_configs.rggain_base = rbase;
+	smartIr_ctx->ir_configs.bggain_base = bbase;
+	smartIr_ctx->ir_configs.awbgain_rad = rad;
+	smartIr_ctx->ir_configs.awbgain_dis = dis;
+	smartIr_ctx->ir_configs.switch_cnts_th = switch_cnt;
+	rk_smart_ir_config(smartIr_ctx->ir_ctx, &smartIr_ctx->ir_configs);
+}
+
+static void *switch_ir_thread(void *args) {
+	sample_smartIr_t *smartIr_ctx = &g_sample_smartIr_ctx;
+	int init_stat = smartIr_ctx->ir_ctx->state;
+	int ret, switch_flag, sleep_count;
+	FILE *fp;
+	sleep_count = 0;
+
+	ret |= rk_gpio_export_direction(ircut_on_gpio, GPIO_DIRECTION_OUTPUT);
+	ret |= rk_gpio_export_direction(ircut_off_gpio, GPIO_DIRECTION_OUTPUT);
+	ret |= rk_gpio_export_direction(irled_enable_gpio, GPIO_DIRECTION_OUTPUT);
+
+	if (init_stat == RK_SMART_IR_STATUS_NIGHT) {
+		switch_flag = 0;
+		rk_gpio_set_value(irled_enable_gpio, 1);
+	} else {
+		switch_flag = 1;
+		rk_gpio_set_value(irled_enable_gpio, 0);
+	}
+
+	ret = rk_pwm_init(irled_pwm_channel, irled_pwm_period, irled_pwm_duty, PWM_POLARITY_NORMAL);
+	if (ret) {
+		printf("rk_pwm_init error ret [%d]\n", ret);
+	}
+	while (!smartIr_ctx->tquit && (quit == false)) {
+		rk_aiq_uapi2_sysctl_get3AStatsBlk(smartIr_ctx->aiq_ctx, &smartIr_ctx->isp_status,
+		                                  -1);
+		rk_smart_ir_runOnce(smartIr_ctx->ir_ctx, smartIr_ctx->isp_status,
+		                    &smartIr_ctx->ir_res);
+		rk_aiq_uapi2_sysctl_release3AStatsRef(smartIr_ctx->aiq_ctx,
+		                                      smartIr_ctx->isp_status);
+		if (smartIr_ctx->ir_res.status == RK_SMART_IR_STATUS_DAY) {
+			if (switch_flag != 0) {
+				switch_flag = 0;
+				rk_gpio_set_value(irled_enable_gpio, 0);
+				if (rk_pwm_set_enable(irled_pwm_channel, false))
+					printf("pwm%d disable failed %d\n", irled_pwm_channel);
+				rk_isp_enable_ircut(true);
+				usleep(300 * 1000);
+				rk_aiq_uapi2_sysctl_switch_scene(smartIr_ctx->aiq_ctx, "normal", "day");
+
+				printf("SAMPLE_SMART_IR: switch to DAY\n");
+				if ((access("/dev/block/by-name/meta", F_OK)) == 0)
+					system("make_meta --update --meta_path /dev/block/by-name/meta "
+				       "--rk_color_mode 0");
+			}
+
+		} else if (smartIr_ctx->ir_res.status == RK_SMART_IR_STATUS_NIGHT) {
+			if (switch_flag != 1) {
+				switch_flag = 1;
+				rk_aiq_uapi2_sysctl_switch_scene(smartIr_ctx->aiq_ctx, "normal", "night");
+				usleep(300 * 1000);
+				rk_isp_enable_ircut(false);
+				rk_gpio_set_value(irled_enable_gpio, 1);
+				if (rk_pwm_set_enable(irled_pwm_channel, true))
+					printf("pwm%d enable failed %d\n", irled_pwm_channel);
+
+				printf("SAMPLE_SMART_IR: switch to Night\n");
+				if ((access("/dev/block/by-name/meta", F_OK)) == 0)
+					system("make_meta --update --meta_path /dev/block/by-name/meta "
+				       "--rk_color_mode 1");
+			}
+		}
+
+		usleep(30 * 1000);
+	}
+
+	return NULL;
+}
+
+void sample_smartIr_stop() {
+	sample_smartIr_t *smartIr_ctx = &g_sample_smartIr_ctx;
+
+	printf("%s-%d\n", __func__, __LINE__);
+	rk_pwm_deinit(irled_pwm_channel);
+	if (smartIr_ctx->started) {
+		smartIr_ctx->tquit = true;
+		pthread_join(smartIr_ctx->tid, NULL);
+	}
+	smartIr_ctx->started = false;
+
+	if (smartIr_ctx->ir_ctx) {
+		rk_smart_ir_deInit(smartIr_ctx->ir_ctx);
+		smartIr_ctx->ir_ctx = NULL;
+	}
 }
 
 static int errCnt = 0;
@@ -460,6 +624,18 @@ void klog(const char *log) {
 void klog(const char *log) { return; }
 #endif
 
+static void print_usage(const RK_CHAR *name) {
+	printf("usage example:\n");
+	printf("\t%s -d 0.04 -n 0.2 -r 1.0 -r 1.0 -R 0.1 -D 0.3 -s 50\n", name);
+	printf("\t-s | --switch_cnt: switch_cnts_th, Default 50\n");
+	printf("\t-d | --d2n:   d2n_envL_th, Default 0.04f\n");
+	printf("\t-n | --n2d:   n2d_envL_th, Default 0.2f\n");
+	printf("\t-r | --rbase: rggain_base, Default 1.0f\n");
+	printf("\t-r | --bbase: bggain_base, Default 1.0f\n");
+	printf("\t-R | --rad:   awbgain_rad, Default 0.1f\n");
+	printf("\t-D | --dis:   awbgain_dis, Default 0.3f\n");
+}
+
 int main(int argc, char *argv[]) {
 	klog("main");
 	RK_S32 s32Ret = RK_FAILURE;
@@ -471,6 +647,56 @@ int main(int argc, char *argv[]) {
 
 	g_s32FrameCnt = RUN_TOTAL_CNT_MAX;
 	pOutPath = "/tmp/venc-test.bin";
+
+	sample_smartIr_t *smartIr_ctx = &g_sample_smartIr_ctx;
+	float d2n = d2n_envL_th;
+	float n2d = n2d_envL_th;
+	float rbase = rggain_base;
+	float bbase = bggain_base;
+	float rad = awbgain_rad;
+	float dis = awbgain_dis;
+	int switch_cnt = 60;
+	int c;
+	if (argc > 1) {
+		while ((c = getopt_long(argc, argv, optstr, long_options, NULL)) != -1) {
+			const char *tmp_optarg = optarg;
+			switch (c) {
+				case 's':
+					switch_cnt = atoi(optarg);
+					break;
+				case 'd':
+					d2n = atof(optarg);
+					break;
+				case 'n':
+					n2d = atof(optarg);
+					break;
+				case 'r':
+					rbase = atof(optarg);
+					break;
+				case 'b':
+					bbase = atof(optarg);
+					break;
+				case 'R':
+					rad = atof(optarg);
+					break;
+				case 'D':
+					dis = atof(optarg);
+					break;
+				case '?':
+				default:
+					print_usage(argv[0]);
+					return 0;
+			}
+		}
+	}
+	printf("d2n_envL_th:%f, n2d_envL_th:%f, rggain_base:%f, bggain_base:%f, awbgain_rad:%f,"
+		"awbgain_dis:%f, switch_cnts_th:%d\n",
+		d2n, n2d, rbase, bbase, rad, dis, switch_cnt);
+	if (d2n < 0 || n2d < 0 || rbase < 0 || bbase < 0 || rad < 0 || dis < 0 ||
+	    switch_cnt < 0) {
+		printf("invalid input param,please check!\n");
+		return -1;
+	}
 
 	signal(SIGINT, sigterm_handler);
 	RK_S64 s64VencInitStart = TEST_COMM_GetNowUs();
@@ -589,9 +815,9 @@ int main(int argc, char *argv[]) {
 		       aiq_static_info.sensor_info.sensor_name);
 	}
 
-	ret = aiq_ctx = rk_aiq_uapi2_sysctl_init(aiq_static_info.sensor_info.sensor_name,
-	                                         "/etc/iqfiles/", NULL, NULL);
-	if (ret < 0) {
+	aiq_ctx = rk_aiq_uapi2_sysctl_init(aiq_static_info.sensor_info.sensor_name,
+	                                   "/etc/iqfiles/", NULL, NULL);
+	if (aiq_ctx == NULL) {
 		printf("%s: failed to init aiq\n", aiq_static_info.sensor_info.sensor_name);
 	}
 
@@ -606,6 +832,13 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 	klog("aiq start");
+	smartIr_ctx->aiq_ctx = aiq_ctx;
+	smartIr_ctx->ir_ctx = rk_smart_ir_init(aiq_ctx);
+	smartIr_ctx->ir_ctx->state = rk_color_mode;
+	load_ir_configs(d2n, n2d, rbase, bbase, rad, dis, switch_cnt);
+	smartIr_ctx->tquit = false;
+	pthread_create(&smartIr_ctx->tid, NULL, switch_ir_thread, NULL);
+	smartIr_ctx->started = true;
 
 	RK_S64 s64AiqInitEnd = TEST_COMM_GetNowUs();
 	printf("Aiq:%lld us\n", s64AiqInitEnd - s64AiqInitStart);
@@ -646,6 +879,11 @@ __FAILED:
 	if (iq_mem != MAP_FAILED)
 		munmap(iq_mem, file_size);
 
+	rk_gpio_unexport(irled_enable_gpio);
+	rk_gpio_unexport(ircut_on_gpio);
+	rk_gpio_unexport(ircut_off_gpio);
+	pthread_join(smartIr_ctx->tid, RK_NULL);
+	sample_smartIr_stop();
 	rk_aiq_uapi2_sysctl_stop(aiq_ctx, false);
 	rk_aiq_uapi2_sysctl_deinit(aiq_ctx);
 #endif

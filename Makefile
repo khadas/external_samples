@@ -82,6 +82,7 @@ INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/xcore
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/algos
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/iq_parser
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/iq_parser_v2
+INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/smartIr
 SAMPLE_CFLAGS += -g -Wall $(INC_FLAGS) $(PKG_CONF_OPTS)
 LD_FLAGS += -L$(SAMPLE_OUT_DIR)/lib -lsample_comm
 ifeq ($(BUILD_STATIC_LINK), y)
@@ -118,7 +119,7 @@ export LD_FLAGS
 all: $(PKG_TARGET)
 	@echo "build $(PKG_NAME) done";
 
-sample-build: libasound librkaiq librockit librockiva COMM_LIB
+sample-build: libasound librkaiq librockit librockiva librksysutils COMM_LIB
 	@mkdir -p $(SAMPLE_OUT_DIR)/bin
 	@make -C $(CURRENT_DIR)/audio;
 	@make -C $(CURRENT_DIR)/audio install;
@@ -152,6 +153,9 @@ librockit:
 
 librockiva:
 	@test ! -d $(RK_MEDIA_TOP_DIR)/iva || make -C $(RK_MEDIA_TOP_DIR)/iva
+
+librksysutils:
+	@test ! -d $(RK_MEDIA_TOP_DIR)/sysutils || make -C $(RK_MEDIA_TOP_DIR)/sysutils
 
 clean:
 	@make -C $(CURRENT_DIR)/common clean

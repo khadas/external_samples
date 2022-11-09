@@ -1,10 +1,7 @@
 # Rockchip sample Makefile
 
-T_FAST_BOOT = simple_fast_client
-
-
 SIMPLE_FAST_CLIENT_LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic -lpthread -lrockit \
-	-lrockchip_mpp \
+	-lrockchip_mpp -lrksysutils -lsmartIr \
 	-lrkaudio_detect -laec_bf_process \
 	-lrga -Wl,-Bdynamic \
 	-L$(SAMPLE_OUT_DIR)/ -lrkaiq -lstdc++ -lm
