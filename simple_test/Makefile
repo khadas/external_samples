@@ -77,6 +77,9 @@ simple_vi_tde: simple_vi_tde.c
 simple_vi_venc_combo: simple_vi_venc_combo.c
 	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
 
+simple_vi_eptz_test: simple_vi_eptz_test.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
+
 install:
 	@mv -f $(OBJECTS) $(SAMPLE_OUT_DIR)/bin
 
