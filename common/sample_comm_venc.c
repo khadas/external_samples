@@ -280,13 +280,15 @@ __RETRY1:
 RK_S32 SAMPLE_COMM_VENC_GetStream(SAMPLE_VENC_CTX_S *ctx, void **pdata) {
 	RK_S32 s32Ret = RK_FAILURE;
 
-	s32Ret = RK_MPI_VENC_GetStream(ctx->s32ChnId, &ctx->stFrame, -1);
-	if (s32Ret == RK_SUCCESS) {
-		*pdata = RK_MPI_MB_Handle2VirAddr(ctx->stFrame.pstPack->pMbBlk);
-	} else {
-		RK_LOGE("RK_MPI_VENC_GetStream fail %x", s32Ret);
+	while (1) {
+		s32Ret = RK_MPI_VENC_GetStream(ctx->s32ChnId, &ctx->stFrame, 2000);
+		if (s32Ret == RK_SUCCESS) {
+			*pdata = RK_MPI_MB_Handle2VirAddr(ctx->stFrame.pstPack->pMbBlk);
+			break;
+		} else {
+			RK_LOGE("RK_MPI_VENC_GetStream fail %x", s32Ret);
+		}
 	}
-
 	return s32Ret;
 }
 
