@@ -790,6 +790,8 @@ static void *sample_venc_stress_test(void *pArgs) {
 	prctl(PR_SET_NAME, "venc_stress_test");
 	sleep(MODULE_TEST_DELAY_SECOND_TIME);
 
+	SAMPLE_COMM_DumpMeminfo("Enter sample_venc_stress_test",
+	                        gModeTest->s32ModuleTestType);
 	switch (gModeTest->s32ModuleTestType) {
 	case 1:
 		/* venc resolutio switch */
@@ -823,6 +825,7 @@ static void *sample_venc_stress_test(void *pArgs) {
 		RK_LOGE("mode test type:%d is unsupported", gModeTest->s32ModuleTestType);
 	}
 
+	SAMPLE_COMM_DumpMeminfo("Exit sample_venc_stress_test", gModeTest->s32ModuleTestType);
 	RK_LOGE("venc_stress_test exit");
 	return RK_NULL;
 }

@@ -458,6 +458,8 @@ static void *sample_isp_stress_test(void *pArgs) {
 	prctl(PR_SET_NAME, "isp_stress_test");
 	wait_module_test_switch_success();
 
+	SAMPLE_COMM_DumpMeminfo("Enter sample_multi_isp_stress_test",
+	                        gModeTest->s32ModuleTestType);
 	switch (gModeTest->s32ModuleTestType) {
 	case 1:
 		pn_mode_switch(gModeTest->u32ModuleTestLoop);
@@ -475,6 +477,8 @@ static void *sample_isp_stress_test(void *pArgs) {
 		RK_LOGE("mode test type:%d is unsupported", gModeTest->s32ModuleTestType);
 	}
 
+	SAMPLE_COMM_DumpMeminfo("Exit sample_multi_isp_stress_test",
+	                        gModeTest->s32ModuleTestType);
 	RK_LOGE("sample_isp_stress_test exit");
 	return RK_NULL;
 }

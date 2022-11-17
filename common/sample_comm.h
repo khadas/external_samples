@@ -312,6 +312,8 @@ RK_S32 SAMPLE_COMM_TDE_GetMB(SAMPLE_TDE_CTX_S *ctx);
 RK_S32 SAMPLE_COMM_TDE_ReleaseMB(SAMPLE_TDE_CTX_S *ctx);
 RK_S32 SAMPLE_COMM_TDE_Destroy(SAMPLE_TDE_CTX_S *ctx);
 
+RK_S32 SAMPLE_COMM_DumpMeminfo(RK_CHAR *callFunc, RK_S32 moduleTestType);
+
 #ifdef __cplusplus
 #if __cplusplus
 }

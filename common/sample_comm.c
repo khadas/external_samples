@@ -133,6 +133,14 @@ RK_S32 SAMPLE_COMM_GetBmpResolution(RK_CHAR *pBmpFile, RK_U32 *width, RK_U32 *he
 	return RK_SUCCESS;
 }
 
+RK_S32 SAMPLE_COMM_DumpMeminfo(RK_CHAR *callFunc, RK_S32 moduleTestType) {
+	char systemCmd[256];
+	system("echo 3 > /proc/sys/vm/drop_caches");
+	sprintf(systemCmd, "echo %s %d >> /tmp/testLog.txt", callFunc, moduleTestType);
+	system(systemCmd);
+	system("cat /proc/meminfo | grep MemAvailable >> /tmp/testLog.txt");
+}
+
 #ifdef __cplusplus
 #if __cplusplus
 }

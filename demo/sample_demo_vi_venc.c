@@ -1465,6 +1465,7 @@ static void *sample_demo_stresstest(void *pArgs) {
 	RK_U32 u32TestCount = 0;
 
 	wait_module_test_switch_success();
+	SAMPLE_COMM_DumpMeminfo("Enter sample_demo_stresstest", gModeTest->s32ModuleTestType);
 	while (!gModeTest->bModuleTestThreadQuit) {
 
 		switch (gModeTest->s32ModuleTestType) {
@@ -1588,6 +1589,7 @@ static void *sample_demo_stresstest(void *pArgs) {
 			break;
 		}
 	}
+	SAMPLE_COMM_DumpMeminfo("Exit sample_demo_stresstest", gModeTest->s32ModuleTestType);
 	RK_LOGE("sample_demo_stresstest exit!!!");
 	return RK_NULL;
 }
