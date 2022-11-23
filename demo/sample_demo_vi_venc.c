@@ -1126,7 +1126,7 @@ static RK_S32 rgn_init(void) {
 	ctx->rgn[0].rgnHandle = 0;
 	ctx->rgn[0].stRgnAttr.enType = COVER_RGN;
 	ctx->rgn[0].stMppChn.enModId = RK_ID_VI;
-	ctx->rgn[0].stMppChn.s32ChnId = ctx->vi[0].s32ChnId;
+	ctx->rgn[0].stMppChn.s32ChnId = VI_MAX_CHN_NUM;
 	ctx->rgn[0].stMppChn.s32DevId = ctx->vi[0].s32DevId;
 	ctx->rgn[0].stRegion.s32X = 0;        /* must be 2 aligned */
 	ctx->rgn[0].stRegion.s32Y = 0;        /* must be 2 aligned */
@@ -1145,7 +1145,7 @@ static RK_S32 rgn_init(void) {
 	ctx->rgn[1].rgnHandle = 1;
 	ctx->rgn[1].stRgnAttr.enType = COVER_RGN;
 	ctx->rgn[1].stMppChn.enModId = RK_ID_VI;
-	ctx->rgn[1].stMppChn.s32ChnId = ctx->vi[0].s32ChnId;
+	ctx->rgn[1].stMppChn.s32ChnId = VI_MAX_CHN_NUM;
 	ctx->rgn[1].stMppChn.s32DevId = ctx->vi[0].s32DevId;
 	ctx->rgn[1].stRegion.s32X = 0; /* must be 2 aligned */
 	ctx->rgn[1].stRegion.s32Y =
@@ -1165,7 +1165,7 @@ static RK_S32 rgn_init(void) {
 	ctx->rgn[2].rgnHandle = 2;
 	ctx->rgn[2].stRgnAttr.enType = MOSAIC_RGN;
 	ctx->rgn[2].stMppChn.enModId = RK_ID_VI;
-	ctx->rgn[2].stMppChn.s32ChnId = ctx->vi[0].s32ChnId;
+	ctx->rgn[2].stMppChn.s32ChnId = VI_MAX_CHN_NUM;
 	ctx->rgn[2].stMppChn.s32DevId = ctx->vi[0].s32DevId;
 	ctx->rgn[2].stRegion.s32X =
 	    RK_ALIGN_2(ctx->vi[0].u32Width - 256); /* must be 2 aligned */
@@ -1184,7 +1184,7 @@ static RK_S32 rgn_init(void) {
 	ctx->rgn[3].rgnHandle = 3;
 	ctx->rgn[3].stRgnAttr.enType = MOSAIC_RGN;
 	ctx->rgn[3].stMppChn.enModId = RK_ID_VI;
-	ctx->rgn[3].stMppChn.s32ChnId = ctx->vi[0].s32ChnId;
+	ctx->rgn[3].stMppChn.s32ChnId = VI_MAX_CHN_NUM;
 	ctx->rgn[3].stMppChn.s32DevId = ctx->vi[0].s32DevId;
 	ctx->rgn[3].stRegion.s32X =
 	    RK_ALIGN_2(ctx->vi[0].u32Width - 256); /* must be 2 aligned */

@@ -112,7 +112,9 @@ static const struct option long_options[] = {
  ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
-	printf("\t%s -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 -o /userdata/\n", name);
+	printf("\t%s -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path "
+	       "/userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp -o /userdata/\n",
+	       name);
 #ifdef RKAIQ
 	printf(
 	    "\t-a | --aiq : enable aiq with dirpath provided, eg:-a /etc/iqfiles/, \n"
@@ -258,7 +260,7 @@ static RK_S32 rgn_init(void) {
 	ctx->rgn[0].rgnHandle = 0;
 	ctx->rgn[0].stRgnAttr.enType = COVER_RGN;
 	ctx->rgn[0].stMppChn.enModId = RK_ID_VI;
-	ctx->rgn[0].stMppChn.s32ChnId = ctx->vi.s32ChnId;
+	ctx->rgn[0].stMppChn.s32ChnId = VI_MAX_CHN_NUM;
 	ctx->rgn[0].stMppChn.s32DevId = ctx->vi.s32DevId;
 	ctx->rgn[0].stRegion.s32X = 0;        /* must be 2 aligned */
 	ctx->rgn[0].stRegion.s32Y = 0;        /* must be 2 aligned */
@@ -279,7 +281,7 @@ static RK_S32 rgn_init(void) {
 	ctx->rgn[1].rgnHandle = 1;
 	ctx->rgn[1].stRgnAttr.enType = COVER_RGN;
 	ctx->rgn[1].stMppChn.enModId = RK_ID_VI;
-	ctx->rgn[1].stMppChn.s32ChnId = ctx->vi.s32ChnId;
+	ctx->rgn[1].stMppChn.s32ChnId = VI_MAX_CHN_NUM;
 	ctx->rgn[1].stMppChn.s32DevId = ctx->vi.s32DevId;
 	ctx->rgn[1].stRegion.s32X = 0;               /* must be 2 aligned */
 	ctx->rgn[1].stRegion.s32Y = RK_ALIGN_2(256); /* must be 2 aligned */
@@ -300,7 +302,7 @@ static RK_S32 rgn_init(void) {
 	ctx->rgn[2].rgnHandle = 2;
 	ctx->rgn[2].stRgnAttr.enType = MOSAIC_RGN;
 	ctx->rgn[2].stMppChn.enModId = RK_ID_VI;
-	ctx->rgn[2].stMppChn.s32ChnId = ctx->vi.s32ChnId;
+	ctx->rgn[2].stMppChn.s32ChnId = VI_MAX_CHN_NUM;
 	ctx->rgn[2].stMppChn.s32DevId = ctx->vi.s32DevId;
 	ctx->rgn[2].stRegion.s32X =
 	    RK_ALIGN_2(ctx->vi.u32Width - 128); /* must be 2 aligned */
@@ -321,7 +323,7 @@ static RK_S32 rgn_init(void) {
 	ctx->rgn[3].rgnHandle = 3;
 	ctx->rgn[3].stRgnAttr.enType = MOSAIC_RGN;
 	ctx->rgn[3].stMppChn.enModId = RK_ID_VI;
-	ctx->rgn[3].stMppChn.s32ChnId = ctx->vi.s32ChnId;
+	ctx->rgn[3].stMppChn.s32ChnId = VI_MAX_CHN_NUM;
 	ctx->rgn[3].stMppChn.s32DevId = ctx->vi.s32DevId;
 	ctx->rgn[3].stRegion.s32X =
 	    RK_ALIGN_2(ctx->vi.u32Width - 128);      /* must be 2 aligned */
@@ -780,11 +782,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	/* Rgn Init*/
-	s32Ret = rgn_init();
-	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("rgn_init failure");
-		program_handle_error(__func__, __LINE__);
-	}
+	rgn_init();
 
 	if (gModeTest->s32ModuleTestType) {
 		gModeTest->bModuleTestIfopen = RK_TRUE;
