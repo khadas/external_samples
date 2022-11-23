@@ -92,10 +92,23 @@ RK_S32 SAMPLE_COMM_VI_CreateChn(SAMPLE_VI_CTX_S *ctx) {
 	}
 
 	// 3.enable channel
-	s32Ret = RK_MPI_VI_EnableChn(ctx->u32PipeId, ctx->s32ChnId);
+	if (!ctx->bIfIspGroupInit) {
+		s32Ret = RK_MPI_VI_EnableChn(ctx->u32PipeId, ctx->s32ChnId);
+	} else {
+		s32Ret = RK_MPI_VI_EnableChnExt(ctx->u32PipeId, ctx->s32ChnId);
+	}
 	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("RK_MPI_VI_EnableChn failed with %#x!\n", s32Ret);
+		RK_LOGE("RK_MPI_VI_EnableChn(Ext) failed with %#x! pipe:%d chn:%d", s32Ret,
+		        ctx->u32PipeId, ctx->s32ChnId);
 		goto __FAILED2;
+	}
+
+	if (ctx->bIfOpenEptz) {
+		s32Ret = RK_MPI_VI_SetEptz(ctx->u32PipeId, ctx->s32ChnId, ctx->stCropInfo);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VI_SetEptz failure:%#X", s32Ret);
+			goto __FAILED2;
+		}
 	}
 
 	// 4.save debug file
@@ -152,7 +165,11 @@ RK_S32 SAMPLE_COMM_VI_ReleaseChnFrame(SAMPLE_VI_CTX_S *ctx) {
 RK_S32 SAMPLE_COMM_VI_DestroyChn(SAMPLE_VI_CTX_S *ctx) {
 	RK_S32 s32Ret = RK_FAILURE;
 
-	s32Ret = RK_MPI_VI_DisableChn(ctx->u32PipeId, ctx->s32ChnId);
+	if (!ctx->bIfIspGroupInit) {
+		s32Ret = RK_MPI_VI_DisableChn(ctx->u32PipeId, ctx->s32ChnId);
+	} else {
+		s32Ret = RK_MPI_VI_DisableChnExt(ctx->u32PipeId, ctx->s32ChnId);
+	}
 	s32Ret |= RK_MPI_VI_DisableDev(ctx->s32DevId);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_VI_Close failed with %#x!\n", s32Ret);

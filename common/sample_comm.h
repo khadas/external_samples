@@ -100,6 +100,8 @@ typedef struct _rkMpiAOCtx {
 
 typedef struct _rkMpiVICtx {
 	RK_BOOL bWrapIfEnable;
+	RK_BOOL bIfOpenEptz;
+	RK_BOOL bIfIspGroupInit;
 	RK_U32 u32BufferLine;
 	RK_U32 u32Width;
 	RK_U32 u32Height;
@@ -107,6 +109,7 @@ typedef struct _rkMpiVICtx {
 	VI_DEV s32DevId;
 	VI_PIPE u32PipeId;
 	VI_CHN s32ChnId;
+	VI_CROP_INFO_S stCropInfo;
 	VI_DEV_ATTR_S stDevAttr;
 	VI_DEV_BIND_PIPE_S stBindPipe;
 	VI_CHN_ATTR_S stChnAttr;
