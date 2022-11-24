@@ -1331,7 +1331,7 @@ static RK_S32 rgn_change_posit(void) {
 	RGN_CHN_ATTR_S stChnAttr;
 	memset(&stChnAttr, 0, sizeof(RGN_CHN_ATTR_S));
 
-	if (gModeTest->s32ModuleTestType == 5) {
+	if (gModeTest->s32ModuleTestType != 0) {
 		return RK_SUCCESS;
 	}
 
