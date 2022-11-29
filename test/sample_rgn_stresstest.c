@@ -49,7 +49,7 @@ typedef struct _rkModeTest {
 	RK_BOOL bModuleTestIfopen;
 	RK_BOOL bWrapIfEnable;
 	RK_S32 s32ModuleTestType;
-	RK_U32 u32ModuleTestLoop;
+	RK_S32 s32ModuleTestLoop;
 	RK_U32 u32TestFrameCount;
 	RK_U32 u32VencGetFrameCount;
 	RK_CHAR *inputBmp1Path;
@@ -437,8 +437,8 @@ static RK_S32 rgn_deinit(void) {
 	return s32Ret;
 }
 
-static void rgn_attach_and_detach(RK_U32 test_loop) {
-	RK_U32 s32TestCount = 0;
+static void rgn_attach_and_detach(RK_S32 test_loop) {
+	RK_S32 s32TestCount = 0;
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_S32 i = 0;
 
@@ -489,7 +489,7 @@ static void *sample_rgn_stress_test(void *pArgs) {
 	switch (gModeTest->s32ModuleTestType) {
 	case 1:
 		/* rgn attach/detach */
-		rgn_attach_and_detach(gModeTest->u32ModuleTestLoop);
+		rgn_attach_and_detach(gModeTest->s32ModuleTestLoop);
 		break;
 	default:
 		RK_LOGE("mode test type:%d is unsupported", gModeTest->s32ModuleTestType);
@@ -501,7 +501,6 @@ static void *sample_rgn_stress_test(void *pArgs) {
 }
 
 static RK_S32 rtsp_init(CODEC_TYPE_E enCodecType) {
-	RK_S32 i = 0;
 
 	g_rtsplive = create_rtsp_demo(554);
 	g_rtsp_session = rtsp_new_session(g_rtsplive, "/live/0");
@@ -526,7 +525,7 @@ static RK_S32 rtsp_deinit(void) {
 	return RK_SUCCESS;
 }
 
-RK_S32 global_param_init(void) {
+static RK_S32 global_param_init(void) {
 
 	ctx = (SAMPLE_MPI_CTX_S *)malloc(sizeof(SAMPLE_MPI_CTX_S));
 	if (ctx == RK_NULL) {
@@ -542,7 +541,7 @@ RK_S32 global_param_init(void) {
 	}
 	memset(gModeTest, 0, sizeof(g_mode_test));
 
-	gModeTest->u32ModuleTestLoop = -1;
+	gModeTest->s32ModuleTestLoop = -1;
 	gModeTest->u32TestFrameCount = 500;
 
 	sem_init(&g_sem_module_test, 0, 0);
@@ -555,7 +554,7 @@ RK_S32 global_param_init(void) {
 	return RK_SUCCESS;
 }
 
-RK_S32 global_param_deinit(void) {
+static RK_S32 global_param_deinit(void) {
 
 	if (ctx) {
 		free(ctx);
@@ -568,6 +567,7 @@ RK_S32 global_param_deinit(void) {
 	}
 	sem_destroy(&g_sem_module_test);
 	pthread_mutex_destroy(&g_frame_count_mutex);
+	return RK_SUCCESS;
 }
 
 int main(int argc, char *argv[]) {
@@ -579,7 +579,6 @@ int main(int argc, char *argv[]) {
 	RK_CHAR *pIqFileDir = RK_NULL;
 	RK_S32 s32CamId = 0;
 	RK_S32 s32LoopCnt = -1;
-	RK_S32 s32ChnId = 0;
 	RK_U32 u32VencFps = 25;
 	RK_U32 u32BitRate = 4 * 1024;
 	CODEC_TYPE_E enCodecType = RK_CODEC_TYPE_H264;
@@ -675,7 +674,7 @@ int main(int argc, char *argv[]) {
 			gModeTest->inputBmp2Path = optarg;
 			break;
 		case 't' + 'l':
-			gModeTest->u32ModuleTestLoop = atoi(optarg);
+			gModeTest->s32ModuleTestLoop = atoi(optarg);
 			break;
 		case 'c':
 			gModeTest->u32TestFrameCount = atoi(optarg);
@@ -695,7 +694,7 @@ int main(int argc, char *argv[]) {
 
 		s32Ret = SAMPLE_COMM_ISP_Init(s32CamId, eHdrMode, bMultictx, pIqFileDir);
 		s32Ret |= SAMPLE_COMM_ISP_Run(s32CamId);
-		if (s32Ret = RK_SUCCESS) {
+		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("ISP init failure");
 			g_exit_result = RK_FAILURE;
 			goto __FAILED2;

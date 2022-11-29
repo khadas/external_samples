@@ -47,7 +47,7 @@ typedef struct _rkModeTest {
 	RK_BOOL bModuleTestThreadQuit;
 	RK_BOOL bModuleTestIfopen;
 	RK_S32 s32ModuleTestType;
-	RK_U32 u32ModuleTestLoop;
+	RK_S32 s32ModuleTestLoop;
 	RK_U32 u32TestFrameCount;
 	RK_U32 u32VencGetFrameCount;
 } g_mode_test;
@@ -210,8 +210,8 @@ static void wait_module_test_switch_success(void) {
 	sem_wait(&g_sem_module_test);
 }
 
-static void venc_resolution_switch(RK_U32 test_loop) {
-	RK_U32 s32TestCount = 0;
+static void venc_resolution_switch(RK_S32 test_loop) {
+	RK_S32 s32TestCount = 0;
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_U32 u32DstWidth = 704;
 	RK_U32 u32DstHeight = 576;
@@ -233,7 +233,7 @@ static void venc_resolution_switch(RK_U32 test_loop) {
 			RK_LOGE("vi devid:%d chnid:%d unband to venc chnid:%d failure",
 			        ctx->vi.s32DevId, ctx->vi.s32ChnId, ctx->venc.s32ChnId);
 			program_handle_error(__func__, __LINE__);
-			return s32Ret;
+			break;
 		}
 
 		memset(&pstChnAttr, 0, sizeof(VENC_CHN_ATTR_S));
@@ -256,7 +256,7 @@ static void venc_resolution_switch(RK_U32 test_loop) {
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("venc set chn resolution failure");
 			program_handle_error(__func__, __LINE__);
-			return s32Ret;
+			break;
 		}
 
 		memset(&vipstChnAttr, 0, sizeof(VI_CHN_ATTR_S));
@@ -276,7 +276,7 @@ static void venc_resolution_switch(RK_U32 test_loop) {
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE(" set resolution failure");
 			program_handle_error(__func__, __LINE__);
-			return s32Ret;
+			break;
 		}
 
 		// Bind vi and venc
@@ -291,7 +291,7 @@ static void venc_resolution_switch(RK_U32 test_loop) {
 			RK_LOGE("vi devid:%d chnid:%d band to venc chnid:%d failure",
 			        ctx->vi.s32DevId, ctx->vi.s32ChnId, ctx->venc.s32ChnId);
 			program_handle_error(__func__, __LINE__);
-			return s32Ret;
+			break;
 		}
 
 		RK_LOGE("------------------------Venc resolution switch to %dx%d",
@@ -313,11 +313,11 @@ static void venc_resolution_switch(RK_U32 test_loop) {
 		}
 	}
 	RK_LOGE("venc_resolution_switch exit");
-	return;
 }
 
-RK_S32 encode_destroy_and_restart(CODEC_TYPE_E enCodecType, VENC_RC_MODE_E enRcMode,
-                                  RK_U32 u32Profile, RK_BOOL bIfSliceSplit) {
+static RK_S32 encode_destroy_and_restart(CODEC_TYPE_E enCodecType,
+                                         VENC_RC_MODE_E enRcMode, RK_U32 u32Profile,
+                                         RK_BOOL bIfSliceSplit) {
 	RK_S32 s32Ret = RK_FAILURE;
 	MPP_CHN_S stSrcChn, stDestChn;
 
@@ -378,7 +378,7 @@ RK_S32 encode_destroy_and_restart(CODEC_TYPE_E enCodecType, VENC_RC_MODE_E enRcM
 	return s32Ret;
 }
 
-static RK_S32 encode_type_switch(RK_U32 test_loop) {
+static RK_S32 encode_type_switch(RK_S32 test_loop) {
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_S32 now_test_loop = 0;
 	g_rtsp_ifenbale = RK_FALSE;
@@ -430,8 +430,8 @@ static RK_S32 encode_type_switch(RK_U32 test_loop) {
 	return s32Ret;
 }
 
-static RK_S32 smartp_mode(RK_U32 test_loop) {
-	RK_U32 s32TestCount = 0;
+static RK_S32 smartp_mode(RK_S32 test_loop) {
+	RK_S32 s32TestCount = 0;
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_BOOL eSmartpIfEnable = RK_TRUE;
 	MPP_CHN_S stSrcChn, stDestChn;
@@ -517,12 +517,11 @@ static RK_S32 smartp_mode(RK_U32 test_loop) {
 	return RK_SUCCESS;
 }
 
-static RK_S32 smart_encode(RK_U32 test_loop) {
-	RK_U32 s32TestCount = 0;
+static RK_S32 smart_encode(RK_S32 test_loop) {
+	RK_S32 s32TestCount = 0;
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_BOOL eSvcIfEnable = RK_TRUE;
 	MPP_CHN_S stSrcChn, stDestChn;
-	VENC_RC_PARAM_S pstRcParam;
 
 	while (!gModeTest->bModuleTestThreadQuit) {
 		gModeTest->bIfVencThreadQuit = RK_TRUE;
@@ -613,8 +612,8 @@ static RK_S32 smart_encode(RK_U32 test_loop) {
 	return RK_SUCCESS;
 }
 
-static RK_S32 motion_deblur_test(RK_U32 test_loop) {
-	RK_U32 s32TestCount = 0;
+static RK_S32 motion_deblur_test(RK_S32 test_loop) {
+	RK_S32 s32TestCount = 0;
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_BOOL eMotionDeblurIfEnable = RK_TRUE;
 	MPP_CHN_S stSrcChn, stDestChn;
@@ -700,8 +699,8 @@ static RK_S32 motion_deblur_test(RK_U32 test_loop) {
 	return RK_SUCCESS;
 }
 
-static RK_S32 venc_force_idr_test(RK_U32 test_loop) {
-	RK_U32 s32TestCount = 0;
+static RK_S32 venc_force_idr_test(RK_S32 test_loop) {
+	RK_S32 s32TestCount = 0;
 	RK_S32 s32Ret = RK_FAILURE;
 	while (!gModeTest->bModuleTestThreadQuit) {
 
@@ -732,11 +731,10 @@ static RK_S32 venc_force_idr_test(RK_U32 test_loop) {
 	return RK_SUCCESS;
 }
 
-static RK_S32 venc_set_rotation(RK_U32 test_loop) {
-	RK_U32 s32TestCount = 0;
+static RK_S32 venc_set_rotation(RK_S32 test_loop) {
+	RK_S32 s32TestCount = 0;
 	RK_S32 s32Ret = RK_FAILURE;
 	ROTATION_E enRotation;
-	MPP_CHN_S stSrcChn, stDestChn;
 
 	while (!gModeTest->bModuleTestThreadQuit) {
 
@@ -795,31 +793,31 @@ static void *sample_venc_stress_test(void *pArgs) {
 	switch (gModeTest->s32ModuleTestType) {
 	case 1:
 		/* venc resolutio switch */
-		venc_resolution_switch(gModeTest->u32ModuleTestLoop);
+		venc_resolution_switch(gModeTest->s32ModuleTestLoop);
 		break;
 	case 2:
 		/* encode type switch */
-		encode_type_switch(gModeTest->u32ModuleTestLoop);
+		encode_type_switch(gModeTest->s32ModuleTestLoop);
 		break;
 	case 3:
 		/* smartp test*/
-		smartp_mode(gModeTest->u32ModuleTestLoop);
+		smartp_mode(gModeTest->s32ModuleTestLoop);
 		break;
 	case 4:
 		/* smart video coding*/
-		smart_encode(gModeTest->u32ModuleTestLoop);
+		smart_encode(gModeTest->s32ModuleTestLoop);
 		break;
 	case 5:
 		/*motion deblur test*/
-		motion_deblur_test(gModeTest->u32ModuleTestLoop);
+		motion_deblur_test(gModeTest->s32ModuleTestLoop);
 		break;
 	case 6:
 		/*force idr test*/
-		venc_force_idr_test(gModeTest->u32ModuleTestLoop);
+		venc_force_idr_test(gModeTest->s32ModuleTestLoop);
 		break;
 	case 7:
 		/*	venc set chn rotation*/
-		venc_set_rotation(gModeTest->u32ModuleTestLoop);
+		venc_set_rotation(gModeTest->s32ModuleTestLoop);
 		break;
 	default:
 		RK_LOGE("mode test type:%d is unsupported", gModeTest->s32ModuleTestType);
@@ -831,7 +829,6 @@ static void *sample_venc_stress_test(void *pArgs) {
 }
 
 static RK_S32 rtsp_init(CODEC_TYPE_E enCodecType) {
-	RK_S32 i = 0;
 
 	g_rtsplive = create_rtsp_demo(554);
 	g_rtsp_session = rtsp_new_session(g_rtsplive, "/live/0");
@@ -856,7 +853,7 @@ static RK_S32 rtsp_deinit(void) {
 	return RK_SUCCESS;
 }
 
-RK_S32 global_param_init(void) {
+static RK_S32 global_param_init(void) {
 
 	ctx = (SAMPLE_MPI_CTX_S *)malloc(sizeof(SAMPLE_MPI_CTX_S));
 	if (ctx == RK_NULL) {
@@ -872,7 +869,7 @@ RK_S32 global_param_init(void) {
 	}
 	memset(gModeTest, 0, sizeof(g_mode_test));
 
-	gModeTest->u32ModuleTestLoop = -1;
+	gModeTest->s32ModuleTestLoop = -1;
 	gModeTest->u32TestFrameCount = 500;
 
 	sem_init(&g_sem_module_test, 0, 0);
@@ -885,7 +882,7 @@ RK_S32 global_param_init(void) {
 	return RK_SUCCESS;
 }
 
-RK_S32 global_param_deinit(void) {
+static RK_S32 global_param_deinit(void) {
 
 	if (ctx) {
 		free(ctx);
@@ -898,6 +895,7 @@ RK_S32 global_param_deinit(void) {
 	}
 	sem_destroy(&g_sem_module_test);
 	pthread_mutex_destroy(&g_frame_count_mutex);
+	return RK_SUCCESS;
 }
 
 int main(int argc, char *argv[]) {
@@ -909,7 +907,6 @@ int main(int argc, char *argv[]) {
 	RK_CHAR *pIqFileDir = RK_NULL;
 	RK_S32 s32CamId = 0;
 	RK_S32 s32LoopCnt = -1;
-	RK_S32 s32ChnId = 0;
 	RK_U32 u32VencFps = 25;
 	RK_U32 u32BitRate = 4 * 1024;
 	CODEC_TYPE_E enCodecType = RK_CODEC_TYPE_H264;
@@ -998,7 +995,7 @@ int main(int argc, char *argv[]) {
 			u32VencFps = atoi(optarg);
 			break;
 		case 't' + 'l':
-			gModeTest->u32ModuleTestLoop = atoi(optarg);
+			gModeTest->s32ModuleTestLoop = atoi(optarg);
 			break;
 		case 'c':
 			gModeTest->u32TestFrameCount = atoi(optarg);
@@ -1018,7 +1015,7 @@ int main(int argc, char *argv[]) {
 
 		s32Ret = SAMPLE_COMM_ISP_Init(s32CamId, eHdrMode, bMultictx, pIqFileDir);
 		s32Ret |= SAMPLE_COMM_ISP_Run(s32CamId);
-		if (s32Ret = RK_SUCCESS) {
+		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("ISP init failure");
 			g_exit_result = RK_FAILURE;
 			goto __FAILED2;

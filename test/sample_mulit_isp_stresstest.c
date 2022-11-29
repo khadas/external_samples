@@ -46,14 +46,14 @@ typedef struct _rkModeTest {
 	RK_BOOL bIfViThreadQuit[CAM_NUM_MAX];
 	RK_BOOL bModuleTestThreadQuit;
 	RK_BOOL bModuleTestIfopen;
-	RK_U32 u32IspLaunchMode;
+	RK_BOOL bMultictx;
 	RK_S32 s32ModuleTestType;
-	RK_U32 u32ModuleTestLoop;
+	RK_S32 s32ModuleTestLoop;
+	RK_S32 s32CamId[CAM_NUM_MAX];
+	RK_U32 u32IspLaunchMode;
 	RK_U32 u32TestFrameCount;
 	RK_U32 u32ViGetFrameCount[CAM_NUM_MAX];
-	RK_S32 s32CamId[CAM_NUM_MAX];
 	RK_U32 u32CamNum;
-	RK_BOOL bMultictx;
 	rk_aiq_working_mode_t eHdrMode;
 	RK_CHAR *pIqFileDir;
 } g_mode_test;
@@ -243,9 +243,9 @@ static void wait_module_test_switch_success(void) {
 	}
 }
 
-static void pn_mode_switch(RK_U32 test_loop) {
+static void pn_mode_switch(RK_S32 test_loop) {
 	RK_S32 i = 0;
-	RK_U32 s32TestCount = 0;
+	RK_S32 s32TestCount = 0;
 	RK_S32 s32Ret = RK_FAILURE;
 
 	while (!gModeTest->bModuleTestThreadQuit) {
@@ -292,9 +292,9 @@ static void pn_mode_switch(RK_U32 test_loop) {
 	return;
 }
 
-static void hdr_mode_switch_test(RK_U32 test_loop) {
+static void hdr_mode_switch_test(RK_S32 test_loop) {
 	RK_S32 i = 0;
-	RK_U32 s32TestCount = 0;
+	RK_S32 s32TestCount = 0;
 	RK_S32 s32Ret = RK_FAILURE;
 
 	while (!gModeTest->bModuleTestThreadQuit) {
@@ -348,10 +348,10 @@ static void hdr_mode_switch_test(RK_U32 test_loop) {
 	return;
 }
 
-static void frameRate_switch_test(RK_U32 test_loop) {
+static void frameRate_switch_test(RK_S32 test_loop) {
 
 	RK_S32 i = 0;
-	RK_U32 s32TestCount = 0;
+	RK_S32 s32TestCount = 0;
 	RK_S32 s32Ret = RK_FAILURE;
 	VI_CHN_ATTR_S pstChnAttr;
 	while (!gModeTest->bModuleTestThreadQuit) {
@@ -408,11 +408,11 @@ static void frameRate_switch_test(RK_U32 test_loop) {
 	return;
 }
 
-static void ldch_mode_test(RK_U32 test_loop) {
+static void ldch_mode_test(RK_S32 test_loop) {
 	RK_BOOL bIfLDCHEnable = RK_FALSE;
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_U32 u32LdchLevel = 0;
-	RK_U32 test_count = 0;
+	RK_S32 test_count = 0;
 	RK_S32 i = 0;
 
 	while (!gModeTest->bModuleTestThreadQuit) {
@@ -462,16 +462,16 @@ static void *sample_isp_stress_test(void *pArgs) {
 	                        gModeTest->s32ModuleTestType);
 	switch (gModeTest->s32ModuleTestType) {
 	case 1:
-		pn_mode_switch(gModeTest->u32ModuleTestLoop);
+		pn_mode_switch(gModeTest->s32ModuleTestLoop);
 		break;
 	case 2:
-		hdr_mode_switch_test(gModeTest->u32ModuleTestLoop);
+		hdr_mode_switch_test(gModeTest->s32ModuleTestLoop);
 		break;
 	case 3:
-		frameRate_switch_test(gModeTest->u32ModuleTestLoop);
+		frameRate_switch_test(gModeTest->s32ModuleTestLoop);
 		break;
 	case 4:
-		ldch_mode_test(gModeTest->u32ModuleTestLoop);
+		ldch_mode_test(gModeTest->s32ModuleTestLoop);
 		break;
 	default:
 		RK_LOGE("mode test type:%d is unsupported", gModeTest->s32ModuleTestType);
@@ -499,7 +499,7 @@ RK_S32 global_param_init(void) {
 	}
 	memset(gModeTest, 0, sizeof(g_mode_test));
 
-	gModeTest->u32ModuleTestLoop = -1;
+	gModeTest->s32ModuleTestLoop = -1;
 	gModeTest->u32TestFrameCount = 500;
 
 	for (RK_S32 i = 0; i < CAM_NUM_MAX; i++) {
@@ -591,7 +591,7 @@ int main(int argc, char *argv[]) {
 			gModeTest->s32ModuleTestType = atoi(optarg);
 			break;
 		case 't' + 'l':
-			gModeTest->u32ModuleTestLoop = atoi(optarg);
+			gModeTest->s32ModuleTestLoop = atoi(optarg);
 			break;
 		case 't':
 			gModeTest->u32TestFrameCount = atoi(optarg);

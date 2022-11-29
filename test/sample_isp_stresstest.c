@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Rockchip Electronics Co. LTD
+ * Copyright 2022 Rockchip Electronics Co. LTD
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ extern "C" {
 #include "sample_comm.h"
 
 #define BUFFER_SIZE 255
-#define LDCH_MAX_CORRECT_LEVEL 255
+#define LDCH_MAX_LEVEL 255
 #define MODULE_TEST_DELAY_SECOND_TIME 3 //(unit: second)
 
 typedef struct _rkModeTest {
@@ -48,12 +48,12 @@ typedef struct _rkModeTest {
 	RK_BOOL bIfViTHreadQuit;
 	RK_BOOL bModuleTestThreadQuit;
 	RK_BOOL bModuleTestIfopen;
+	RK_BOOL bMultictx;
 	RK_S32 s32ModuleTestType;
-	RK_U32 u32ModuleTestLoop;
+	RK_S32 s32ModuleTestLoop;
+	RK_S32 s32CamId;
 	RK_U32 u32TestFrameCount;
 	RK_U32 u32ViGetFrameCount;
-	RK_S32 s32CamId;
-	RK_S32 bMultictx;
 	rk_aiq_working_mode_t eHdrMode;
 	RK_CHAR *pIqFileDir;
 } g_mode_test;
@@ -204,12 +204,10 @@ static void wait_module_test_switch_success(void) {
 	sem_wait(&g_sem_module_test);
 }
 
-static void pn_mode_switch(RK_U32 test_loop) {
-	RK_S32 i = 0;
-	RK_U32 s32TestCount = 0;
+static void pn_mode_switch(RK_S32 test_loop) {
+	RK_S32 s32TestCount = 0;
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_LOGE("s32CamId: %d hdr: %d", gModeTest->s32CamId, gModeTest->eHdrMode);
-	// Frame count refer chn is venc[0]
 
 	while (!gModeTest->bModuleTestThreadQuit) {
 
@@ -247,9 +245,8 @@ static void pn_mode_switch(RK_U32 test_loop) {
 	return;
 }
 
-static void hdr_mode_switch_test(RK_U32 test_loop) {
-	RK_S32 i = 0;
-	RK_U32 s32TestCount = 0;
+static void hdr_mode_switch_test(RK_S32 test_loop) {
+	RK_S32 s32TestCount = 0;
 	RK_S32 s32Ret = RK_FAILURE;
 
 	while (!gModeTest->bModuleTestThreadQuit) {
@@ -294,10 +291,8 @@ static void hdr_mode_switch_test(RK_U32 test_loop) {
 	return;
 }
 
-static void frameRate_switch_test(RK_U32 test_loop) {
-
-	RK_S32 i = 0;
-	RK_U32 s32TestCount = 0;
+static void frameRate_switch_test(RK_S32 test_loop) {
+	RK_S32 s32TestCount = 0;
 	RK_S32 s32Ret = RK_FAILURE;
 	VI_CHN_ATTR_S pstChnAttr;
 	while (!gModeTest->bModuleTestThreadQuit) {
@@ -347,11 +342,11 @@ static void frameRate_switch_test(RK_U32 test_loop) {
 	return;
 }
 
-static void ldch_mode_test(RK_U32 test_loop) {
+static void ldch_mode_test(RK_S32 test_loop) {
 	RK_BOOL bIfLDCHEnable = RK_FALSE;
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_U32 u32LdchLevel = 0;
-	RK_U32 test_count = 0;
+	RK_S32 test_count = 0;
 
 	while (!gModeTest->bModuleTestThreadQuit) {
 
@@ -365,7 +360,7 @@ static void ldch_mode_test(RK_U32 test_loop) {
 
 		if (bIfLDCHEnable) {
 			u32LdchLevel++;
-			if (u32LdchLevel > LDCH_MAX_CORRECT_LEVEL) {
+			if (u32LdchLevel > LDCH_MAX_LEVEL) {
 				u32LdchLevel = 0;
 			}
 		}
@@ -396,16 +391,16 @@ static void *sample_isp_stress_test(void *pArgs) {
 	SAMPLE_COMM_DumpMeminfo("Enter sample_isp_stress_test", gModeTest->s32ModuleTestType);
 	switch (gModeTest->s32ModuleTestType) {
 	case 1:
-		pn_mode_switch(gModeTest->u32ModuleTestLoop);
+		pn_mode_switch(gModeTest->s32ModuleTestLoop);
 		break;
 	case 2:
-		hdr_mode_switch_test(gModeTest->u32ModuleTestLoop);
+		hdr_mode_switch_test(gModeTest->s32ModuleTestLoop);
 		break;
 	case 3:
-		frameRate_switch_test(gModeTest->u32ModuleTestLoop);
+		frameRate_switch_test(gModeTest->s32ModuleTestLoop);
 		break;
 	case 4:
-		ldch_mode_test(gModeTest->u32ModuleTestLoop);
+		ldch_mode_test(gModeTest->s32ModuleTestLoop);
 		break;
 	default:
 		RK_LOGE("mode test type:%d is unsupported", gModeTest->s32ModuleTestType);
@@ -415,7 +410,7 @@ static void *sample_isp_stress_test(void *pArgs) {
 	return RK_NULL;
 }
 
-RK_S32 global_param_init(void) {
+static RK_S32 global_param_init(void) {
 
 	ctx = (SAMPLE_MPI_CTX_S *)malloc(sizeof(SAMPLE_MPI_CTX_S));
 	if (ctx == RK_NULL) {
@@ -431,7 +426,7 @@ RK_S32 global_param_init(void) {
 	}
 	memset(gModeTest, 0, sizeof(g_mode_test));
 
-	gModeTest->u32ModuleTestLoop = -1;
+	gModeTest->s32ModuleTestLoop = -1;
 	gModeTest->u32TestFrameCount = 500;
 
 	sem_init(&g_sem_module_test, 0, 0);
@@ -444,7 +439,7 @@ RK_S32 global_param_init(void) {
 	return RK_SUCCESS;
 }
 
-RK_S32 global_param_deinit(void) {
+static RK_S32 global_param_deinit(void) {
 
 	if (ctx) {
 		free(ctx);
@@ -457,6 +452,8 @@ RK_S32 global_param_deinit(void) {
 	}
 	sem_destroy(&g_sem_module_test);
 	pthread_mutex_destroy(&g_frame_count_mutex);
+
+	return RK_SUCCESS;
 }
 
 int main(int argc, char *argv[]) {
@@ -562,7 +559,7 @@ int main(int argc, char *argv[]) {
 			gModeTest->s32ModuleTestType = atoi(optarg);
 			break;
 		case 't' + 'l':
-			gModeTest->u32ModuleTestLoop = atoi(optarg);
+			gModeTest->s32ModuleTestLoop = atoi(optarg);
 			break;
 		case 'c':
 			gModeTest->u32TestFrameCount = atoi(optarg);
@@ -586,7 +583,7 @@ int main(int argc, char *argv[]) {
 		RK_LOGE("eHdrMode: %d", eHdrMode);
 		s32Ret = SAMPLE_COMM_ISP_Init(s32CamId, eHdrMode, bMultictx, pIqFileDir);
 		s32Ret |= SAMPLE_COMM_ISP_Run(s32CamId);
-		if (s32Ret = RK_SUCCESS) {
+		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("ISP init failure");
 			g_exit_result = RK_FAILURE;
 			goto __FAILED2;
