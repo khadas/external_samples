@@ -393,6 +393,7 @@ int main(int argc, char *argv[])
     while (!quit) {
         usleep(50000);
     }
+	pthread_join(&main_thread, NULL);
 
     s32Ret = RK_MPI_VI_DisableChn(0, 0);
     printf("RK_MPI_VI_DisableChn %x", s32Ret);

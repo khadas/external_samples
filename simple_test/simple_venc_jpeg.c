@@ -278,7 +278,7 @@ int main(int argc, char *argv[])
 		usleep(30000); // sleep 30 ms.
 	}
 	sleep(1);
-
+	pthread_join(&main_thread, NULL);
 	s32Ret = RK_MPI_SYS_UnBind(&stSrcChn, &stDestChn);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_SYS_UnBind fail %x", s32Ret);

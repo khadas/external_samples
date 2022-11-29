@@ -183,7 +183,7 @@ int main()
 	{
 		usleep(5000);
 	}
-
+	pthread_join(&main_thread, NULL);
 	RK_MPI_SYS_UnBind(&stSrcChn, &stIvsChn);
 	RK_MPI_IVS_DestroyChn(0);
 	RK_MPI_VI_DisableChn(0, 0);

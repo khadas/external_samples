@@ -393,6 +393,7 @@ int main(int argc, char *argv[]) {
 	while (!quit) {
 		usleep(500000);
 	}
+	pthread_join(&main_thread, NULL);
 
 	if (g_rtsplive)
 		rtsp_del_demo(g_rtsplive);

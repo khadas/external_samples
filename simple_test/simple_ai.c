@@ -252,7 +252,7 @@ int main(int argc, char *argv[]) {
 	while (!quit) {
 		usleep(500000);
 	}
-
+	pthread_join(&read_thread, NULL);
 	//RK_MPI_AI_DisableVqe(0, 0);
 	RK_MPI_AI_DisableChn(0, 0);
 	RK_MPI_AI_Disable(0);

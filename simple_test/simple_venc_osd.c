@@ -460,6 +460,7 @@ int main(int argc, char *argv[])
 	while (!quit) {
 		usleep(50000);
 	}
+	pthread_join(&main_thread, NULL);
 
 	s32Ret = RK_MPI_SYS_UnBind(&stSrcChn, &stDestChn);
 	if (s32Ret != RK_SUCCESS) {

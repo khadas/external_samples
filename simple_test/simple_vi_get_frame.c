@@ -27,7 +27,7 @@ static void *GetMediaBuffer0(void *arg) {
 	printf("========%s========\n", __func__);
 	int loopCount = 0;
 	int s32Ret;
-	RK_S32 waitTime = 33;
+	RK_S32 waitTime = 1000;
 	int pipeId = 0;
 	int channelId = 0;
 	channelId = *(int *)arg;
@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
 	while (!quit) {
 		usleep(50000);
 	}
-
+	pthread_join(&main_thread, NULL);
 	s32Ret = RK_MPI_VI_DisableChn(0, s32chnlId);
 	RK_LOGE("RK_MPI_VI_DisableChn %x", s32Ret);
 
