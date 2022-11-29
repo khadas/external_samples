@@ -55,7 +55,7 @@ RK_S32 open_device_ao(RK_S32 s32SampleRate, RK_S32 u32FrameCnt)
 	/*==============================================================================*/
 	sprintf((char *)aoAttr.u8CardName, "%s","hw:0,0");
 
-	aoAttr.soundCard.channels = 1;      //2
+	aoAttr.soundCard.channels = 2;      //2
 	aoAttr.soundCard.sampleRate = 48000;//s32SampleRate;       16000
 	aoAttr.soundCard.bitWidth = AUDIO_BIT_WIDTH_16;
 
@@ -264,6 +264,8 @@ __RETRY:
 		}
 		timeStamp++;
 	}
+
+	RK_MPI_AO_WaitEos(0, 0, -1);
 
 	if (adec_file) {
 		fclose(adec_file);
