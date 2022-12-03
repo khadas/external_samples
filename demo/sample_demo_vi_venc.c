@@ -1856,6 +1856,20 @@ int main(int argc, char *argv[]) {
 #endif
 	}
 
+	/* Init iva */
+	ctx->iva.u32ImageHeight = u32IvsWidth;
+	ctx->iva.u32ImageWidth = u32IvsHeight;
+	ctx->iva.u32DetectStartX = 0;
+	ctx->iva.u32DetectStartY = 0;
+	ctx->iva.u32DetectWidth = u32IvsWidth;
+	ctx->iva.u32DetectHight = u32IvsHeight;
+	ctx->iva.eImageTransform = ROCKIVA_IMAGE_TRANSFORM_NONE;
+	ctx->iva.eImageFormat = ROCKIVA_IMAGE_FORMAT_YUV420SP_NV12;
+	ctx->iva.eModeType = ROCKIVA_OBJECT_TYPE_PERSON;
+	ctx->iva.u32IvaDetectFrameRate = u32IvaDetectFrameRate;
+	ctx->iva.resultCallback = rkIvaEvent_callback;
+	SAMPLE_COMM_IVA_Create(&ctx->iva);
+
 	if (RK_MPI_SYS_Init() != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_SYS_Init failure");
 		g_exit_result = RK_FAILURE;
@@ -1958,20 +1972,6 @@ int main(int argc, char *argv[]) {
 		RK_LOGE("SAMPLE_COMM_IVS_Create failure:%X", s32Ret);
 		program_handle_error(__func__, __LINE__);
 	}
-
-	/* Init iva */
-	ctx->iva.u32ImageHeight = u32IvsWidth;
-	ctx->iva.u32ImageWidth = u32IvsHeight;
-	ctx->iva.u32DetectStartX = 0;
-	ctx->iva.u32DetectStartY = 0;
-	ctx->iva.u32DetectWidth = u32IvsWidth;
-	ctx->iva.u32DetectHight = u32IvsHeight;
-	ctx->iva.eImageTransform = ROCKIVA_IMAGE_TRANSFORM_NONE;
-	ctx->iva.eImageFormat = ROCKIVA_IMAGE_FORMAT_YUV420SP_NV12;
-	ctx->iva.eModeType = ROCKIVA_OBJECT_TYPE_PERSON;
-	ctx->iva.u32IvaDetectFrameRate = u32IvaDetectFrameRate;
-	ctx->iva.resultCallback = rkIvaEvent_callback;
-	SAMPLE_COMM_IVA_Create(&ctx->iva);
 
 	/* Init VENC[0] */
 	ctx->venc[0].s32ChnId = 0;
