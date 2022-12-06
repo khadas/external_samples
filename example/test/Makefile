@@ -12,6 +12,11 @@ install:
 	@mv -f sample_venc_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_rgn_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_mulit_isp_stresstest $(SAMPLE_OUT_DIR)/bin
+	@mkdir -p ../../../../output/out/userdata/
+	@cp -f source/160x96.bmp ../../../../output/out/userdata/
+	@cp -f source/192x96.bmp ../../../../output/out/userdata/
+	@cp -f source/rv1103_stresstest.sh ../../../../output/out/userdata/
+	@cp -f source/rv1106_stresstest.sh ../../../../output/out/userdata/
 
 clean:
 	@echo "clean test"
