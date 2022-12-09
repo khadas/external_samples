@@ -49,8 +49,8 @@ static void *GetMediaBuffer(void *arg) {
 #endif
 	while (!quit) {
 		result = RK_MPI_AI_GetFrame(0, 0, &frame, RK_NULL, s32MilliSec);
-		if (result == 0) {
-			void *data = RK_MPI_MB_Handle2VirAddr(frame.pMbBlk);
+		if (result == RK_SUCCESS) {
+			void* data = RK_MPI_MB_Handle2VirAddr(frame.pMbBlk);
 			RK_U32 len = frame.u32Len;
 			RK_LOGI("data = %p, len = %d", data, len);
 			if (save_file) {
@@ -126,8 +126,8 @@ RK_S32 ai_set_other(RK_S32 s32SetVolume) {
 
 	RK_MPI_AI_SetVolume(s32DevId, s32SetVolume);
 
-	//左声道，无需修改
-	RK_MPI_AI_SetTrackMode(s32DevId, AUDIO_TRACK_FRONT_LEFT);
+	//双声道，左声道为MIC拾⾳数据，右声道为播放的右声道的回采数据
+	RK_MPI_AI_SetTrackMode(s32DevId, AUDIO_TRACK_NORMAL);
 	AUDIO_TRACK_MODE_E trackMode;
 	RK_MPI_AI_GetTrackMode(s32DevId, &trackMode);
 	RK_LOGI("test info : get track mode = %d", trackMode);
@@ -165,28 +165,46 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate,
 	aiAttr.u32ChnCnt = 2;
 
 	result = RK_MPI_AI_SetPubAttr(aiDevId, &aiAttr);
-	if (result != 0) {
-		RK_LOGE("ai set attr fail, reason = %d", result);
-		goto __FAILED;
+	if (result != RK_SUCCESS) {
+			RK_LOGE("ai set attr fail, reason = %x", result);
+			goto __FAILED;
+	}
+
+	result = RK_MPI_AMIX_SetControl(aiDevId, "I2STDM Digital Loopback Mode", (char *)"Mode2");
+	if (result != RK_SUCCESS) {
+			RK_LOGE("ai set I2STDM Digital Loopback Mode fail, reason = %x", result);
+			goto __FAILED;
+	}
+
+	result = RK_MPI_AMIX_SetControl(aiDevId, "ADC ALC Left Volume", (char *)"22");
+	if (result != RK_SUCCESS) {
+			RK_LOGE("ai set alc left voulme fail, reason = %x", result);
+			goto __FAILED;
+	}
+
+	result = RK_MPI_AMIX_SetControl(aiDevId, "ADC ALC Right Volume", (char *)"22");
+	if (result != RK_SUCCESS) {
+			RK_LOGE("ai set alc right voulme fail, reason = %x", result);
+			goto __FAILED;
 	}
 
 	result = RK_MPI_AI_Enable(aiDevId);
-	if (result != 0) {
-		RK_LOGE("ai enable fail, reason = %d", result);
-		goto __FAILED;
+	if (result != RK_SUCCESS) {
+			RK_LOGE("ai enable fail, reason = %x", result);
+			goto __FAILED;
 	}
 
 	memset(&pstParams, 0, sizeof(AI_CHN_PARAM_S));
 	pstParams.enLoopbackMode = AUDIO_LOOPBACK_NONE;
-	pstParams.s32UsrFrmDepth = 1;
+	pstParams.s32UsrFrmDepth = 4;
 	result = RK_MPI_AI_SetChnParam(aiDevId, aiChn, &pstParams);
 	if (result != RK_SUCCESS) {
 		RK_LOGE("ai set channel params, aiChn = %d", aiChn);
 		return RK_FAILURE;
 	}
 
-	//使用声音增强功能，默认关闭
-	// test_init_ai_vqe(OutputSampleRate);
+	//使用声音增强功能，默认开启
+	test_init_ai_vqe(OutputSampleRate);
 
 	result = RK_MPI_AI_EnableChn(aiDevId, aiChn);
 	if (result != 0) {
@@ -267,8 +285,9 @@ int main(int argc, char *argv[]) {
 	while (!quit) {
 		usleep(500000);
 	}
-	pthread_join(&read_thread, NULL);
-	// RK_MPI_AI_DisableVqe(0, 0);
+
+	pthread_join(read_thread, NULL);
+	RK_MPI_AI_DisableVqe(0, 0);
 	RK_MPI_AI_DisableChn(0, 0);
 	RK_MPI_AI_Disable(0);
 	RK_MPI_SYS_Exit();
