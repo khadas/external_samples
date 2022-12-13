@@ -41,6 +41,10 @@ ifeq ($(RK_MEDIA_CHIP), rv1106)
 PKG_CONF_OPTS += -DARCH64=OFF
 endif
 
+ifeq ($(CONFIG_RK_IVA),y)
+	LD_FLAGS += -DROCKIVA
+endif
+
 ifeq ($(CONFIG_RK_SAMPLE),y)
 PKG_TARGET := sample-build
 else

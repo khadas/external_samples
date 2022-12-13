@@ -335,6 +335,7 @@ static void *venc_get_stream(void *pArgs) {
 	return RK_NULL;
 }
 
+#ifdef ROCKIVA
 static void rkIvaEvent_callback(const RockIvaBaResult *result,
                                 const RockIvaExecuteStatus status, void *userData) {
 	if (result->objNum == 0)
@@ -386,6 +387,7 @@ static void *vi_iva_thread(void *pArgs) {
 	RK_LOGE("vi_iva_thread exit !!!");
 	return RK_NULL;
 }
+#endif
 
 static void *ivs_detect_thread(void *pArgs) {
 	RK_S32 s32Ret = RK_FAILURE;
@@ -1959,6 +1961,7 @@ int main(int argc, char *argv[]) {
 		program_handle_error(__func__, __LINE__);
 	}
 
+#ifdef ROCKIVA
 	/* Init iva */
 	ctx->iva.u32ImageHeight = u32IvsWidth;
 	ctx->iva.u32ImageWidth = u32IvsHeight;
@@ -1972,6 +1975,7 @@ int main(int argc, char *argv[]) {
 	ctx->iva.u32IvaDetectFrameRate = u32IvaDetectFrameRate;
 	ctx->iva.resultCallback = rkIvaEvent_callback;
 	SAMPLE_COMM_IVA_Create(&ctx->iva);
+#endif
 
 	/* Init VENC[0] */
 	ctx->venc[0].s32ChnId = 0;
@@ -2169,8 +2173,10 @@ int main(int argc, char *argv[]) {
 	/* ivs detect thread launch */
 	pthread_create(&ivs_detect_thread_id, 0, ivs_detect_thread, (void *)&ctx->ivs);
 
+#ifdef ROCKIVA
 	// /* VI[2] IVA thread launch */
 	pthread_create(&vi_iva_thread_id, 0, vi_iva_thread, RK_NULL);
+#endif
 
 	if (gModeTest->s32ModuleTestType) {
 		gModeTest->bModuleTestIfopen = RK_TRUE;
@@ -2194,10 +2200,12 @@ int main(int argc, char *argv[]) {
 		pthread_join(modeTest_thread_id, RK_NULL);
 	}
 
+#ifdef ROCKIVA
 	/* Destroy IVA */
 	gModeTest->bIfViIvaTHreadQuit = RK_TRUE;
 	pthread_join(vi_iva_thread_id, RK_NULL);
 	SAMPLE_COMM_IVA_Destroy(&ctx->iva);
+#endif
 
 	/* VI[2] unbind IVS[0]*/
 	stSrcChn.enModId = RK_ID_VI;

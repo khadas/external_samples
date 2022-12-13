@@ -30,6 +30,7 @@ extern "C" {
 #define ROCKIVA_PATH_LENGTH (128)
 #define MODEL_DATA_PATH "/usr/lib/"
 
+#ifdef ROCKIVA
 RK_S32 SAMPLE_COMM_IVA_Create(SAMPLE_IVA_CTX_S *ctx) {
 	RK_S32 s32Ret = RK_FAILURE;
 
@@ -107,6 +108,7 @@ RK_S32 SAMPLE_COMM_IVA_Destroy(SAMPLE_IVA_CTX_S *ctx) {
 
 	return s32Ret;
 }
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus

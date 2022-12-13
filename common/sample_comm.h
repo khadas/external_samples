@@ -42,11 +42,13 @@ extern "C" {
 #include "rk_mpi_vi.h"
 #include "rk_mpi_vo.h"
 #include "rk_mpi_vpss.h"
+#ifdef ROCKIVA
 #include "rockiva/rockiva_ba_api.h"
 #include "rockiva/rockiva_common.h"
 #include "rockiva/rockiva_det_api.h"
 #include "rockiva/rockiva_face_api.h"
 #include "rockiva/rockiva_image.h"
+#endif
 #include "sample_comm_isp.h"
 
 /*******************************************************
@@ -238,6 +240,7 @@ typedef struct _rkMpiIvsCtx {
 	IVS_CHN_ATTR_S stIvsAttr;
 } SAMPLE_IVS_CTX_S;
 
+#ifdef ROCKIVA
 typedef struct _rkMpiIvaCtx {
 	RK_U32 u32ImageWidth;
 	RK_U32 u32ImageHeight;
@@ -255,6 +258,7 @@ typedef struct _rkMpiIvaCtx {
 	RockIvaInitParam commonParams;
 	ROCKIVA_BA_ResultCallback resultCallback;
 } SAMPLE_IVA_CTX_S;
+#endif
 
 /*******************************************************
     function announce
@@ -304,8 +308,10 @@ RK_S32 SAMPLE_COMM_UnBind(const MPP_CHN_S *pstSrcChn, const MPP_CHN_S *pstDestCh
 
 RK_S32 SAMPLE_COMM_GetBmpResolution(RK_CHAR *pBmpFile, RK_U32 *width, RK_U32 *height);
 
+#ifdef ROCKIVA
 RK_S32 SAMPLE_COMM_IVA_Create(SAMPLE_IVA_CTX_S *ctx);
 RK_S32 SAMPLE_COMM_IVA_Destroy(SAMPLE_IVA_CTX_S *ctx);
+#endif
 
 RK_S32 SAMPLE_COMM_IVS_Create(SAMPLE_IVS_CTX_S *ctx);
 RK_S32 SAMPLE_COMM_IVS_Destroy(RK_S32 s32IvsChnid);
