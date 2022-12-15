@@ -127,7 +127,7 @@ static void *vi_get_stream(void *pArgs) {
 			}
 
 			RK_LOGE(
-			    "SAMPLE_COMM_VI_GetChnFrame DevId %d ok:data %p size:%d loop:%d seq:%d "
+			    "SAMPLE_COMM_VI_GetChnFrame DevId %d ok:data %p size:%llu loop:%d seq:%d "
 			    "pts:%lld ms\n",
 			    ctx->s32DevId, pData, ctx->stViFrame.stVFrame.u64PrivateData, loopCount,
 			    ctx->stViFrame.stVFrame.u32TimeRef,
@@ -231,7 +231,7 @@ static void *vpss_get_stream(void *pArgs) {
 			}
 #endif
 			RK_LOGD(
-			    "SAMPLE_COMM_VPSS_GetChnFrame DevId %d ok:data %p size:%d loop:%d seq:%d "
+			    "SAMPLE_COMM_VPSS_GetChnFrame DevId %d ok:data %p size:%llu loop:%d seq:%d "
 			    "pts:%lld ms\n",
 			    ctx->s32GrpId, pData, ctx->stChnFrameInfos.stVFrame.u64PrivateData,
 			    loopCount, ctx->stChnFrameInfos.stVFrame.u32TimeRef,

@@ -121,7 +121,7 @@ static void *GetMediaBuffer0(void *arg) {
 			void *data = RK_MPI_MB_Handle2VirAddr(stViFrame.stVFrame.pMbBlk);
 			fd = RK_MPI_MB_Handle2Fd(stViFrame.stVFrame.pMbBlk);
 
-			RK_LOGD("RK_MPI_VI_GetChnFrame ok:data %p loop:%d seq:%d pts:%lld ms len=%d", data, loopCount,
+			RK_LOGD("RK_MPI_VI_GetChnFrame ok:data %p loop:%d seq:%d pts:%lld ms len=%llu", data, loopCount,
 							 stViFrame.stVFrame.u32TimeRef, stViFrame.stVFrame.u64PTS / 1000, stViFrame.stVFrame.u64PrivateData);
 
 			// 6.get the channel status

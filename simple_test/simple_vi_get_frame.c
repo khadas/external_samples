@@ -39,7 +39,7 @@ static void *GetMediaBuffer0(void *arg) {
 		if (s32Ret == RK_SUCCESS) {
 			RK_U64 nowUs = TEST_COMM_GetNowUs();
 			void *data = RK_MPI_MB_Handle2VirAddr(stViFrame.stVFrame.pMbBlk);
-			RK_LOGD("RK_MPI_VI_GetChnFrame ok:data %p loop:%d seq:%d pts:%lld ms len=%d", data, loopCount,
+			RK_LOGD("RK_MPI_VI_GetChnFrame ok:data %p loop:%d seq:%d pts:%lld ms len=%llu", data, loopCount,
 							 stViFrame.stVFrame.u32TimeRef, stViFrame.stVFrame.u64PTS / 1000, stViFrame.stVFrame.u64PrivateData);
 			// 6.get the channel status
 			s32Ret = RK_MPI_VI_QueryChnStatus(pipeId, channelId, &stChnStatus);

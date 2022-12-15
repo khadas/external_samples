@@ -133,7 +133,7 @@ static void *vi_get_stream(void *pArgs) {
 			}
 
 			printf(
-			    "SAMPLE_COMM_VI_GetChnFrame DevId %d ok:data %p size:%d loop:%d seq:%d "
+			    "SAMPLE_COMM_VI_GetChnFrame DevId %d ok:data %p size:%llu loop:%d seq:%d "
 			    "pts:%lld ms\n",
 			    ctx->s32DevId, pData, ctx->stViFrame.stVFrame.u64PrivateData, loopCount,
 			    ctx->stViFrame.stVFrame.u32TimeRef,
