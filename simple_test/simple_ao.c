@@ -1,13 +1,13 @@
-//AO
+// AO
 
-#include <stdio.h>
-#include <sys/poll.h>
 #include <errno.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/poll.h>
+#include <unistd.h>
 
 #include "sample_comm.h"
 
@@ -19,9 +19,8 @@ static void sigterm_handler(int sig) {
 
 static FILE *ao_file;
 
-RK_S32 ao_set_other(RK_S32 s32SetVolume)
-{
-	printf("\n=======%s=======\n",__func__);
+RK_S32 ao_set_other(RK_S32 s32SetVolume) {
+	printf("\n=======%s=======\n", __func__);
 	int s32DevId = 0;
 	RK_S32 volume = 0;
 
@@ -39,10 +38,9 @@ RK_S32 ao_set_other(RK_S32 s32SetVolume)
 	return 0;
 }
 
-
-RK_S32 open_device_ao(RK_S32 s32ReSmpSampleRate, RK_S32 s32SampleRate, RK_S32 u32FrameCnt)
-{
-	printf("\n=======%s=======\n",__func__);
+RK_S32 open_device_ao(RK_S32 s32ReSmpSampleRate, RK_S32 s32SampleRate,
+                      RK_S32 u32FrameCnt) {
+	printf("\n=======%s=======\n", __func__);
 	RK_S32 result = 0;
 	AUDIO_DEV aoDevId = 0;
 	AO_CHN aoChn = 0;
@@ -52,17 +50,17 @@ RK_S32 open_device_ao(RK_S32 s32ReSmpSampleRate, RK_S32 s32SampleRate, RK_S32 u3
 	memset(&pstParams, 0, sizeof(AO_CHN_PARAM_S));
 	memset(&aoAttr, 0, sizeof(AIO_ATTR_S));
 	/*==============================================================================*/
-	sprintf((char *)aoAttr.u8CardName, "%s","hw:0,0");
+	sprintf((char *)aoAttr.u8CardName, "%s", "hw:0,0");
 
-	aoAttr.soundCard.channels = 2;      //2
-	aoAttr.soundCard.sampleRate = s32SampleRate;//s32SampleRate;       16000
+	aoAttr.soundCard.channels = 2;               // 2
+	aoAttr.soundCard.sampleRate = s32SampleRate; // s32SampleRate;       16000
 	aoAttr.soundCard.bitWidth = AUDIO_BIT_WIDTH_16;
 
-	aoAttr.enBitwidth = AUDIO_BIT_WIDTH_16;                   //AUDIO_BIT_WIDTH_16
-	aoAttr.enSamplerate = (AUDIO_SAMPLE_RATE_E)s32SampleRate; //16000
+	aoAttr.enBitwidth = AUDIO_BIT_WIDTH_16;                   // AUDIO_BIT_WIDTH_16
+	aoAttr.enSamplerate = (AUDIO_SAMPLE_RATE_E)s32SampleRate; // 16000
 
 	aoAttr.enSoundmode = AUDIO_SOUND_MODE_MONO;
-	aoAttr.u32PtNumPerFrm = u32FrameCnt;   //1024
+	aoAttr.u32PtNumPerFrm = u32FrameCnt; // 1024
 	//以下参数没有特殊需要，无需修改
 	aoAttr.u32FrmNum = 4;
 	aoAttr.u32EXFlag = 0;
@@ -85,9 +83,10 @@ RK_S32 open_device_ao(RK_S32 s32ReSmpSampleRate, RK_S32 s32SampleRate, RK_S32 u3
 	}
 	/*==============================================================================*/
 	// set sample rate of input data
-	if(s32ReSmpSampleRate != s32SampleRate){
+	if (s32ReSmpSampleRate != s32SampleRate) {
 		printf("********RK_MPI_AO_EnableReSmp*********\n");
-		result = RK_MPI_AO_EnableReSmp(aoDevId, aoChn, (AUDIO_SAMPLE_RATE_E)s32ReSmpSampleRate);
+		result = RK_MPI_AO_EnableReSmp(aoDevId, aoChn,
+		                               (AUDIO_SAMPLE_RATE_E)s32ReSmpSampleRate);
 		if (result != 0) {
 			RK_LOGE("ao enable channel fail, reason = %x, aoChn = %d", result, aoChn);
 			return RK_FAILURE;
@@ -102,15 +101,16 @@ RK_S32 open_device_ao(RK_S32 s32ReSmpSampleRate, RK_S32 s32SampleRate, RK_S32 u3
 static RK_CHAR optstr[] = "?::d:r:i:t:s:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
-	printf("\t%s -r 16000 -s 16000 -i /tmp/16000.pcm\n", name);				//正常情况-r -s 配置成一样的就好
+	printf("\t%s -r 16000 -s 16000 -i /tmp/16000.pcm\n",
+	       name); //正常情况-r -s 配置成一样的就好
 	printf("\t-r: Resample rate, Default:16000\n");
-	printf("\t-s: sample rate, Default:16000\n");				
+	printf("\t-s: sample rate, Default:16000\n");
 	printf("\t-i: input path, Default:\"/tmp/16000.pcm\"\n");
 }
 
 int main(int argc, char *argv[]) {
-	RK_S32 u32SampleRate = 16000;				//device samplerate
-	RK_S32 s32ReSmpSampleRate = 16000;	//input pcm samplerate
+	RK_S32 u32SampleRate = 16000;      // device samplerate
+	RK_S32 s32ReSmpSampleRate = 16000; // input pcm samplerate
 	RK_U32 u32FrameCnt = 1024;
 	RK_CHAR *pInPath = "/tmp/16000.pcm";
 	int c;
@@ -153,7 +153,6 @@ int main(int argc, char *argv[]) {
 
 	printf("%s initial finish\n", __func__);
 
-
 	RK_U8 *srcData = RK_NULL;
 	RK_S32 srcSize = 0;
 	RK_U64 timeStamp = 0;
@@ -177,19 +176,19 @@ int main(int argc, char *argv[]) {
 		extConfig.pu8VirAddr = srcData;
 		extConfig.u64Size = srcSize;
 		RK_MPI_SYS_CreateMB(&(frame.pMbBlk), &extConfig);
-__RETRY:
+	__RETRY:
 		result = RK_MPI_AO_SendFrame(0, 0, &frame, s32MilliSec);
 		if (result < 0) {
-				RK_LOGE("send frame fail, result = %d, TimeStamp = %lld, s32MilliSec = %d",
-						result, frame.u64TimeStamp, s32MilliSec);
-				goto __RETRY;
+			RK_LOGE("send frame fail, result = %d, TimeStamp = %lld, s32MilliSec = %d",
+			        result, frame.u64TimeStamp, s32MilliSec);
+			goto __RETRY;
 		}
 		RK_MPI_MB_ReleaseMB(frame.pMbBlk);
 
 		if (srcSize <= 0) {
-				printf("eof");
-				RK_MPI_AO_WaitEos(0, 0, s32MilliSec);
-				break;
+			printf("eof");
+			RK_MPI_AO_WaitEos(0, 0, s32MilliSec);
+			break;
 		}
 	}
 

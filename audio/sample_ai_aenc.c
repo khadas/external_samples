@@ -78,8 +78,8 @@ static void GetHeader(RK_U8 *pu8Hdr, RK_S32 u32SmpRate, RK_U8 u8Channel,
 }
 
 /******************************************************************************
-* function : aenc thread
-******************************************************************************/
+ * function : aenc thread
+ ******************************************************************************/
 static void *aenc_get_stream(void *pArgs) {
 	SAMPLE_AENC_CTX_S *ctx = (SAMPLE_AENC_CTX_S *)(pArgs);
 	RK_S32 s32Ret = RK_FAILURE;

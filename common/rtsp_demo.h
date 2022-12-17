@@ -27,7 +27,7 @@ enum rtsp_codec_id {
 	RTSP_CODEC_ID_AUDIO_G711U,          /*codec_data is NULL*/
 	RTSP_CODEC_ID_AUDIO_G726,           /*codec_data is bitrate (int)*/
 	RTSP_CODEC_ID_AUDIO_AAC,            /*codec_data is audio specific config (2bytes).
-                                           frame type is ADTS*/
+	                                       frame type is ADTS*/
 };
 
 typedef void *rtsp_demo_handle;

@@ -1,11 +1,11 @@
 
-#include <stdio.h>
-#include <sys/poll.h>
 #include <errno.h>
-#include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdio.h>
+#include <sys/poll.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "sample_comm.h"
 
@@ -44,27 +44,25 @@ static void *GetMediaBuffer0(void *arg) {
 			}
 			RK_U64 nowUs = TEST_COMM_GetNowUs();
 
-			RK_LOGD("chn:0, loopCount:%d enc->seq:%d wd:%d pts=%lld delay=%lldus\n", loopCount,
-					stFrame.u32Seq, stFrame.pstPack->u32Len, stFrame.pstPack->u64PTS, nowUs - stFrame.pstPack->u64PTS);
+			RK_LOGD("chn:0, loopCount:%d enc->seq:%d wd:%d pts=%lld delay=%lldus\n",
+			        loopCount, stFrame.u32Seq, stFrame.pstPack->u32Len,
+			        stFrame.pstPack->u64PTS, nowUs - stFrame.pstPack->u64PTS);
 
 			s32Ret = RK_MPI_VENC_ReleaseStream(0, &stFrame);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("RK_MPI_VENC_ReleaseStream fail %x", s32Ret);
 			}
 			loopCount++;
-		}
-		else
-		{
+		} else {
 			RK_LOGE("RK_MPI_VI_GetChnFrame fail %x", s32Ret);
 		}
 
-		if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt))
-		{
+		if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt)) {
 			quit = true;
 			break;
 		}
 
-		usleep(10*1000);
+		usleep(10 * 1000);
 	}
 
 	if (venc0_file)
@@ -72,15 +70,13 @@ static void *GetMediaBuffer0(void *arg) {
 
 	free(stFrame.pstPack);
 	return NULL;
-
 }
 
-static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enType)
-{
+static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enType) {
 	printf("========%s========\n", __func__);
 	VENC_RECV_PIC_PARAM_S stRecvParam;
 	VENC_CHN_ATTR_S stAttr;
-	memset(&stAttr,0,sizeof(VENC_CHN_ATTR_S));
+	memset(&stAttr, 0, sizeof(VENC_CHN_ATTR_S));
 
 	stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H264CBR;
 	stAttr.stRcAttr.stH264Cbr.u32BitRate = 10 * 1024;
@@ -109,11 +105,11 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
 	return 0;
 }
 
-//demo板dev默认都是0，根据不同的channel 来选择不同的vi节点
+// demo板dev默认都是0，根据不同的channel 来选择不同的vi节点
 int vi_dev_init() {
 	printf("%s\n", __func__);
 	int ret = 0;
-	int devId=0;
+	int devId = 0;
 	int pipeId = devId;
 
 	VI_DEV_ATTR_S stDevAttr;
@@ -163,7 +159,8 @@ int vi_chn_init(int channelId, int width, int height) {
 	VI_CHN_ATTR_S vi_chn_attr;
 	memset(&vi_chn_attr, 0, sizeof(vi_chn_attr));
 	vi_chn_attr.stIspOpt.u32BufCount = buf_cnt;
-	vi_chn_attr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;//VI_V4L2_MEMORY_TYPE_MMAP;
+	vi_chn_attr.stIspOpt.enMemoryType =
+	    VI_V4L2_MEMORY_TYPE_DMABUF; // VI_V4L2_MEMORY_TYPE_MMAP;
 	vi_chn_attr.stSize.u32Width = width;
 	vi_chn_attr.stSize.u32Height = height;
 	vi_chn_attr.enPixelFormat = RK_FMT_YUV420SP;
@@ -186,13 +183,13 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-w | --width: VI width, Default:1920\n");
 	printf("\t-h | --heght: VI height, Default:1080\n");
 	printf("\t-c | --frame_cnt: frame number of output, Default:150\n");
-	printf("\t-I | --camid: camera ctx id, Default 0. 0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
+	printf("\t-I | --camid: camera ctx id, Default 0. "
+	       "0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
 	printf("\t-e | --encode: encode type, Default:h264, Value:h264, h265, mjpeg\n");
 	printf("\t-o: output path, Default:NULL\n");
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_U32 u32Width = 1920;
 	RK_U32 u32Height = 1080;
@@ -215,7 +212,7 @@ int main(int argc, char *argv[])
 			break;
 		case 'c':
 			g_s32FrameCnt = atoi(optarg);
-				break;
+			break;
 		case 'e':
 			if (!strcmp(optarg, "h264")) {
 				enCodecType = RK_VIDEO_ID_AVC;
@@ -265,21 +262,22 @@ int main(int argc, char *argv[])
 	vi_chn_init(s32chnlId, u32Width, u32Height);
 
 	// venc  init
-	test_venc_init(0, u32Width, u32Height, enCodecType);//RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
+	test_venc_init(0, u32Width, u32Height,
+	               enCodecType); // RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
 
 	MPP_CHN_S stSrcChn, stDestChn;
 	// bind vi to venc
-	stSrcChn.enModId    = RK_ID_VI;
-	stSrcChn.s32DevId   = 0;
-	stSrcChn.s32ChnId   = s32chnlId;
+	stSrcChn.enModId = RK_ID_VI;
+	stSrcChn.s32DevId = 0;
+	stSrcChn.s32ChnId = s32chnlId;
 
-	stDestChn.enModId   = RK_ID_VENC;
-	stDestChn.s32DevId  = 0;
-	stDestChn.s32ChnId  = 0;
+	stDestChn.enModId = RK_ID_VENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = 0;
 	printf("====RK_MPI_SYS_Bind vi0 to venc0====\n");
 	s32Ret = RK_MPI_SYS_Bind(&stSrcChn, &stDestChn);
 	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("bind 0 ch venc failed" );
+		RK_LOGE("bind 0 ch venc failed");
 		goto __FAILED;
 	}
 
@@ -312,11 +310,9 @@ int main(int argc, char *argv[])
 	s32Ret = RK_MPI_VI_DisableDev(0);
 	RK_LOGE("RK_MPI_VI_DisableDev %x", s32Ret);
 
-
 __FAILED:
 	RK_LOGE("test running exit:%d", s32Ret);
 	RK_MPI_SYS_Exit();
 
 	return 0;
 }
-

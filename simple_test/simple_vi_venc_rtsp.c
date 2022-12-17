@@ -1,13 +1,13 @@
-#include <stdio.h>
-#include <sys/poll.h>
 #include <errno.h>
-#include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdio.h>
+#include <sys/poll.h>
 #include <time.h>
+#include <unistd.h>
 
-#include "sample_comm.h"
 #include "rtsp_demo.h"
+#include "sample_comm.h"
 
 static RK_S32 g_s32FrameCnt = -1;
 static RK_U32 g_u32Bitrate = 10 * 1024;
@@ -43,42 +43,40 @@ static void *GetMediaBuffer0(void *arg) {
 			if (g_rtsplive && g_rtsp_session) {
 				pData = RK_MPI_MB_Handle2VirAddr(stFrame.pstPack->pMbBlk);
 				rtsp_tx_video(g_rtsp_session, pData, stFrame.pstPack->u32Len,
-											stFrame.pstPack->u64PTS);
+				              stFrame.pstPack->u64PTS);
 				rtsp_do_event(g_rtsplive);
 			}
 
 			RK_U64 nowUs = TEST_COMM_GetNowUs();
 
-			RK_LOGD("chn:0, loopCount:%d enc->seq:%d wd:%d pts=%lld delay=%lldus\n", loopCount,
-							 stFrame.u32Seq, stFrame.pstPack->u32Len, stFrame.pstPack->u64PTS, nowUs - stFrame.pstPack->u64PTS);
+			RK_LOGD("chn:0, loopCount:%d enc->seq:%d wd:%d pts=%lld delay=%lldus\n",
+			        loopCount, stFrame.u32Seq, stFrame.pstPack->u32Len,
+			        stFrame.pstPack->u64PTS, nowUs - stFrame.pstPack->u64PTS);
 
 			s32Ret = RK_MPI_VENC_ReleaseStream(0, &stFrame);
 			if (s32Ret != RK_SUCCESS) {
-					RK_LOGE("RK_MPI_VENC_ReleaseStream fail %x", s32Ret);
+				RK_LOGE("RK_MPI_VENC_ReleaseStream fail %x", s32Ret);
 			}
 			loopCount++;
 		}
 
-		if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt))
-		{
+		if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt)) {
 			quit = true;
 			break;
 		}
 
-		usleep(10*1000);
+		usleep(10 * 1000);
 	}
 	printf("\n======exit %s=======\n", __func__);
 	free(stFrame.pstPack);
 	return NULL;
-
 }
 
-static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enType)
-{
+static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enType) {
 	printf("========%s========\n", __func__);
 	VENC_RECV_PIC_PARAM_S stRecvParam;
 	VENC_CHN_ATTR_S stAttr;
-	memset(&stAttr,0,sizeof(VENC_CHN_ATTR_S));
+	memset(&stAttr, 0, sizeof(VENC_CHN_ATTR_S));
 
 	stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H264CBR;
 	stAttr.stRcAttr.stH264Cbr.u32BitRate = g_u32Bitrate;
@@ -107,7 +105,7 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
 int vi_dev_init() {
 	printf("%s\n", __func__);
 	int ret = 0;
-	int devId=0;
+	int devId = 0;
 	int pipeId = devId;
 
 	VI_DEV_ATTR_S stDevAttr;
@@ -157,7 +155,8 @@ int vi_chn_init(int channelId, int width, int height) {
 	VI_CHN_ATTR_S vi_chn_attr;
 	memset(&vi_chn_attr, 0, sizeof(vi_chn_attr));
 	vi_chn_attr.stIspOpt.u32BufCount = buf_cnt;
-	vi_chn_attr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;//VI_V4L2_MEMORY_TYPE_MMAP;
+	vi_chn_attr.stIspOpt.enMemoryType =
+	    VI_V4L2_MEMORY_TYPE_DMABUF; // VI_V4L2_MEMORY_TYPE_MMAP;
 	vi_chn_attr.stSize.u32Width = width;
 	vi_chn_attr.stSize.u32Height = height;
 	vi_chn_attr.enPixelFormat = RK_FMT_YUV420SP;
@@ -181,13 +180,13 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-h | --heght: VI height, Default:1080\n");
 	printf("\t-a | --aiq: iq file path, Default:/etc/iqfiles\n");
 	printf("\t-c | --frame_cnt: frame number of output, Default:150\n");
-	printf("\t-I | --camid: camera ctx id, Default 0. 0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
+	printf("\t-I | --camid: camera ctx id, Default 0. "
+	       "0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
 	printf("\t-e | --encode: encode type, Default:h264, Value:h264, h265\n");
 	printf("\t-b | --bitrate: set bitrate (Kbps), Default: 10Mbps\n");
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_U32 u32Width = 1920;
 	RK_U32 u32Height = 1080;
@@ -201,7 +200,7 @@ int main(int argc, char *argv[])
 	while ((c = getopt(argc, argv, optstr)) != -1) {
 		switch (c) {
 		case 'a':
-			if(optarg)
+			if (optarg)
 				iq_dir = optarg;
 			break;
 		case 'w':
@@ -250,7 +249,7 @@ int main(int argc, char *argv[])
 		printf("ISP IQ file path: %s\n\n", iq_dir);
 		SAMPLE_COMM_ISP_Init(0, RK_AIQ_WORKING_MODE_NORMAL, 0, iq_dir);
 		SAMPLE_COMM_ISP_Run(0);
-		//SAMPLE_COMM_ISP_SetFrameRate(0, fps);
+		// SAMPLE_COMM_ISP_SetFrameRate(0, fps);
 #endif
 	}
 
@@ -276,21 +275,22 @@ int main(int argc, char *argv[])
 	vi_chn_init(s32chnlId, u32Width, u32Height);
 
 	// venc  init
-	test_venc_init(0, u32Width, u32Height, enCodecType);//RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
+	test_venc_init(0, u32Width, u32Height,
+	               enCodecType); // RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
 
 	MPP_CHN_S stSrcChn, stDestChn;
 	// bind vi to venc
-	stSrcChn.enModId    = RK_ID_VI;
-	stSrcChn.s32DevId   = 0;
-	stSrcChn.s32ChnId   = s32chnlId;
+	stSrcChn.enModId = RK_ID_VI;
+	stSrcChn.s32DevId = 0;
+	stSrcChn.s32ChnId = s32chnlId;
 
-	stDestChn.enModId   = RK_ID_VENC;
-	stDestChn.s32DevId  = 0;
-	stDestChn.s32ChnId  = 0;
+	stDestChn.enModId = RK_ID_VENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = 0;
 	printf("====RK_MPI_SYS_Bind vi0 to venc0====\n");
 	s32Ret = RK_MPI_SYS_Bind(&stSrcChn, &stDestChn);
 	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("bind 0 ch venc failed" );
+		RK_LOGE("bind 0 ch venc failed");
 		goto __FAILED;
 	}
 
@@ -336,4 +336,3 @@ __FAILED:
 
 	return 0;
 }
-

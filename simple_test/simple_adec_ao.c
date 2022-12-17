@@ -1,15 +1,14 @@
-//adec->ao
-#include <stdio.h>
-#include <sys/poll.h>
+// adec->ao
 #include <errno.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/poll.h>
+#include <unistd.h>
 
 #include "sample_comm.h"
-
 
 static bool quit = false;
 static void sigterm_handler(int sig) {
@@ -21,9 +20,8 @@ static RK_U32 code_type = RK_AUDIO_ID_ADPCM_G726;
 
 static FILE *adec_file;
 
-RK_S32 ao_set_other(RK_S32 s32SetVolume)
-{
-	printf("\n=======%s=======\n",__func__);
+RK_S32 ao_set_other(RK_S32 s32SetVolume) {
+	printf("\n=======%s=======\n", __func__);
 	int s32DevId = 0;
 	RK_S32 volume = 0;
 
@@ -40,10 +38,8 @@ RK_S32 ao_set_other(RK_S32 s32SetVolume)
 	return 0;
 }
 
-
-RK_S32 open_device_ao(RK_S32 s32SampleRate, RK_S32 u32FrameCnt)
-{
-	printf("\n=======%s=======\n",__func__);
+RK_S32 open_device_ao(RK_S32 s32SampleRate, RK_S32 u32FrameCnt) {
+	printf("\n=======%s=======\n", __func__);
 	RK_S32 result = 0;
 	AUDIO_DEV aoDevId = 0;
 	AO_CHN aoChn = 0;
@@ -53,17 +49,17 @@ RK_S32 open_device_ao(RK_S32 s32SampleRate, RK_S32 u32FrameCnt)
 	memset(&pstParams, 0, sizeof(AO_CHN_PARAM_S));
 	memset(&aoAttr, 0, sizeof(AIO_ATTR_S));
 	/*==============================================================================*/
-	sprintf((char *)aoAttr.u8CardName, "%s","hw:0,0");
+	sprintf((char *)aoAttr.u8CardName, "%s", "hw:0,0");
 
-	aoAttr.soundCard.channels = 2;      //2
-	aoAttr.soundCard.sampleRate = 48000;//s32SampleRate;       16000
+	aoAttr.soundCard.channels = 2;       // 2
+	aoAttr.soundCard.sampleRate = 48000; // s32SampleRate;       16000
 	aoAttr.soundCard.bitWidth = AUDIO_BIT_WIDTH_16;
 
-	aoAttr.enBitwidth = AUDIO_BIT_WIDTH_16;                   //AUDIO_BIT_WIDTH_16
-	aoAttr.enSamplerate = (AUDIO_SAMPLE_RATE_E)s32SampleRate; //16000
+	aoAttr.enBitwidth = AUDIO_BIT_WIDTH_16;                   // AUDIO_BIT_WIDTH_16
+	aoAttr.enSamplerate = (AUDIO_SAMPLE_RATE_E)s32SampleRate; // 16000
 
 	aoAttr.enSoundmode = AUDIO_SOUND_MODE_MONO;
-	aoAttr.u32PtNumPerFrm = u32FrameCnt;   //1024
+	aoAttr.u32PtNumPerFrm = u32FrameCnt; // 1024
 	//以下参数没有特殊需要，无需修改
 	aoAttr.u32FrmNum = 4;
 	aoAttr.u32EXFlag = 0;
@@ -97,24 +93,22 @@ RK_S32 open_device_ao(RK_S32 s32SampleRate, RK_S32 u32FrameCnt)
 	return RK_SUCCESS;
 }
 
-
-RK_S32 init_mpi_adec(RK_S32 s32SampleRate)
-{
-	printf("\n=======%s=======\n",__func__);
+RK_S32 init_mpi_adec(RK_S32 s32SampleRate) {
+	printf("\n=======%s=======\n", __func__);
 	RK_S32 s32ret = 0;
 	ADEC_CHN AdChn = 0;
 	ADEC_CHN_ATTR_S pstChnAttr;
 	memset(&pstChnAttr, 0, sizeof(ADEC_CHN_ATTR_S));
 
 	pstChnAttr.stCodecAttr.enType = (RK_CODEC_ID_E)code_type;
-	pstChnAttr.stCodecAttr.u32Channels = 1;					//default 1
+	pstChnAttr.stCodecAttr.u32Channels = 1; // default 1
 	pstChnAttr.stCodecAttr.u32SampleRate = s32SampleRate;
 	pstChnAttr.stCodecAttr.u32BitPerCodedSample = 4;
 
 	pstChnAttr.enType = (RK_CODEC_ID_E)code_type;
-	pstChnAttr.enMode = ADEC_MODE_STREAM; //ADEC_MODE_PACK
+	pstChnAttr.enMode = ADEC_MODE_STREAM; // ADEC_MODE_PACK
 	pstChnAttr.u32BufCount = 4;
-	pstChnAttr.u32BufSize = 50*1024;
+	pstChnAttr.u32BufSize = 50 * 1024;
 	s32ret = RK_MPI_ADEC_CreateChn(AdChn, &pstChnAttr);
 	if (s32ret) {
 		RK_LOGE("create adec chn %d err:0x%x\n", AdChn, s32ret);
@@ -156,20 +150,20 @@ int main(int argc, char *argv[]) {
 		case 'i':
 			pInPath = optarg;
 			break;
-			case 't':
-				if (!strcmp(optarg, "g711a")) {
-					code_type = RK_AUDIO_ID_PCM_ALAW;
-					pCodecName = "g711a";
-				} else if (!strcmp(optarg, "g711u")) {
-					code_type = RK_AUDIO_ID_PCM_MULAW;
-					pCodecName = "g711u";
-				} else if (!strcmp(optarg, "g726")) {
-					code_type = RK_AUDIO_ID_ADPCM_G726;
-					pCodecName = "g726";
-				} else {
-					printf("ERROR: Invalid encoder type.\n");
-					return 0;
-				}
+		case 't':
+			if (!strcmp(optarg, "g711a")) {
+				code_type = RK_AUDIO_ID_PCM_ALAW;
+				pCodecName = "g711a";
+			} else if (!strcmp(optarg, "g711u")) {
+				code_type = RK_AUDIO_ID_PCM_MULAW;
+				pCodecName = "g711u";
+			} else if (!strcmp(optarg, "g726")) {
+				code_type = RK_AUDIO_ID_ADPCM_G726;
+				pCodecName = "g726";
+			} else {
+				printf("ERROR: Invalid encoder type.\n");
+				return 0;
+			}
 			break;
 		case '?':
 		default:
@@ -197,26 +191,24 @@ int main(int argc, char *argv[]) {
 	open_device_ao(u32SampleRate, u32FrameCnt);
 	init_mpi_adec(u32SampleRate);
 
-
-	//adec bind ao
+	// adec bind ao
 	MPP_CHN_S stSrcChn, stDestChn;
-	stSrcChn.enModId    = RK_ID_ADEC;
-	stSrcChn.s32DevId   = 0;
-	stSrcChn.s32ChnId   = 0;
+	stSrcChn.enModId = RK_ID_ADEC;
+	stSrcChn.s32DevId = 0;
+	stSrcChn.s32ChnId = 0;
 
-	stDestChn.enModId   = RK_ID_AO;
-	stDestChn.s32DevId  = 0;
-	stDestChn.s32ChnId  = 0;
+	stDestChn.enModId = RK_ID_AO;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = 0;
 
 	// 3. bind AI-AENC
 	ret = RK_MPI_SYS_Bind(&stSrcChn, &stDestChn);
 	if (ret) {
-	printf("Bind AI[0] to AENC[0] failed! ret=%d\n", ret);
-	return -1;
+		printf("Bind AI[0] to AENC[0] failed! ret=%d\n", ret);
+		return -1;
 	}
 
 	printf("%s initial finish\n", __func__);
-
 
 	RK_U8 *srcData = RK_NULL;
 	RK_S32 srcSize = 0;
@@ -224,7 +216,6 @@ int main(int argc, char *argv[]) {
 	RK_U64 timeStamp = 0;
 	RK_S32 count = 0;
 	AUDIO_STREAM_S stAudioStream;
-
 
 	while (!quit) {
 		srcData = calloc(1024, sizeof(RK_U8));
@@ -241,9 +232,7 @@ int main(int argc, char *argv[]) {
 			// free srcData here, otherwise it will be leaked
 			free(srcData);
 			break;
-		}
-		else
-		{
+		} else {
 			stAudioStream.u32Len = srcSize;
 			stAudioStream.u64TimeStamp = timeStamp;
 			stAudioStream.u32Seq = ++count;
@@ -252,9 +241,9 @@ int main(int argc, char *argv[]) {
 			extConfig.pFreeCB = adec_data_free;
 			extConfig.pOpaque = srcData;
 			extConfig.pu8VirAddr = srcData;
-			extConfig.u64Size    = srcSize;
+			extConfig.u64Size = srcSize;
 			RK_MPI_SYS_CreateMB(&(stAudioStream.pMbBlk), &extConfig);
-__RETRY:
+		__RETRY:
 			ret = RK_MPI_ADEC_SendStream(0, &stAudioStream, RK_TRUE);
 			if (ret != RK_SUCCESS) {
 				RK_LOGE("fail to send adec stream.");
@@ -271,7 +260,6 @@ __RETRY:
 		fclose(adec_file);
 		adec_file = RK_NULL;
 	}
-
 
 	RK_MPI_SYS_UnBind(&stSrcChn, &stDestChn);
 	RK_MPI_AO_DisableReSmp(0, 0);

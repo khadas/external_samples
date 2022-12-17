@@ -1,10 +1,10 @@
-#include <stdio.h>
-#include <sys/poll.h>
 #include <errno.h>
-#include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdio.h>
+#include <sys/poll.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "sample_comm.h"
 
@@ -38,23 +38,20 @@ static void *GetMediaBuffer0(void *arg) {
 		if (s32Ret == RK_SUCCESS) {
 			RK_U64 nowUs = TEST_COMM_GetNowUs();
 			void *data = RK_MPI_MB_Handle2VirAddr(stViFrame.stVFrame.pMbBlk);
-			RK_LOGD("RK_MPI_VI_GetChnFrame ok:data %p loop:%d seq:%d pts:%lld ms len=%llu", data, loopCount,
-							 stViFrame.stVFrame.u32TimeRef, stViFrame.stVFrame.u64PTS / 1000, stViFrame.stVFrame.u64PrivateData);
+			RK_LOGD(
+			    "RK_MPI_VI_GetChnFrame ok:data %p loop:%d seq:%d pts:%lld ms len=%llu",
+			    data, loopCount, stViFrame.stVFrame.u32TimeRef,
+			    stViFrame.stVFrame.u64PTS / 1000, stViFrame.stVFrame.u64PrivateData);
 			// 6.get the channel status
 			s32Ret = RK_MPI_VI_QueryChnStatus(pipeId, channelId, &stChnStatus);
-			RK_LOGD("RK_MPI_VI_QueryChnStatus ret %x, w:%d,h:%d,enable:%d," \
-							"current frame id:%d,input lost:%d,output lost:%d," \
-							"framerate:%d,vbfail:%d delay=%lldus",
-							 s32Ret,
-							 stChnStatus.stSize.u32Width,
-							 stChnStatus.stSize.u32Height,
-							 stChnStatus.bEnable,
-							 stChnStatus.u32CurFrameID,
-							 stChnStatus.u32InputLostFrame,
-							 stChnStatus.u32OutputLostFrame,
-							 stChnStatus.u32FrameRate,
-							 stChnStatus.u32VbFail,
-							 nowUs - stViFrame.stVFrame.u64PTS);
+			RK_LOGD("RK_MPI_VI_QueryChnStatus ret %x, w:%d,h:%d,enable:%d,"
+			        "current frame id:%d,input lost:%d,output lost:%d,"
+			        "framerate:%d,vbfail:%d delay=%lldus",
+			        s32Ret, stChnStatus.stSize.u32Width, stChnStatus.stSize.u32Height,
+			        stChnStatus.bEnable, stChnStatus.u32CurFrameID,
+			        stChnStatus.u32InputLostFrame, stChnStatus.u32OutputLostFrame,
+			        stChnStatus.u32FrameRate, stChnStatus.u32VbFail,
+			        nowUs - stViFrame.stVFrame.u64PTS);
 
 			// 7.release the frame
 			s32Ret = RK_MPI_VI_ReleaseChnFrame(pipeId, channelId, &stViFrame);
@@ -66,22 +63,20 @@ static void *GetMediaBuffer0(void *arg) {
 			RK_LOGE("RK_MPI_VI_GetChnFrame timeout %x", s32Ret);
 		}
 
-		if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt))
-		{
+		if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt)) {
 			quit = true;
 			break;
 		}
-
 	}
 
 	return NULL;
 }
 
-//demo板dev默认都是0，根据不同的channel 来选择不同的vi节点
+// demo板dev默认都是0，根据不同的channel 来选择不同的vi节点
 int vi_dev_init() {
 	printf("%s\n", __func__);
 	int ret = 0;
-	int devId=0;
+	int devId = 0;
 	int pipeId = devId;
 
 	VI_DEV_ATTR_S stDevAttr;
@@ -131,7 +126,8 @@ int vi_chn_init(int channelId, int width, int height) {
 	VI_CHN_ATTR_S vi_chn_attr;
 	memset(&vi_chn_attr, 0, sizeof(vi_chn_attr));
 	vi_chn_attr.stIspOpt.u32BufCount = buf_cnt;
-	vi_chn_attr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;//VI_V4L2_MEMORY_TYPE_MMAP;
+	vi_chn_attr.stIspOpt.enMemoryType =
+	    VI_V4L2_MEMORY_TYPE_DMABUF; // VI_V4L2_MEMORY_TYPE_MMAP;
 	vi_chn_attr.stSize.u32Width = width;
 	vi_chn_attr.stSize.u32Height = height;
 	vi_chn_attr.enPixelFormat = RK_FMT_YUV420SP;
@@ -155,14 +151,14 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-w | --width: VI width, Default:1920\n");
 	printf("\t-h | --heght: VI height, Default:1080\n");
 	printf("\t-c | --frame_cnt: frame number of output, Default:-1\n");
-	printf("\t-I | --camid: camera ctx id, Default 0. 0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
+	printf("\t-I | --camid: camera ctx id, Default 0. "
+	       "0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
 	printf("\t-d | --hdr_mode: Default:0, 0:normal,1:hdr2\n");
 	printf("\t-m | --multiple sensor: Default:0 \n");
 	printf("\t-o: output path, Default:0  0 or 1 /data/test_0.yuv\n");
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_U32 u32Width = 1920;
 	RK_U32 u32Height = 1080;
@@ -177,7 +173,7 @@ int main(int argc, char *argv[])
 	while ((c = getopt(argc, argv, optstr)) != -1) {
 		switch (c) {
 		case 'a':
-			if(optarg)
+			if (optarg)
 				iq_dir = optarg;
 			else
 				iq_dir = "/etc/iqfiles";
@@ -210,18 +206,18 @@ int main(int argc, char *argv[])
 		}
 	}
 
-  if (iq_dir) {
+	if (iq_dir) {
 #ifdef RKAIQ
-    printf("#####Aiq xml dirpath: %s\n\n", iq_dir);
-    rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
-    if (hdr == 1)
-        hdr_mode = RK_AIQ_WORKING_MODE_ISP_HDR2;
-    //int fps = 30;
-    SAMPLE_COMM_ISP_Init(0, hdr_mode, multi_sensor, iq_dir);
-    SAMPLE_COMM_ISP_Run(0);
-    //SAMPLE_COMM_ISP_SetFrameRate(0, fps);
+		printf("#####Aiq xml dirpath: %s\n\n", iq_dir);
+		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
+		if (hdr == 1)
+			hdr_mode = RK_AIQ_WORKING_MODE_ISP_HDR2;
+		// int fps = 30;
+		SAMPLE_COMM_ISP_Init(0, hdr_mode, multi_sensor, iq_dir);
+		SAMPLE_COMM_ISP_Run(0);
+		// SAMPLE_COMM_ISP_SetFrameRate(0, fps);
 #endif
-  }
+	}
 
 	printf("#Resolution: %dx%d\n", u32Width, u32Height);
 	printf("#Output Path: %d\n", savefile);
@@ -239,10 +235,11 @@ int main(int argc, char *argv[])
 	vi_chn_init(s32chnlId, u32Width, u32Height);
 
 	stDebugFile.bCfg = (RK_BOOL)savefile;
-	//memcpy(stDebugFile.aFilePath, "/userdata/", strlen("/data"));
+	// memcpy(stDebugFile.aFilePath, "/userdata/", strlen("/data"));
 	strcpy(stDebugFile.aFilePath, "/userdata/");
 
-	snprintf(stDebugFile.aFileName, sizeof(stDebugFile.aFileName), "test_%d.yuv",s32chnlId);
+	snprintf(stDebugFile.aFileName, sizeof(stDebugFile.aFileName), "test_%d.yuv",
+	         s32chnlId);
 	RK_MPI_VI_ChnSaveFile(0, s32chnlId, &stDebugFile);
 
 	pthread_t main_thread;
@@ -266,8 +263,3 @@ __FAILED:
 
 	return 0;
 }
-
-
-
-
-

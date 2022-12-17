@@ -25,7 +25,6 @@ extern "C" {
 #include <fcntl.h>
 #include <getopt.h>
 #include <pthread.h>
-#include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -37,7 +36,9 @@ extern "C" {
 
 #include "sample_comm.h"
 
-typedef struct _rkMpiCtx { SAMPLE_VI_CTX_S vi[6]; } SAMPLE_MPI_CTX_S;
+typedef struct _rkMpiCtx {
+	SAMPLE_VI_CTX_S vi[6];
+} SAMPLE_MPI_CTX_S;
 
 static bool quit = false;
 static void sigterm_handler(int sig) {
@@ -63,12 +64,12 @@ static const struct option long_options[] = {
 };
 
 /******************************************************************************
-* function : show usage
-******************************************************************************/
+ * function : show usage
+ ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s -w 2560 -h 1520 -a /etc/iqfiles/ -n 6 -l 10 -o /data/\n", name);
-#if(defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ) && (defined UAPI2)
 	printf("\t-a | --aiq: enable aiq with dirpath provided, eg:-a /etc/iqfiles/, "
 	       "set dirpath empty to using path by default, without this option aiq "
 	       "should run in other application\n");
@@ -85,8 +86,8 @@ static void print_usage(const RK_CHAR *name) {
 }
 
 /******************************************************************************
-* function : vi thread
-******************************************************************************/
+ * function : vi thread
+ ******************************************************************************/
 static void *vi_get_stream(void *pArgs) {
 	SAMPLE_VI_CTX_S *ctx = (SAMPLE_VI_CTX_S *)(pArgs);
 	RK_S32 s32Ret = RK_FAILURE;
@@ -109,8 +110,8 @@ static void *vi_get_stream(void *pArgs) {
 		s32Ret = SAMPLE_COMM_VI_GetChnFrame(ctx, &pData);
 		if (s32Ret == RK_SUCCESS) {
 			if (ctx->stViFrame.stVFrame.u64PrivateData <= 0) {
-			    //SAMPLE_COMM_VI_ReleaseChnFrame(ctx);
-				//continue;
+				// SAMPLE_COMM_VI_ReleaseChnFrame(ctx);
+				// continue;
 			}
 			// exit when complete
 			if (ctx->s32loopCount > 0) {
@@ -146,9 +147,9 @@ static void *vi_get_stream(void *pArgs) {
 }
 
 /******************************************************************************
-* function    : main()
-* Description : main
-******************************************************************************/
+ * function    : main()
+ * Description : main
+ ******************************************************************************/
 int main(int argc, char *argv[]) {
 	RK_S32 s32Ret = RK_FAILURE;
 	SAMPLE_MPI_CTX_S *ctx;
@@ -174,7 +175,7 @@ int main(int argc, char *argv[]) {
 
 	signal(SIGINT, sigterm_handler);
 
-#if(defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ) && (defined UAPI2)
 	RK_BOOL bMultictx = RK_FALSE;
 #endif
 	int c;
@@ -230,7 +231,7 @@ int main(int argc, char *argv[]) {
 		case 'o':
 			pOutPath = optarg;
 			break;
-#if(defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ) && (defined UAPI2)
 		case 'M':
 			if (atoi(optarg)) {
 				bMultictx = RK_TRUE;
@@ -248,7 +249,7 @@ int main(int argc, char *argv[]) {
 	printf("#Output Path: %s\n", pOutPath);
 	printf("#IQ Path: %s\n", iq_file_dir);
 	if (iq_file_dir) {
-#if(defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ) && (defined UAPI2)
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
 		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
@@ -305,7 +306,7 @@ int main(int argc, char *argv[]) {
 __FAILED:
 	RK_MPI_SYS_Exit();
 	if (iq_file_dir) {
-#if(defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ) && (defined UAPI2)
 		SAMPLE_COMM_ISP_CamGroup_Stop(0);
 #endif
 	}

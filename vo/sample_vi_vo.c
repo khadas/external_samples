@@ -25,7 +25,6 @@ extern "C" {
 #include <fcntl.h>
 #include <getopt.h>
 #include <pthread.h>
-#include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -66,8 +65,8 @@ static const struct option long_options[] = {
 };
 
 /******************************************************************************
-* function : show usage
-******************************************************************************/
+ * function : show usage
+ ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s -w 2560 -h 1520 -a /etc/iqfiles/ -I 0 -D 3 -L 0\n", name);
@@ -88,9 +87,9 @@ static void print_usage(const RK_CHAR *name) {
 }
 
 /******************************************************************************
-* function    : main()
-* Description : main
-******************************************************************************/
+ * function    : main()
+ * Description : main
+ ******************************************************************************/
 int main(int argc, char *argv[]) {
 	RK_S32 s32Ret = RK_FAILURE;
 	SAMPLE_MPI_CTX_S *ctx;

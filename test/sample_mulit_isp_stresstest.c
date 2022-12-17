@@ -121,7 +121,7 @@ static void print_usage(const RK_CHAR *name) {
 
 static RK_S32 isp_init(void) {
 	RK_S32 s32Ret = RK_FAILURE;
-#if(defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ) && (defined UAPI2)
 	if (gModeTest->bIfIspGroupInit == RK_FALSE) {
 		for (RK_S32 i = 0; i < gModeTest->u32CamNum; i++) {
 			s32Ret = SAMPLE_COMM_ISP_Init(gModeTest->s32CamId[i], gModeTest->eHdrMode,
@@ -155,7 +155,7 @@ static RK_S32 isp_init(void) {
 
 static RK_S32 isp_deinit(void) {
 	RK_S32 s32Ret = RK_SUCCESS;
-#if(defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ) && (defined UAPI2)
 	if (gModeTest->bIfIspGroupInit == RK_FALSE) {
 		for (RK_S32 i = 0; i < gModeTest->u32CamNum; i++) {
 			SAMPLE_COMM_ISP_Stop(i);
@@ -633,7 +633,7 @@ int main(int argc, char *argv[]) {
 	signal(SIGINT, sigterm_handler);
 	signal(SIGTERM, sigterm_handler);
 
-#if(defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ) && (defined UAPI2)
 	RK_BOOL bMultictx = RK_TRUE;
 #endif
 	int c;
@@ -679,7 +679,7 @@ int main(int argc, char *argv[]) {
 
 	printf("#IQ Path: %s\n", iq_file_dir);
 	if (iq_file_dir) {
-#if(defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ) && (defined UAPI2)
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
 		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
@@ -792,7 +792,7 @@ __VI_INITFAIL:
 __FAILED:
 	RK_MPI_SYS_Exit();
 	if (iq_file_dir) {
-#if(defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ) && (defined UAPI2)
 		isp_deinit();
 #endif
 	}

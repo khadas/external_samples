@@ -25,7 +25,6 @@ extern "C" {
 #include <fcntl.h>
 #include <getopt.h>
 #include <pthread.h>
-#include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -75,8 +74,8 @@ static const struct option long_options[] = {
 };
 
 /******************************************************************************
-* function : show usage
-******************************************************************************/
+ * function : show usage
+ ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s -w 2560 -h 1520 -a /etc/iqfiles/ -I 0 -e h264cbr -b 4096 "
@@ -108,8 +107,8 @@ static void print_usage(const RK_CHAR *name) {
 }
 
 /******************************************************************************
-* function : venc thread
-******************************************************************************/
+ * function : venc thread
+ ******************************************************************************/
 static void *venc_get_stream(void *pArgs) {
 	SAMPLE_VENC_CTX_S *ctx = (SAMPLE_VENC_CTX_S *)(pArgs);
 	RK_S32 s32Ret = RK_FAILURE;
@@ -166,9 +165,9 @@ static void *venc_get_stream(void *pArgs) {
 }
 
 /******************************************************************************
-* function    : main()
-* Description : main
-******************************************************************************/
+ * function    : main()
+ * Description : main
+ ******************************************************************************/
 int main(int argc, char *argv[]) {
 	RK_S32 s32Ret = RK_FAILURE;
 	SAMPLE_MPI_CTX_S *ctx;
@@ -476,7 +475,7 @@ int main(int argc, char *argv[]) {
 		ctx->vo.stLayerAttr.stImageSize.u32Height = disp_height;
 		ctx->vo.stLayerAttr.u32DispFrmRt = 30;
 		ctx->vo.stLayerAttr.enPixFormat = RK_FMT_RGB888;
-		//ctx->vo.stLayerAttr.bDoubleFrame = RK_FALSE;
+		// ctx->vo.stLayerAttr.bDoubleFrame = RK_FALSE;
 		ctx->vo.stChnAttr.stRect.s32X = 0;
 		ctx->vo.stChnAttr.stRect.s32Y = 0;
 		ctx->vo.stChnAttr.stRect.u32Width = disp_width;

@@ -14,16 +14,16 @@
  *  limitations under the License.
  */
 
-#include <stdio.h>
-#include <sys/poll.h>
 #include <errno.h>
-#include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdio.h>
+#include <sys/poll.h>
 #include <time.h>
+#include <unistd.h>
 
-#include "sample_comm.h"
 #include "rtsp_demo.h"
+#include "sample_comm.h"
 
 #define STEP_COUNT 10
 #define PORT_NUMBER 554
@@ -43,7 +43,8 @@ static void sigterm_handler(int sig) {
 	quit = true;
 }
 
-static RK_S32 vi_eptz(RK_U32 loopCount, RK_U32 srcWidth, RK_U32 srcHeight, RK_U32 dstWidth, RK_U32 dstHeight) {
+static RK_S32 vi_eptz(RK_U32 loopCount, RK_U32 srcWidth, RK_U32 srcHeight,
+                      RK_U32 dstWidth, RK_U32 dstHeight) {
 	RK_U32 x = 0;
 	RK_U32 y = 0;
 	RK_U32 w = 0;
@@ -80,8 +81,7 @@ static RK_S32 vi_eptz(RK_U32 loopCount, RK_U32 srcWidth, RK_U32 srcHeight, RK_U3
 				bEptz = RK_TRUE;
 				bDoCrop = RK_TRUE;
 			}
-		}
-		else if ((STEP_COUNT < i) && (i < STEP_COUNT * 2)) {
+		} else if ((STEP_COUNT < i) && (i < STEP_COUNT * 2)) {
 			if (loopCount % (STEP_COUNT * 2) == i) {
 				x = xStride * (STEP_COUNT * 2 - i);
 				y = yStride * (STEP_COUNT * 2 - i);
@@ -99,7 +99,7 @@ static RK_S32 vi_eptz(RK_U32 loopCount, RK_U32 srcWidth, RK_U32 srcHeight, RK_U3
 		stCropInfo.stCropRect.s32Y = y;
 		stCropInfo.stCropRect.u32Width = w;
 		stCropInfo.stCropRect.u32Height = h;
-		if(bEptz){
+		if (bEptz) {
 			RK_MPI_VI_SetEptz(0, 0, stCropInfo);
 		}
 		bEptz = RK_FALSE;
@@ -112,7 +112,7 @@ static void *GetMediaBuffer(void *arg) {
 	(void)arg;
 	void *pData = RK_NULL;
 	RK_S32 loopCount = 0;
-	RK_S32 s32Ret= RK_SUCCESS;
+	RK_S32 s32Ret = RK_SUCCESS;
 	RK_BOOL bAttachPool = RK_TRUE;
 	VI_CROP_INFO_S stCropInfo;
 	memset(&stCropInfo, 0, sizeof(VI_CROP_INFO_S));
@@ -127,7 +127,8 @@ static void *GetMediaBuffer(void *arg) {
 		if (s32Ret == RK_SUCCESS) {
 			if (g_rtsplive && g_rtsp_session) {
 				pData = RK_MPI_MB_Handle2VirAddr(stFrame.pstPack->pMbBlk);
-				rtsp_tx_video(g_rtsp_session, pData, stFrame.pstPack->u32Len, stFrame.pstPack->u64PTS);
+				rtsp_tx_video(g_rtsp_session, pData, stFrame.pstPack->u32Len,
+				              stFrame.pstPack->u64PTS);
 				rtsp_do_event(g_rtsplive);
 			}
 
@@ -138,8 +139,7 @@ static void *GetMediaBuffer(void *arg) {
 			}
 			loopCount++;
 			vi_eptz(loopCount, vi_eptz_w[0], vi_eptz_h[0], vi_eptz_w[1], vi_eptz_h[1]);
-		}
-		else {
+		} else {
 			RK_LOGE("RK_MPI_VENC_GetStream timeout", s32Ret);
 			return RK_FAILURE;
 		}
@@ -148,9 +148,11 @@ static void *GetMediaBuffer(void *arg) {
 			break;
 		}
 	}
-	// restore crops setting as beginning resolution, avoiding getting video frame fail when run again.
+	// restore crops setting as beginning resolution, avoiding getting video frame fail
+	// when run again.
 	RK_MPI_VI_GetEptz(0, 0, &stCropInfo);
-	if (stCropInfo.stCropRect.u32Width != vi_eptz_w[0] || stCropInfo.stCropRect.u32Height != vi_eptz_h[0]) {
+	if (stCropInfo.stCropRect.u32Width != vi_eptz_w[0] ||
+	    stCropInfo.stCropRect.u32Height != vi_eptz_h[0]) {
 		stCropInfo.stCropRect.u32Width = vi_eptz_w[0];
 		stCropInfo.stCropRect.u32Height = vi_eptz_h[0];
 		RK_MPI_VI_SetEptz(0, 0, stCropInfo);
@@ -166,10 +168,11 @@ FAILED:
 	return NULL;
 }
 
-static RK_S32 test_venc_init(RK_U32 chnId, RK_U32 width, RK_U32 height, RK_CODEC_ID_E enType) {
+static RK_S32 test_venc_init(RK_U32 chnId, RK_U32 width, RK_U32 height,
+                             RK_CODEC_ID_E enType) {
 	VENC_RECV_PIC_PARAM_S stRecvParam;
 	VENC_CHN_ATTR_S stAttr;
-	memset(&stAttr,0,sizeof(VENC_CHN_ATTR_S));
+	memset(&stAttr, 0, sizeof(VENC_CHN_ATTR_S));
 
 	stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H264CBR;
 	stAttr.stRcAttr.stH264Cbr.u32BitRate = g_u32Bitrate;
@@ -249,7 +252,8 @@ static RK_S32 vi_chn_init(RK_U32 channelId, RK_U32 width, RK_U32 height) {
 	VI_CHN_ATTR_S vi_chn_attr;
 	memset(&vi_chn_attr, 0, sizeof(vi_chn_attr));
 	vi_chn_attr.stIspOpt.u32BufCount = buf_cnt;
-	vi_chn_attr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;//VI_V4L2_MEMORY_TYPE_MMAP;
+	vi_chn_attr.stIspOpt.enMemoryType =
+	    VI_V4L2_MEMORY_TYPE_DMABUF; // VI_V4L2_MEMORY_TYPE_MMAP;
 	vi_chn_attr.stSize.u32Width = width;
 	vi_chn_attr.stSize.u32Height = height;
 	vi_chn_attr.enPixelFormat = RK_FMT_YUV420SP;
@@ -273,7 +277,8 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-h | --heght: VI height, Default:1080\n");
 	printf("\t-a | --aiq: iq file path, Default:/etc/iqfiles\n");
 	printf("\t-c | --frame_cnt: frame number of output, Default:150\n");
-	printf("\t-I | --camid: camera ctx id, Default 0. 0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
+	printf("\t-I | --camid: camera ctx id, Default 0. "
+	       "0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
 	printf("\t-e | --encode: encode type, Default:h264, Value:h264, h265\n");
 }
 
@@ -291,7 +296,7 @@ int main(int argc, char *argv[]) {
 	while ((c = getopt(argc, argv, optstr)) != -1) {
 		switch (c) {
 		case 'a':
-			if(optarg)
+			if (optarg)
 				iq_dir = optarg;
 			break;
 		case 'w':
@@ -337,18 +342,18 @@ int main(int argc, char *argv[]) {
 		RK_LOGW("ISP IQ file path: %s\n\n", iq_dir);
 		SAMPLE_COMM_ISP_Init(0, RK_AIQ_WORKING_MODE_NORMAL, 0, iq_dir);
 		SAMPLE_COMM_ISP_Run(0);
-		//SAMPLE_COMM_ISP_SetFrameRate(0, fps);
+		// SAMPLE_COMM_ISP_SetFrameRate(0, fps);
 #endif
 	}
 
 	// init rtsp
 	g_rtsplive = create_rtsp_demo(PORT_NUMBER);
-	if(g_rtsplive == NULL) {
+	if (g_rtsplive == NULL) {
 		RK_LOGE("rtsp create session fail\n");
 		goto __FAILED;
 	}
 	g_rtsp_session = rtsp_new_session(g_rtsplive, "/live/0");
-	if(g_rtsp_session == NULL) {
+	if (g_rtsp_session == NULL) {
 		RK_LOGE("rtsp create session fail\n");
 		goto __FAILED;
 	}
@@ -371,20 +376,21 @@ int main(int argc, char *argv[]) {
 	vi_dev_init();
 	vi_chn_init(0, u32Width, u32Height);
 	// venc  init
-	test_venc_init(0, u32Width, u32Height, enCodecType);//RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
+	test_venc_init(0, u32Width, u32Height,
+	               enCodecType); // RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
 
 	MPP_CHN_S stSrcChn, stDestChn;
 	// bind vi to venc
-	stSrcChn.enModId    = RK_ID_VI;
-	stSrcChn.s32DevId   = 0;
-	stSrcChn.s32ChnId   = 0;
+	stSrcChn.enModId = RK_ID_VI;
+	stSrcChn.s32DevId = 0;
+	stSrcChn.s32ChnId = 0;
 
-	stDestChn.enModId   = RK_ID_VENC;
-	stDestChn.s32DevId  = 0;
-	stDestChn.s32ChnId  = 0;
+	stDestChn.enModId = RK_ID_VENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = 0;
 	s32Ret = RK_MPI_SYS_Bind(&stSrcChn, &stDestChn);
 	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("bind 0 ch venc failed" );
+		RK_LOGE("bind 0 ch venc failed");
 		goto __FAILED;
 	}
 	pthread_t main_thread;

@@ -1,43 +1,42 @@
 
-#include <stdio.h>
-#include <sys/poll.h>
 #include <errno.h>
-#include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdio.h>
+#include <sys/poll.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "sample_comm.h"
 
-#define MAXWIDTH 	2304
-#define MAXHEIGHT	1296
+#define MAXWIDTH 2304
+#define MAXHEIGHT 1296
 
 static RK_S32 g_s32FrameCnt = -1;
 static bool quit = false;
-#define RK_ARRAY_ELEMS(a)      (sizeof(a) / sizeof((a)[0]))
+#define RK_ARRAY_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 static void sigterm_handler(int sig) {
 	fprintf(stderr, "signal %d\n", sig);
 	quit = true;
 }
 
-typedef struct rkResolution_st
-{
+typedef struct rkResolution_st {
 	SIZE_S size;
-	const char  *resStr;
-}RK_RESOLUTION_ST;
+	const char *resStr;
+} RK_RESOLUTION_ST;
 
 static RK_RESOLUTION_ST test_res[] = {
-	{{1920, 1080}, "1920x1080"},	// 1080p
-	{{1280,  720}, "1280x1080"},	// 720p
-	{{720,   576}, "720 x 576"},	// 576p
-	{{640,   480}, "640 x 480"},	// 480p
-	{{640,   360}, "640 x 360"},	// 360p
-	{{512,   288}, "512 x 288"},	//
-	{{480,   320}, "480 x 320"},	// 320p
-	{{320,   240}, "320 x 240"},	// 240p
-	{{2304, 1296}, "2304x1296"},	// 300w
-	// {{2560, 1440}, "2560x1440"},	// 400w
-	// {{2880, 1616}, "2880x1616"},	// 500w
+    {{1920, 1080}, "1920x1080"}, // 1080p
+    {{1280, 720}, "1280x1080"},  // 720p
+    {{720, 576}, "720 x 576"},   // 576p
+    {{640, 480}, "640 x 480"},   // 480p
+    {{640, 360}, "640 x 360"},   // 360p
+    {{512, 288}, "512 x 288"},   //
+    {{480, 320}, "480 x 320"},   // 320p
+    {{320, 240}, "320 x 240"},   // 240p
+    {{2304, 1296}, "2304x1296"}, // 300w
+                                 // {{2560, 1440}, "2560x1440"},	// 400w
+                                 // {{2880, 1616}, "2880x1616"},	// 500w
 };
 
 RK_U64 TEST_COMM_GetNowUs() {
@@ -62,42 +61,43 @@ static void *GetMediaBuffer0(void *arg) {
 	VI_CHN_ATTR_S stChnAttr;
 
 	MPP_CHN_S stSrcChn, stDestChn;
-	stSrcChn.enModId    = RK_ID_VI;
-	stSrcChn.s32DevId   = 0;
-	stSrcChn.s32ChnId   = 0;
+	stSrcChn.enModId = RK_ID_VI;
+	stSrcChn.s32DevId = 0;
+	stSrcChn.s32ChnId = 0;
 
-	stDestChn.enModId   = RK_ID_VENC;
-	stDestChn.s32DevId  = 0;
-	stDestChn.s32ChnId  = 0;
+	stDestChn.enModId = RK_ID_VENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = 0;
 
 	while (!quit) {
 		s32Ret = RK_MPI_VENC_GetStream(0, &stFrame, 500);
 		if (s32Ret == RK_SUCCESS) {
 			RK_U64 nowUs = TEST_COMM_GetNowUs();
 
-			RK_LOGD("chn:0, loopCount:%d enc->seq:%d wd:%d pts=%lld delay=%lldus\n", loopCount,
-					stFrame.u32Seq, stFrame.pstPack->u32Len, stFrame.pstPack->u64PTS, nowUs - stFrame.pstPack->u64PTS);
+			RK_LOGD("chn:0, loopCount:%d enc->seq:%d wd:%d pts=%lld delay=%lldus\n",
+			        loopCount, stFrame.u32Seq, stFrame.pstPack->u32Len,
+			        stFrame.pstPack->u64PTS, nowUs - stFrame.pstPack->u64PTS);
 
 			s32Ret = RK_MPI_VENC_ReleaseStream(0, &stFrame);
 			if (s32Ret != RK_SUCCESS) {
-					RK_LOGE("RK_MPI_VENC_ReleaseStream fail %x", s32Ret);
+				RK_LOGE("RK_MPI_VENC_ReleaseStream fail %x", s32Ret);
 			}
 			loopCount++;
 		}
 
-		//change resolution
+		// change resolution
 		if (loopCount % 100 == 0) {
 			printf("===change resolution===\n");
 			if (idx >= resCnt)
 				idx = 0;
 
-			//1, unbind
+			// 1, unbind
 			s32Ret = RK_MPI_SYS_UnBind(&stSrcChn, &stDestChn);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("RK_MPI_SYS_UnBind fail %x", s32Ret);
 			}
 
-			//2, set venc
+			// 2, set venc
 			stAttr.stVencAttr.u32PicWidth = test_res[idx].size.u32Width;
 			stAttr.stVencAttr.u32PicHeight = test_res[idx].size.u32Height;
 			stAttr.stVencAttr.u32VirWidth = test_res[idx].size.u32Width;
@@ -106,50 +106,49 @@ static void *GetMediaBuffer0(void *arg) {
 			stAttr.stVencAttr.u32MaxPicHeight = MAXHEIGHT;
 			RK_MPI_VENC_SetChnAttr(0, &stAttr);
 
-			//3, set vi
-			stChnAttr.stSize.u32Width  = test_res[idx].size.u32Width;
+			// 3, set vi
+			stChnAttr.stSize.u32Width = test_res[idx].size.u32Width;
 			stChnAttr.stSize.u32Height = test_res[idx].size.u32Height;
-			stChnAttr.stIspOpt.stMaxSize.u32Width  = MAXWIDTH;
+			stChnAttr.stIspOpt.stMaxSize.u32Width = MAXWIDTH;
 			stChnAttr.stIspOpt.stMaxSize.u32Height = MAXHEIGHT;
 			stChnAttr.stFrameRate.s32SrcFrameRate = -1;
 			stChnAttr.stFrameRate.s32DstFrameRate = -1;
 			s32Ret = RK_MPI_VI_SetChnAttr(0, 0, &stChnAttr);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGD("RK_MPI_VI_SetChnAttr %d x %d fail, ret: %x",
-						test_res[idx].size.u32Width, test_res[idx].size.u32Height, s32Ret);
+				        test_res[idx].size.u32Width, test_res[idx].size.u32Height,
+				        s32Ret);
 			} else {
 				RK_LOGD("====RK_MPI_VI_SetChnAttr %d x %d success====",
-						test_res[idx].size.u32Width, test_res[idx].size.u32Height);
+				        test_res[idx].size.u32Width, test_res[idx].size.u32Height);
 			}
 
-			//4, bind
+			// 4, bind
 			s32Ret = RK_MPI_SYS_Bind(&stSrcChn, &stDestChn);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("bind %x ch venc failed", s32Ret);
 			}
 			idx++;
 		}
-		usleep(10*1000);
+		usleep(10 * 1000);
 
-		if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt))
-		{
+		if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt)) {
 			quit = true;
 			break;
 		}
 
-		usleep(10*1000);
+		usleep(10 * 1000);
 	}
 
 	free(stFrame.pstPack);
 	return NULL;
 }
 
-static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enType)
-{
+static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enType) {
 	printf("========%s========\n", __func__);
 	VENC_RECV_PIC_PARAM_S stRecvParam;
 	VENC_CHN_ATTR_S stAttr;
-	memset(&stAttr,0,sizeof(VENC_CHN_ATTR_S));
+	memset(&stAttr, 0, sizeof(VENC_CHN_ATTR_S));
 
 	stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H264CBR;
 	stAttr.stRcAttr.stH264Cbr.u32BitRate = 10 * 1024;
@@ -166,8 +165,8 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
 	stAttr.stVencAttr.u32VirHeight = height;
 	stAttr.stVencAttr.u32StreamBufCnt = 2;
 	stAttr.stVencAttr.u32BufSize = MAXWIDTH * MAXHEIGHT * 3 / 2;
-	//stAttr.stGopAttr.u32MaxLtrCount = 1;
-	//stAttr.stVencAttr.enMirror = MIRROR_NONE;
+	// stAttr.stGopAttr.u32MaxLtrCount = 1;
+	// stAttr.stVencAttr.enMirror = MIRROR_NONE;
 
 	RK_MPI_VENC_CreateChn(chnId, &stAttr);
 
@@ -178,11 +177,11 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
 	return 0;
 }
 
-//demo板dev默认都是0，根据不同的channel 来选择不同的vi节点
+// demo板dev默认都是0，根据不同的channel 来选择不同的vi节点
 int vi_dev_init() {
 	printf("%s\n", __func__);
 	int ret = 0;
-	int devId=0;
+	int devId = 0;
 	int pipeId = devId;
 
 	VI_DEV_ATTR_S stDevAttr;
@@ -232,8 +231,9 @@ int vi_chn_init(int channelId, int width, int height) {
 	VI_CHN_ATTR_S vi_chn_attr;
 	memset(&vi_chn_attr, 0, sizeof(vi_chn_attr));
 	vi_chn_attr.stIspOpt.u32BufCount = buf_cnt;
-	vi_chn_attr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_MMAP;//VI_V4L2_MEMORY_TYPE_MMAP;
-	vi_chn_attr.stIspOpt.stMaxSize.u32Width  = MAXWIDTH;
+	vi_chn_attr.stIspOpt.enMemoryType =
+	    VI_V4L2_MEMORY_TYPE_MMAP; // VI_V4L2_MEMORY_TYPE_MMAP;
+	vi_chn_attr.stIspOpt.stMaxSize.u32Width = MAXWIDTH;
 	vi_chn_attr.stIspOpt.stMaxSize.u32Height = MAXHEIGHT;
 	vi_chn_attr.stIspOpt.bNoUseLibV4L2 = RK_TRUE;
 	vi_chn_attr.stSize.u32Width = width;
@@ -261,12 +261,12 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-w | --width: VI width, Default:1920\n");
 	printf("\t-h | --heght: VI height, Default:1080\n");
 	printf("\t-c | --frame_cnt: frame number of output, Default:150\n");
-	printf("\t-I | --camid: camera ctx id, Default 0. 0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
+	printf("\t-I | --camid: camera ctx id, Default 0. "
+	       "0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
 	printf("\t-e | --encode: encode type, Default:h264, Value:h264, h265, mjpeg\n");
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_U32 u32Width = 1920;
 	RK_U32 u32Height = 1080;
@@ -327,21 +327,22 @@ int main(int argc, char *argv[])
 	vi_chn_init(s32chnlId, u32Width, u32Height);
 
 	// venc  init
-	test_venc_init(0, u32Width, u32Height, enCodecType);//RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
+	test_venc_init(0, u32Width, u32Height,
+	               enCodecType); // RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
 
 	MPP_CHN_S stSrcChn, stDestChn;
 	// bind vi to venc
-	stSrcChn.enModId    = RK_ID_VI;
-	stSrcChn.s32DevId   = 0;
-	stSrcChn.s32ChnId   = s32chnlId;
+	stSrcChn.enModId = RK_ID_VI;
+	stSrcChn.s32DevId = 0;
+	stSrcChn.s32ChnId = s32chnlId;
 
-	stDestChn.enModId   = RK_ID_VENC;
-	stDestChn.s32DevId  = 0;
-	stDestChn.s32ChnId  = 0;
+	stDestChn.enModId = RK_ID_VENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = 0;
 	printf("====RK_MPI_SYS_Bind vi0 to venc0====\n");
 	s32Ret = RK_MPI_SYS_Bind(&stSrcChn, &stDestChn);
 	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("bind 0 ch venc failed" );
+		RK_LOGE("bind 0 ch venc failed");
 		goto __FAILED;
 	}
 
@@ -380,4 +381,3 @@ __FAILED:
 
 	return 0;
 }
-

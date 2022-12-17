@@ -25,7 +25,6 @@ extern "C" {
 #include <fcntl.h>
 #include <getopt.h>
 #include <pthread.h>
-#include <pthread.h>
 #include <semaphore.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -68,8 +67,8 @@ static const struct option long_options[] = {
 };
 
 /******************************************************************************
-* function : show usage
-******************************************************************************/
+ * function : show usage
+ ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
 	printf("Usage : %s -n <index> -l <loop count> -c <frame count> -f <pixel format>\n",
 	       name);
@@ -84,8 +83,8 @@ static void print_usage(const RK_CHAR *name) {
 }
 
 /******************************************************************************
-* function : vi thread
-******************************************************************************/
+ * function : vi thread
+ ******************************************************************************/
 static void *vi_get_stream(void *pArgs) {
 	SAMPLE_VI_CTX_S *ctx = (SAMPLE_VI_CTX_S *)(pArgs);
 	RK_S32 s32Ret = RK_FAILURE;
@@ -108,8 +107,8 @@ static void *vi_get_stream(void *pArgs) {
 		s32Ret = SAMPLE_COMM_VI_GetChnFrame(ctx, &pData);
 		if (s32Ret == RK_SUCCESS) {
 			if (ctx->stViFrame.stVFrame.u64PrivateData <= 0) {
-			    //SAMPLE_COMM_VI_ReleaseChnFrame(ctx);
-				//continue;
+				// SAMPLE_COMM_VI_ReleaseChnFrame(ctx);
+				// continue;
 			}
 
 			// exit when complete
@@ -146,8 +145,8 @@ static void *vi_get_stream(void *pArgs) {
 }
 
 /******************************************************************************
-* function : vpss thread
-******************************************************************************/
+ * function : vpss thread
+ ******************************************************************************/
 static RK_U8 data[2560 * 1520 * 2];
 static RK_U8 data0[2560 * 1520 * 2];
 static RK_U8 data1[2560 * 1520 * 2];
@@ -230,12 +229,12 @@ static void *vpss_get_stream(void *pArgs) {
 				    ctx->stChnFrameInfos.stVFrame.u32Height, 6164480, g_compressMode);
 			}
 #endif
-			RK_LOGD(
-			    "SAMPLE_COMM_VPSS_GetChnFrame DevId %d ok:data %p size:%llu loop:%d seq:%d "
-			    "pts:%lld ms\n",
-			    ctx->s32GrpId, pData, ctx->stChnFrameInfos.stVFrame.u64PrivateData,
-			    loopCount, ctx->stChnFrameInfos.stVFrame.u32TimeRef,
-			    ctx->stChnFrameInfos.stVFrame.u64PTS / 1000);
+			RK_LOGD("SAMPLE_COMM_VPSS_GetChnFrame DevId %d ok:data %p size:%llu loop:%d "
+			        "seq:%d "
+			        "pts:%lld ms\n",
+			        ctx->s32GrpId, pData, ctx->stChnFrameInfos.stVFrame.u64PrivateData,
+			        loopCount, ctx->stChnFrameInfos.stVFrame.u32TimeRef,
+			        ctx->stChnFrameInfos.stVFrame.u64PTS / 1000);
 
 			SAMPLE_COMM_VPSS_ReleaseChnFrame(ctx);
 			loopCount++;
@@ -289,8 +288,8 @@ static void *vpss_send_stream(void *pArgs) {
 }
 
 /******************************************************************************
-* function : venc thread
-******************************************************************************/
+ * function : venc thread
+ ******************************************************************************/
 static void *venc_get_stream(void *pArgs) {
 	SAMPLE_VENC_CTX_S *ctx = (SAMPLE_VENC_CTX_S *)(pArgs);
 	RK_S32 s32Ret = RK_FAILURE;
@@ -344,8 +343,8 @@ static void *venc_get_stream(void *pArgs) {
 }
 
 /******************************************************************************
-* function    : SAMPLE_COMM_ISP_Stresstest
-******************************************************************************/
+ * function    : SAMPLE_COMM_ISP_Stresstest
+ ******************************************************************************/
 int SAMPLE_CAMERA_ISP_Stresstest(SAMPLE_MPI_CTX_S *ctx, char *pIqFileDir) {
 	RK_S32 s32Ret = RK_FAILURE;
 	int video_width = 2560;
@@ -428,8 +427,8 @@ __FAILED:
 }
 
 /******************************************************************************
-* function    : SAMPLE_COMM_VENC_Stresstest
-******************************************************************************/
+ * function    : SAMPLE_COMM_VENC_Stresstest
+ ******************************************************************************/
 int SAMPLE_CAMERA_VENC_SetConfig(SAMPLE_MPI_CTX_S *ctx, MPP_CHN_S *pSrc,
                                  MPP_CHN_S *pDest) {
 	RK_S32 s32Ret = RK_FAILURE;
@@ -726,8 +725,8 @@ __FAILED:
 }
 
 /******************************************************************************
-* function    : SAMPLE_COMM_VI_AVS_VENC_Stresstest
-******************************************************************************/
+ * function    : SAMPLE_COMM_VI_AVS_VENC_Stresstest
+ ******************************************************************************/
 int SAMPLE_CAMERA_VI_VPSS_VENC_Stresstest(SAMPLE_MPI_CTX_S *ctx) {
 	RK_S32 s32Ret = RK_FAILURE;
 	int video_width = 2560;
@@ -909,9 +908,9 @@ __FAILED:
 }
 
 /******************************************************************************
-* function    : main()
-* Description : main
-******************************************************************************/
+ * function    : main()
+ * Description : main
+ ******************************************************************************/
 int main(int argc, char *argv[]) {
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_S32 s32Index;

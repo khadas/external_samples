@@ -63,7 +63,7 @@ typedef struct _rkIspInitParam {
 	RK_S32 s32CamId[CAM_NUM_MAX];
 	RK_S32 s32CamGroupId;
 	RK_U32 u32CamNum;
-#if(defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ) && (defined UAPI2)
 	rk_aiq_working_mode_t eHdrMode;
 #endif
 } RK_ISP_INIT_PARAM_S;
@@ -119,7 +119,7 @@ static const struct option long_options[] = {
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 -o /userdata/\n", name);
-#if(defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ) && (defined UAPI2)
 	printf(
 	    "\t-a | --aiq : enable aiq with dirpath provided, eg:-a /etc/iqfiles/, \n"
 	    "\t		set dirpath empty to using path by default, without this option aiq \n"
@@ -146,7 +146,7 @@ static void print_usage(const RK_CHAR *name) {
 static RK_S32 isp_init(RK_ISP_INIT_PARAM_S *pstIspParam) {
 	RK_S32 s32Ret = RK_FAILURE;
 
-#if(defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ) && (defined UAPI2)
 	if (pstIspParam->bIfIspGroupInit == RK_FALSE) {
 		for (RK_S32 i = 0; i < pstIspParam->u32CamNum; i++) {
 			s32Ret =
@@ -163,9 +163,9 @@ static RK_S32 isp_init(RK_ISP_INIT_PARAM_S *pstIspParam) {
 		memset(&camgroup_cfg, 0, sizeof(rk_aiq_camgroup_instance_cfg_t));
 		camgroup_cfg.sns_num = pstIspParam->u32CamNum;
 		camgroup_cfg.config_file_dir = pstIspParam->pIqFileDir;
-		s32Ret =
-		    SAMPLE_COMM_ISP_CamGroup_Init(pstIspParam->s32CamGroupId, pstIspParam->eHdrMode,
-		                                  pstIspParam->bMultictx, &camgroup_cfg);
+		s32Ret = SAMPLE_COMM_ISP_CamGroup_Init(pstIspParam->s32CamGroupId,
+		                                       pstIspParam->eHdrMode,
+		                                       pstIspParam->bMultictx, &camgroup_cfg);
 		if (s32Ret != RK_SUCCESS) {
 			printf("%s : isp cam group init\n", __func__);
 			return RK_FAILURE;
@@ -180,7 +180,7 @@ static RK_S32 isp_init(RK_ISP_INIT_PARAM_S *pstIspParam) {
 
 static RK_S32 isp_deinit(RK_ISP_INIT_PARAM_S *pstIspParam) {
 	RK_S32 s32Ret = RK_SUCCESS;
-#if(defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ) && (defined UAPI2)
 	if (pstIspParam->bIfIspGroupInit == RK_FALSE) {
 		for (RK_S32 i = 0; i < pstIspParam->u32CamNum; i++) {
 			s32Ret = SAMPLE_COMM_ISP_Stop(i);
@@ -558,7 +558,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	if (pIqFileDir) {
-#if(defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ) && (defined UAPI2)
 		printf("#Rkaiq XML DirPath: %s\n", pIqFileDir);
 		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
 		pstIspParam->bMultictx = RK_TRUE;
@@ -699,7 +699,7 @@ __VI_INITFAIL:
 __FAILED:
 	RK_MPI_SYS_Exit();
 	if (pIqFileDir) {
-#if(defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ) && (defined UAPI2)
 		isp_deinit(pstIspParam);
 #endif
 	}

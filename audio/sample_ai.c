@@ -33,7 +33,9 @@ extern "C" {
 
 #include "sample_comm.h"
 
-typedef struct _rkMpiCtx { SAMPLE_AI_CTX_S ai; } SAMPLE_MPI_CTX_S;
+typedef struct _rkMpiCtx {
+	SAMPLE_AI_CTX_S ai;
+} SAMPLE_MPI_CTX_S;
 
 static bool quit = false;
 static void sigterm_handler(int sig) {
@@ -42,8 +44,8 @@ static void sigterm_handler(int sig) {
 }
 
 /******************************************************************************
-* function : ai thread
-******************************************************************************/
+ * function : ai thread
+ ******************************************************************************/
 static void *ai_get_stream(void *pArgs) {
 	SAMPLE_AI_CTX_S *ctx = (SAMPLE_AI_CTX_S *)(pArgs);
 	RK_S32 s32Ret = RK_FAILURE;

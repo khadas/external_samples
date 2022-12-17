@@ -1,13 +1,12 @@
-#include <stdio.h>
-#include <sys/poll.h>
 #include <errno.h>
-#include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdio.h>
+#include <sys/poll.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "sample_comm.h"
-
 
 static bool quit = false;
 
@@ -23,7 +22,7 @@ static void *GetMediaBuffer0(void *arg) {
 	int s32Ret;
 	IVS_RESULT_INFO_S stResults;
 	int width = 1920;
-	//int height = 1080;
+	// int height = 1080;
 
 	while (!quit) {
 		memset(&stResults, 0, sizeof(IVS_RESULT_INFO_S));
@@ -39,7 +38,8 @@ static void *GetMediaBuffer0(void *arg) {
 					for (int j = 0; j < y; j++) {
 						for (int i = 0; i < x; i++) {
 							for (int k = 0; k < 8; k++) {
-								if (stResults.pstResults->stMdInfo.pData[j * 64 + i] & (1 << k))
+								if (stResults.pstResults->stMdInfo.pData[j * 64 + i] &
+								    (1 << k))
 									printf("1");
 								else
 									printf("0");
@@ -60,15 +60,13 @@ static void *GetMediaBuffer0(void *arg) {
 	}
 
 	return NULL;
-
 }
 
-
-//demo板dev默认都是0，根据不同的channel 来选择不同的vi节点
+// demo板dev默认都是0，根据不同的channel 来选择不同的vi节点
 int vi_dev_init() {
 	printf("%s\n", __func__);
 	int ret = 0;
-	int devId=0;
+	int devId = 0;
 	int pipeId = devId;
 
 	VI_DEV_ATTR_S stDevAttr;
@@ -118,7 +116,8 @@ int vi_chn_init(int channelId, int width, int height) {
 	VI_CHN_ATTR_S vi_chn_attr;
 	memset(&vi_chn_attr, 0, sizeof(vi_chn_attr));
 	vi_chn_attr.stIspOpt.u32BufCount = buf_cnt;
-	vi_chn_attr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;//VI_V4L2_MEMORY_TYPE_MMAP;
+	vi_chn_attr.stIspOpt.enMemoryType =
+	    VI_V4L2_MEMORY_TYPE_DMABUF; // VI_V4L2_MEMORY_TYPE_MMAP;
 	vi_chn_attr.stSize.u32Width = width;
 	vi_chn_attr.stSize.u32Height = height;
 	vi_chn_attr.enPixelFormat = RK_FMT_YUV420SP;
@@ -133,7 +132,6 @@ int vi_chn_init(int channelId, int width, int height) {
 
 	return ret;
 }
-
 
 static RK_S32 create_ivs(int width, int height) {
 	IVS_CHN_ATTR_S attr;
@@ -155,8 +153,7 @@ static RK_S32 create_ivs(int width, int height) {
 	return RK_MPI_IVS_CreateChn(0, &attr);
 }
 
-int main()
-{
+int main() {
 	int width = 1920;
 	int height = 1080;
 	MPP_CHN_S stSrcChn, stIvsChn;
@@ -167,20 +164,19 @@ int main()
 	vi_chn_init(0, width, height);
 	create_ivs(width, height);
 
-	stSrcChn.enModId    = RK_ID_VI;
-	stSrcChn.s32DevId   = 0;
-	stSrcChn.s32ChnId   = 0;
+	stSrcChn.enModId = RK_ID_VI;
+	stSrcChn.s32DevId = 0;
+	stSrcChn.s32ChnId = 0;
 
-	stIvsChn.enModId   = RK_ID_IVS;
-	stIvsChn.s32DevId  = 0;
-	stIvsChn.s32ChnId  = 0;
+	stIvsChn.enModId = RK_ID_IVS;
+	stIvsChn.s32DevId = 0;
+	stIvsChn.s32ChnId = 0;
 	RK_MPI_SYS_Bind(&stSrcChn, &stIvsChn);
 
 	pthread_t main_thread;
 	pthread_create(&main_thread, NULL, GetMediaBuffer0, NULL);
 
-	while(!quit)
-	{
+	while (!quit) {
 		usleep(5000);
 	}
 	pthread_join(&main_thread, NULL);
@@ -191,4 +187,3 @@ int main()
 	RK_MPI_SYS_Exit();
 	return 0;
 }
-

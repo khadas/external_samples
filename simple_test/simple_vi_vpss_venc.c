@@ -1,17 +1,16 @@
-#include <stdio.h>
-#include <sys/poll.h>
-#include <errno.h>
-#include <unistd.h>
-#include <pthread.h>
 #include <assert.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/poll.h>
 #include <time.h>
-#include <signal.h>
+#include <unistd.h>
 
 #include "sample_comm.h"
 
@@ -49,23 +48,22 @@ static void *GetMediaBuffer0(void *arg) {
 			}
 			RK_U64 nowUs = TEST_COMM_GetNowUs();
 
-			RK_LOGD("chn:0, loopCount:%d enc->seq:%d wd:%d pts=%lld delay=%lldus\n", loopCount,
-							 stFrame.u32Seq, stFrame.pstPack->u32Len, stFrame.pstPack->u64PTS, nowUs - stFrame.pstPack->u64PTS);
+			RK_LOGD("chn:0, loopCount:%d enc->seq:%d wd:%d pts=%lld delay=%lldus\n",
+			        loopCount, stFrame.u32Seq, stFrame.pstPack->u32Len,
+			        stFrame.pstPack->u64PTS, nowUs - stFrame.pstPack->u64PTS);
 
 			s32Ret = RK_MPI_VENC_ReleaseStream(0, &stFrame);
 			if (s32Ret != RK_SUCCESS) {
-					RK_LOGE("RK_MPI_VENC_ReleaseStream fail %x", s32Ret);
+				RK_LOGE("RK_MPI_VENC_ReleaseStream fail %x", s32Ret);
 			}
 			loopCount++;
-		}
-		else
-		{
+		} else {
 			RK_LOGE("RK_MPI_VENC_GetChnFrame fail %x", s32Ret);
 		}
 
 		if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt))
 			quit = true;
-		usleep(10*1000);
+		usleep(10 * 1000);
 	}
 
 	if (venc0_file)
@@ -75,12 +73,12 @@ static void *GetMediaBuffer0(void *arg) {
 	return NULL;
 }
 
-static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enType)
-{
-	printf("================================%s==================================\n", __func__);
+static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enType) {
+	printf("================================%s==================================\n",
+	       __func__);
 	VENC_RECV_PIC_PARAM_S stRecvParam;
 	VENC_CHN_ATTR_S stAttr;
-	memset(&stAttr,0,sizeof(VENC_CHN_ATTR_S));
+	memset(&stAttr, 0, sizeof(VENC_CHN_ATTR_S));
 
 	stAttr.stVencAttr.enType = enType;
 	stAttr.stVencAttr.enPixelFormat = RK_FMT_YUV420SP;
@@ -106,7 +104,7 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
 int vi_dev_init() {
 	printf("%s\n", __func__);
 	int ret = 0;
-	int devId=0;
+	int devId = 0;
 	int pipeId = devId;
 
 	VI_DEV_ATTR_S stDevAttr;
@@ -150,14 +148,16 @@ int vi_dev_init() {
 }
 
 int vi_chn_init(int channelId, int width, int height) {
-	printf("================================%s==================================\n", __func__);
+	printf("================================%s==================================\n",
+	       __func__);
 	int ret;
 	int buf_cnt = 2;
 	// VI init
 	VI_CHN_ATTR_S vi_chn_attr;
 	memset(&vi_chn_attr, 0, sizeof(vi_chn_attr));
 	vi_chn_attr.stIspOpt.u32BufCount = buf_cnt;
-	vi_chn_attr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;//VI_V4L2_MEMORY_TYPE_MMAP;
+	vi_chn_attr.stIspOpt.enMemoryType =
+	    VI_V4L2_MEMORY_TYPE_DMABUF; // VI_V4L2_MEMORY_TYPE_MMAP;
 	vi_chn_attr.stSize.u32Width = width;
 	vi_chn_attr.stSize.u32Height = height;
 	vi_chn_attr.enPixelFormat = RK_FMT_YUV420SP;
@@ -173,9 +173,9 @@ int vi_chn_init(int channelId, int width, int height) {
 	return ret;
 }
 
-int test_vpss_init(int VpssChn, int width, int height )
-{
-	printf("================================%s==================================\n", __func__);
+int test_vpss_init(int VpssChn, int width, int height) {
+	printf("================================%s==================================\n",
+	       __func__);
 	int s32Ret;
 	VPSS_CHN_ATTR_S stVpssChnAttr;
 	VPSS_GRP_ATTR_S stGrpVpssAttr;
@@ -214,7 +214,7 @@ int test_vpss_init(int VpssChn, int width, int height )
 
 	s32Ret = RK_MPI_VPSS_StartGrp(s32Grp);
 	if (s32Ret != RK_SUCCESS) {
-			return s32Ret;
+		return s32Ret;
 	}
 	return s32Ret;
 }
@@ -229,15 +229,13 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-w | --disp_width: VPSS width, Default:1280\n");
 	printf("\t-h | --disp_height: VPSS height, Default:720\n");
 	printf("\t-c | --frame_cnt: frame number of output, Default:-1\n");
-	printf("\t-I | --camid: camera ctx id, Default 0. 0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
+	printf("\t-I | --camid: camera ctx id, Default 0. "
+	       "0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
 	printf("\t-e | --encode: encode type, Default:h264, Value:h264, h265, mjpeg\n");
 	printf("\t-o: output path, Default:NULL\n");
-
 }
 
-
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	RK_S32 s32Ret = RK_FAILURE;
 	MPP_CHN_S stSrcChn, stvpssChn, stvencChn;
 
@@ -325,27 +323,27 @@ int main(int argc, char *argv[])
 	test_venc_init(0, disp_width, disp_height, enCodecType);
 
 	// bind vi to venc
-	stSrcChn.enModId    = RK_ID_VI;
-	stSrcChn.s32DevId   = 0;
-	stSrcChn.s32ChnId   = s32chnlId;
+	stSrcChn.enModId = RK_ID_VI;
+	stSrcChn.s32DevId = 0;
+	stSrcChn.s32ChnId = s32chnlId;
 
-	stvpssChn.enModId   = RK_ID_VPSS;
-	stvpssChn.s32DevId  = 0;
-	stvpssChn.s32ChnId  = 0;
+	stvpssChn.enModId = RK_ID_VPSS;
+	stvpssChn.s32DevId = 0;
+	stvpssChn.s32ChnId = 0;
 	printf("====RK_MPI_SYS_Bind vi0 to vpss0====\n");
 	s32Ret = RK_MPI_SYS_Bind(&stSrcChn, &stvpssChn);
 	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("bind 0 ch venc failed" );
+		RK_LOGE("bind 0 ch venc failed");
 		goto __FAILED;
 	}
 
-	stvencChn.enModId   = RK_ID_VENC;
-	stvencChn.s32DevId  = 0;
-	stvencChn.s32ChnId  = 0;
+	stvencChn.enModId = RK_ID_VENC;
+	stvencChn.s32DevId = 0;
+	stvencChn.s32ChnId = 0;
 	printf("====RK_MPI_SYS_Bind vpss0 to venc0====\n");
 	s32Ret = RK_MPI_SYS_Bind(&stvpssChn, &stvencChn);
 	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("bind 1 ch venc failed" );
+		RK_LOGE("bind 1 ch venc failed");
 		goto __FAILED;
 	}
 
@@ -353,23 +351,21 @@ int main(int argc, char *argv[])
 	pthread_create(&main_thread, NULL, GetMediaBuffer0, NULL);
 
 	while (!quit) {
-	usleep(50000);
+		usleep(50000);
 	}
 	pthread_join(&main_thread, NULL);
 
 __FAILED:
 
-
 	s32Ret = RK_MPI_SYS_UnBind(&stvpssChn, &stvencChn);
 	if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("RK_MPI_SYS_UnBind fail %x", s32Ret);
+		RK_LOGE("RK_MPI_SYS_UnBind fail %x", s32Ret);
 	}
 
 	s32Ret = RK_MPI_SYS_UnBind(&stSrcChn, &stvpssChn);
 	if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("RK_MPI_SYS_UnBind fail %x", s32Ret);
+		RK_LOGE("RK_MPI_SYS_UnBind fail %x", s32Ret);
 	}
-
 
 	s32Ret = RK_MPI_VI_DisableChn(0, s32chnlId);
 	RK_LOGE("RK_MPI_VI_DisableChn %x", s32Ret);
@@ -394,4 +390,3 @@ __FAILED:
 
 	return 0;
 }
-

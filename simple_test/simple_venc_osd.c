@@ -1,11 +1,10 @@
-#include <stdio.h>
-#include <sys/poll.h>
 #include <errno.h>
-#include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
-#include <signal.h>
+#include <stdio.h>
+#include <sys/poll.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "sample_comm.h"
 
@@ -20,11 +19,11 @@ static void sigterm_handler(int sig) {
 //大小端问题，设置的ARGB 但是颜色是BGRA
 // for argb8888
 #define TEST_ARGB32_PIX_SIZE 4
-#define TEST_ARGB32_RED 	0xFF0000FF
+#define TEST_ARGB32_RED 0xFF0000FF
 #define TEST_ARGB32_GREEN 0x00FF00FF
-#define TEST_ARGB32_BLUE 	0x0000FFFF
+#define TEST_ARGB32_BLUE 0x0000FFFF
 #define TEST_ARGB32_TRANS 0x00000000
-#define TEST_ARGB32_BLACK 	0x000000FF
+#define TEST_ARGB32_BLACK 0x000000FF
 
 static void set_argb8888_buffer(RK_U32 *buf, RK_U32 size, RK_U32 color) {
 	for (RK_U32 i = 0; buf && (i < size); i++)
@@ -36,7 +35,6 @@ RK_U64 TEST_COMM_GetNowUs() {
 	clock_gettime(CLOCK_MONOTONIC, &time);
 	return (RK_U64)time.tv_sec * 1000000 + (RK_U64)time.tv_nsec / 1000; /* microseconds */
 }
-
 
 static void *GetMediaBuffer0(void *arg) {
 	(void)arg;
@@ -58,27 +56,25 @@ static void *GetMediaBuffer0(void *arg) {
 			}
 			RK_U64 nowUs = TEST_COMM_GetNowUs();
 
-			RK_LOGD("chn:0, loopCount:%d enc->seq:%d wd:%d pts=%lld delay=%lldus\n", loopCount,
-					stFrame.u32Seq, stFrame.pstPack->u32Len, stFrame.pstPack->u64PTS, nowUs - stFrame.pstPack->u64PTS);
+			RK_LOGD("chn:0, loopCount:%d enc->seq:%d wd:%d pts=%lld delay=%lldus\n",
+			        loopCount, stFrame.u32Seq, stFrame.pstPack->u32Len,
+			        stFrame.pstPack->u64PTS, nowUs - stFrame.pstPack->u64PTS);
 
 			s32Ret = RK_MPI_VENC_ReleaseStream(0, &stFrame);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("RK_MPI_VENC_ReleaseStream fail %x", s32Ret);
 			}
 			loopCount++;
-		}
-		else
-		{
+		} else {
 			RK_LOGE("RK_MPI_VI_GetChnFrame fail %x", s32Ret);
 		}
 
-		if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt))
-		{
+		if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt)) {
 			quit = true;
 			break;
 		}
 
-		usleep(10*1000);
+		usleep(10 * 1000);
 	}
 
 	if (venc0_file)
@@ -86,11 +82,10 @@ static void *GetMediaBuffer0(void *arg) {
 
 	free(stFrame.pstPack);
 	return NULL;
-
 }
 
-
-RK_S32 load_file_osdmem (const RK_CHAR *filename, RK_U8 *pu8Virt, RK_U32 u32Width, RK_U32 u32Height, RK_U32  pixel_size, RK_U32 shift_value) {
+RK_S32 load_file_osdmem(const RK_CHAR *filename, RK_U8 *pu8Virt, RK_U32 u32Width,
+                        RK_U32 u32Height, RK_U32 pixel_size, RK_U32 shift_value) {
 	RK_U32 mem_len = u32Width;
 	RK_U32 read_len = mem_len * pixel_size >> shift_value;
 	RK_U32 read_height;
@@ -102,21 +97,20 @@ RK_S32 load_file_osdmem (const RK_CHAR *filename, RK_U8 *pu8Virt, RK_U32 u32Widt
 		return RK_FAILURE;
 	}
 	for (read_height = 0; read_height < u32Height; read_height++) {
-		fread((pu8Virt + (u32Width * read_height * pixel_size >> shift_value)), 1, read_len, file);
+		fread((pu8Virt + (u32Width * read_height * pixel_size >> shift_value)), 1,
+		      read_len, file);
 	}
 	fclose(file);
 	return RK_SUCCESS;
 }
 
-
-RK_S32 test_rgn_overlay_process()
-{
+RK_S32 test_rgn_overlay_process() {
 	printf("========%s========\n", __func__);
-	RK_S32          s32Ret       = RK_SUCCESS;
-	RGN_HANDLE      RgnHandle    = 0;
-	BITMAP_S        stBitmap;
-	RGN_ATTR_S      stRgnAttr;
-	RGN_CHN_ATTR_S  stRgnChnAttr;
+	RK_S32 s32Ret = RK_SUCCESS;
+	RGN_HANDLE RgnHandle = 0;
+	BITMAP_S stBitmap;
+	RGN_ATTR_S stRgnAttr;
+	RGN_CHN_ATTR_S stRgnChnAttr;
 
 	int u32Width = 128;
 	int u32Height = 128;
@@ -136,7 +130,7 @@ RK_S32 test_rgn_overlay_process()
 	****************************************/
 	stRgnAttr.enType = OVERLAY_RGN;
 	stRgnAttr.unAttr.stOverlay.enPixelFmt = (PIXEL_FORMAT_E)RK_FMT_ARGB8888;
-	stRgnAttr.unAttr.stOverlay.stSize.u32Width  = u32Width;
+	stRgnAttr.unAttr.stOverlay.stSize.u32Width = u32Width;
 	stRgnAttr.unAttr.stOverlay.stSize.u32Height = u32Height;
 	stRgnAttr.unAttr.stOverlay.u32ClutNum = 0;
 
@@ -147,7 +141,6 @@ RK_S32 test_rgn_overlay_process()
 		return RK_FAILURE;
 	}
 	RK_LOGI("The handle: %d, create success!", RgnHandle);
-
 
 	/*********************************************
 	step 2: display overlay regions to groups
@@ -187,22 +180,21 @@ RK_S32 test_rgn_overlay_process()
 	stBitmap.u32Height = u32Height;
 
 	RK_U16 ColorBlockSize = stBitmap.u32Height * stBitmap.u32Width;
-	stBitmap.pData = malloc(ColorBlockSize* TEST_ARGB32_PIX_SIZE);
+	stBitmap.pData = malloc(ColorBlockSize * TEST_ARGB32_PIX_SIZE);
 	RK_U8 *ColorData = (RK_U8 *)stBitmap.pData;
 	if (filename) {
-		s32Ret = load_file_osdmem(filename, stBitmap.pData, u32Width, u32Height, TEST_ARGB32_PIX_SIZE, 0);
+		s32Ret = load_file_osdmem(filename, stBitmap.pData, u32Width, u32Height,
+		                          TEST_ARGB32_PIX_SIZE, 0);
 		if (RK_SUCCESS != s32Ret) {
-			set_argb8888_buffer((RK_U32 *)ColorData, ColorBlockSize / 4,
-								TEST_ARGB32_RED);
+			set_argb8888_buffer((RK_U32 *)ColorData, ColorBlockSize / 4, TEST_ARGB32_RED);
 			set_argb8888_buffer((RK_U32 *)(ColorData + ColorBlockSize),
-													ColorBlockSize / 4, TEST_ARGB32_GREEN);
+			                    ColorBlockSize / 4, TEST_ARGB32_GREEN);
 			set_argb8888_buffer((RK_U32 *)(ColorData + 2 * ColorBlockSize),
-													ColorBlockSize / 4, TEST_ARGB32_BLUE);
+			                    ColorBlockSize / 4, TEST_ARGB32_BLUE);
 			set_argb8888_buffer((RK_U32 *)(ColorData + 3 * ColorBlockSize),
-													ColorBlockSize / 4, TEST_ARGB32_BLACK);
+			                    ColorBlockSize / 4, TEST_ARGB32_BLACK);
 		}
 	}
-
 
 	s32Ret = RK_MPI_RGN_SetBitMap(RgnHandle, &stBitmap);
 	if (s32Ret != RK_SUCCESS) {
@@ -210,7 +202,8 @@ RK_S32 test_rgn_overlay_process()
 		return RK_FAILURE;
 	}
 	RK_S64 s64ShowBmpEnd = TEST_COMM_GetNowUs();
-	RK_LOGI("Handle:%d, space time %lld us, load bmp success!", RgnHandle, s64ShowBmpEnd - s64ShowBmpStart);
+	RK_LOGI("Handle:%d, space time %lld us, load bmp success!", RgnHandle,
+	        s64ShowBmpEnd - s64ShowBmpStart);
 
 	//另一种刷osd的方式
 #if 0
@@ -241,13 +234,11 @@ RK_S32 test_rgn_overlay_process()
 	return 0;
 }
 
-
-static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enType)
-{
+static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enType) {
 	printf("========%s========\n", __func__);
 	VENC_RECV_PIC_PARAM_S stRecvParam;
 	VENC_CHN_ATTR_S stAttr;
-	memset(&stAttr,0,sizeof(VENC_CHN_ATTR_S));
+	memset(&stAttr, 0, sizeof(VENC_CHN_ATTR_S));
 
 	stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H264CBR;
 	stAttr.stRcAttr.stH264Cbr.u32BitRate = 10 * 1024;
@@ -276,11 +267,11 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
 	return 0;
 }
 
-//demo板dev默认都是0，根据不同的channel 来选择不同的vi节点
+// demo板dev默认都是0，根据不同的channel 来选择不同的vi节点
 int vi_dev_init() {
 	printf("%s\n", __func__);
 	int ret = 0;
-	int devId=0;
+	int devId = 0;
 	int pipeId = devId;
 
 	VI_DEV_ATTR_S stDevAttr;
@@ -330,7 +321,8 @@ int vi_chn_init(int channelId, int width, int height) {
 	VI_CHN_ATTR_S vi_chn_attr;
 	memset(&vi_chn_attr, 0, sizeof(vi_chn_attr));
 	vi_chn_attr.stIspOpt.u32BufCount = buf_cnt;
-	vi_chn_attr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;//VI_V4L2_MEMORY_TYPE_MMAP;
+	vi_chn_attr.stIspOpt.enMemoryType =
+	    VI_V4L2_MEMORY_TYPE_DMABUF; // VI_V4L2_MEMORY_TYPE_MMAP;
 	vi_chn_attr.stSize.u32Width = width;
 	vi_chn_attr.stSize.u32Height = height;
 	vi_chn_attr.enPixelFormat = RK_FMT_YUV420SP;
@@ -353,16 +345,13 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-w | --width: VI width, Default:1920\n");
 	printf("\t-h | --heght: VI height, Default:1080\n");
 	printf("\t-c | --frame_cnt: frame number of output, Default:-1\n");
-	printf("\t-I | --camid: camera ctx id, Default 0. 0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
+	printf("\t-I | --camid: camera ctx id, Default 0. "
+	       "0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
 	printf("\t-e | --encode: encode type, Default:h264, Value:h264, h265, mjpeg\n");
 	printf("\t-o: output path, Default:NULL\n");
-
 }
 
-
-
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_U32 u32Width = 1920;
 	RK_U32 u32Height = 1080;
@@ -375,8 +364,8 @@ int main(int argc, char *argv[])
 	while ((c = getopt(argc, argv, optstr)) != -1) {
 		switch (c) {
 		case 'w':
-		u32Width = atoi(optarg);
-		break;
+			u32Width = atoi(optarg);
+			break;
 		case 'h':
 			u32Height = atoi(optarg);
 			break;
@@ -411,7 +400,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-
 	printf("#CodecName:%s\n", pCodecName);
 	printf("#Resolution: %dx%d\n", u32Width, u32Height);
 	printf("#Output Path: %s\n", pOutPath);
@@ -436,21 +424,22 @@ int main(int argc, char *argv[])
 	vi_chn_init(s32chnlId, u32Width, u32Height);
 
 	// venc  init
-	test_venc_init(0, u32Width, u32Height, enCodecType);//RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
+	test_venc_init(0, u32Width, u32Height,
+	               enCodecType); // RK_VIDEO_ID_AVC RK_VIDEO_ID_HEVC
 
 	MPP_CHN_S stSrcChn, stDestChn;
 	// bind vi to venc
-	stSrcChn.enModId    = RK_ID_VI;
-	stSrcChn.s32DevId   = 0;
-	stSrcChn.s32ChnId   = s32chnlId;
+	stSrcChn.enModId = RK_ID_VI;
+	stSrcChn.s32DevId = 0;
+	stSrcChn.s32ChnId = s32chnlId;
 
-	stDestChn.enModId   = RK_ID_VENC;
-	stDestChn.s32DevId  = 0;
-	stDestChn.s32ChnId  = 0;
+	stDestChn.enModId = RK_ID_VENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = 0;
 	printf("====RK_MPI_SYS_Bind vi0 to venc0====\n");
 	s32Ret = RK_MPI_SYS_Bind(&stSrcChn, &stDestChn);
 	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("bind 0 ch venc failed" );
+		RK_LOGE("bind 0 ch venc failed");
 		goto __FAILED;
 	}
 	test_rgn_overlay_process();
@@ -483,11 +472,9 @@ int main(int argc, char *argv[])
 	s32Ret = RK_MPI_VI_DisableDev(0);
 	RK_LOGE("RK_MPI_VI_DisableDev %x", s32Ret);
 
-
 __FAILED:
 	RK_LOGE("test running exit:%d", s32Ret);
 	RK_MPI_SYS_Exit();
 
 	return 0;
 }
-

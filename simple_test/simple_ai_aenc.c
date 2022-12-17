@@ -1,15 +1,14 @@
-//ai->aenc
-#include <stdio.h>
-#include <sys/poll.h>
+// ai->aenc
 #include <errno.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/poll.h>
+#include <unistd.h>
 
 #include "sample_comm.h"
-
 
 static bool quit = false;
 static void sigterm_handler(int sig) {
@@ -46,15 +45,15 @@ RK_S32 init_ai_vqe(RK_S32 s32SampleRate) {
 	stAiVqeConfig.s32FrameSample = s32SampleRate * s32VqeGapMs / 1000;
 	result = RK_MPI_AI_SetVqeAttr(s32DevId, s32ChnIndex, 0, 0, &stAiVqeConfig);
 	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: SetVqeAttr(%d,%d) failed with %#x",
-				__FUNCTION__, s32DevId, s32ChnIndex, result);
+		RK_LOGE("%s: SetVqeAttr(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
+		        s32ChnIndex, result);
 		return result;
 	}
 
 	result = RK_MPI_AI_GetVqeAttr(s32DevId, s32ChnIndex, &stAiVqeConfig2);
 	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: SetVqeAttr(%d,%d) failed with %#x",
-				__FUNCTION__, s32DevId, s32ChnIndex, result);
+		RK_LOGE("%s: SetVqeAttr(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
+		        s32ChnIndex, result);
 		return result;
 	}
 
@@ -66,17 +65,16 @@ RK_S32 init_ai_vqe(RK_S32 s32SampleRate) {
 
 	result = RK_MPI_AI_EnableVqe(s32DevId, s32ChnIndex);
 	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: EnableVqe(%d,%d) failed with %#x",
-				__FUNCTION__, s32DevId, s32ChnIndex, result);
+		RK_LOGE("%s: EnableVqe(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
+		        s32ChnIndex, result);
 		return result;
 	}
 
 	return RK_SUCCESS;
 }
 
-RK_S32 ai_set_other(RK_S32 s32SetVolume)
-{
-	printf("\n=======%s=======\n",__func__);
+RK_S32 ai_set_other(RK_S32 s32SetVolume) {
+	printf("\n=======%s=======\n", __func__);
 	int s32DevId = 0;
 
 	RK_MPI_AI_SetVolume(s32DevId, s32SetVolume);
@@ -90,9 +88,9 @@ RK_S32 ai_set_other(RK_S32 s32SetVolume)
 	return 0;
 }
 
-RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate ,RK_S32 u32FrameCnt)
-{
-	printf("\n=======%s=======\n",__func__);
+RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate,
+                      RK_S32 u32FrameCnt) {
+	printf("\n=======%s=======\n", __func__);
 	AIO_ATTR_S aiAttr;
 	AI_CHN_PARAM_S pstParams;
 	RK_S32 result;
@@ -102,9 +100,10 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate ,RK_S32 u3
 
 	RK_BOOL needResample = (InputSampleRate != OutputSampleRate) ? RK_TRUE : RK_FALSE;
 
-	sprintf((char *)aiAttr.u8CardName, "%s","hw:0,0");
+	sprintf((char *)aiAttr.u8CardName, "%s", "hw:0,0");
 
-	//s32DeviceSampleRate 和 OutputSampleRate,OutputSampleRate 可以使用其他采样率，需要调用重采样函数。默认一样采样率。
+	// s32DeviceSampleRate 和 OutputSampleRate,OutputSampleRate
+	// 可以使用其他采样率，需要调用重采样函数。默认一样采样率。
 	aiAttr.soundCard.channels = 2;
 	aiAttr.soundCard.sampleRate = InputSampleRate;
 	aiAttr.soundCard.bitWidth = AUDIO_BIT_WIDTH_16;
@@ -139,20 +138,20 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate ,RK_S32 u3
 		return RK_FAILURE;
 	}
 
-	//init_ai_vqe(OutputSampleRate);
+	// init_ai_vqe(OutputSampleRate);
 
-	result =  RK_MPI_AI_EnableChn(aiDevId, aiChn);
+	result = RK_MPI_AI_EnableChn(aiDevId, aiChn);
 	if (result != 0) {
 		RK_LOGE("ai enable channel fail, aiChn = %d, reason = %x", aiChn, result);
 		return RK_FAILURE;
 	}
 
-
 	if (needResample == RK_TRUE) {
 		RK_LOGI("need to resample %d -> %d", InputSampleRate, OutputSampleRate);
-		result = RK_MPI_AI_EnableReSmp(aiDevId, aiChn, (AUDIO_SAMPLE_RATE_E)OutputSampleRate);
+		result =
+		    RK_MPI_AI_EnableReSmp(aiDevId, aiChn, (AUDIO_SAMPLE_RATE_E)OutputSampleRate);
 		if (result != 0) {
-			RK_LOGE("ai enable channel fail, reason = %x, aiChn = %d", result,aiChn);
+			RK_LOGE("ai enable channel fail, reason = %x, aiChn = %d", result, aiChn);
 			return RK_FAILURE;
 		}
 	}
@@ -162,23 +161,22 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate ,RK_S32 u3
 	return RK_SUCCESS;
 __FAILED:
 	return RK_FAILURE;
-
 }
 
-RK_S32 init_mpi_aenc(RK_S32 s32SampleRate)
-{
-	printf("\n=======%s=======\n",__func__);
+RK_S32 init_mpi_aenc(RK_S32 s32SampleRate) {
+	printf("\n=======%s=======\n", __func__);
 	RK_S32 s32ret = 0;
 	AENC_CHN_ATTR_S pstChnAttr;
-	RK_CODEC_ID_E enCodecId = (RK_CODEC_ID_E)code_type;//RK_AUDIO_ID_ADPCM_G726 RK_AUDIO_ID_PCM_ALAW
+	RK_CODEC_ID_E enCodecId =
+	    (RK_CODEC_ID_E)code_type; // RK_AUDIO_ID_ADPCM_G726 RK_AUDIO_ID_PCM_ALAW
 	AUDIO_BIT_WIDTH_E enBitwidth = AUDIO_BIT_WIDTH_16;
 
 	memset(&pstChnAttr, 0, sizeof(AENC_CHN_ATTR_S));
 
-	printf("codecId=%d\n",(int)enCodecId);
+	printf("codecId=%d\n", (int)enCodecId);
 
 	pstChnAttr.stCodecAttr.enType = enCodecId;
-	pstChnAttr.stCodecAttr.u32Channels = 1;				//default MONO
+	pstChnAttr.stCodecAttr.u32Channels = 1; // default MONO
 	pstChnAttr.stCodecAttr.u32SampleRate = s32SampleRate;
 	pstChnAttr.stCodecAttr.enBitwidth = enBitwidth;
 	pstChnAttr.stCodecAttr.pstResv = RK_NULL;
@@ -201,7 +199,6 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-t: --encode: encode type, Default:g726, Value:g711a, g711u, g726\n");
 	printf("\t-o: output path, Default:\"/tmp/aenc.g726\"\n");
 }
-
 
 // 编码g726的时候，只支持8000 单声道，所以需要设置所以需要设置track_mode为8
 int main(int argc, char *argv[]) {
@@ -263,26 +260,24 @@ int main(int argc, char *argv[]) {
 
 	init_mpi_aenc(u32SampleRate);
 
-
-	//ai bind aenc
+	// ai bind aenc
 	MPP_CHN_S stSrcChn, stDestChn;
-	stSrcChn.enModId    = RK_ID_AI;
-	stSrcChn.s32DevId   = 0;
-	stSrcChn.s32ChnId   = 0;
+	stSrcChn.enModId = RK_ID_AI;
+	stSrcChn.s32DevId = 0;
+	stSrcChn.s32ChnId = 0;
 
-	stDestChn.enModId   = RK_ID_AENC;
-	stDestChn.s32DevId  = 0;
-	stDestChn.s32ChnId  = 0;
+	stDestChn.enModId = RK_ID_AENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = 0;
 
 	// 3. bind AI-AENC
 	ret = RK_MPI_SYS_Bind(&stSrcChn, &stDestChn);
 	if (ret) {
-	printf("Bind AI[0] to AENC[0] failed! ret=%d\n", ret);
-	return -1;
+		printf("Bind AI[0] to AENC[0] failed! ret=%d\n", ret);
+		return -1;
 	}
 
 	printf("%s initial finish\n", __func__);
-
 
 	AUDIO_STREAM_S pstStream;
 	RK_S32 eos = 0;
@@ -295,8 +290,8 @@ int main(int argc, char *argv[]) {
 			RK_S32 timeStamp = pstStream.u64TimeStamp;
 			eos = (frameSize <= 0) ? 1 : 0;
 			if (pstFrame) {
-				RK_LOGI("get frame data = %p, size = %d, timeStamp = %lld",
-																					pstFrame, frameSize, timeStamp);
+				RK_LOGI("get frame data = %p, size = %d, timeStamp = %lld", pstFrame,
+				        frameSize, timeStamp);
 				if (save_file) {
 					fwrite(pstFrame, frameSize, 1, save_file);
 					fflush(save_file);
@@ -314,7 +309,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	RK_MPI_SYS_UnBind(&stSrcChn, &stDestChn);
-	//RK_MPI_AI_DisableVqe(0, 0);
+	// RK_MPI_AI_DisableVqe(0, 0);
 	RK_MPI_AI_DisableChn(0, 0);
 	RK_MPI_AI_Disable(0);
 	RK_MPI_AENC_DestroyChn(0);

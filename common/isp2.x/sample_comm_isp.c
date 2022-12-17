@@ -190,8 +190,9 @@ RK_S32 SAMPLE_COMM_ISP_DumpExpInfo(RK_S32 CamId, rk_aiq_working_mode_t WDRMode) 
 		        stExpInfo.MeanLuma, stCCT.CCT);
 	} else {
 		sprintf(
-		    aStr, "S:%.0f-%.1f M:%.0f-%.1f L:%.0f-%.1f SLM:%.1f MLM:%.1f "
-		          "LLM:%.1f CT:%.1f",
+		    aStr,
+		    "S:%.0f-%.1f M:%.0f-%.1f L:%.0f-%.1f SLM:%.1f MLM:%.1f "
+		    "LLM:%.1f CT:%.1f",
 		    stExpInfo.CurExpInfo.HdrExp[0].exp_real_params.integration_time * 1000 * 1000,
 		    stExpInfo.CurExpInfo.HdrExp[0].exp_real_params.analog_gain,
 		    stExpInfo.CurExpInfo.HdrExp[1].exp_real_params.integration_time * 1000 * 1000,
