@@ -12,7 +12,6 @@
 #include "rockiva_ba_api.h"
 #include "rockiva_det_api.h"
 #include "rockiva_face_api.h"
-#include "rockiva_plate_api.h"
 #endif
 #define MODEL_DATA_PATH "/userdata/rockiva_data"		//模型的路径
 
@@ -40,10 +39,8 @@ typedef struct
 {
 	RockIvaHandle handle;
 	RockIvaInitParam commonParams;
-	RockIvaDetectTaskParams detParams;
 	RockIvaBaTaskParams baParams;
 	RockIvaFaceTaskParams faceParams;
-	RockIvaPlateTaskParam plateParams;
 	IvaImageBuf imageBuf[MAX_IMAGE_BUFFER_SIZE];
 	int hasImageBufAlloc;
 } IvaAppContext;
@@ -148,7 +145,7 @@ static void *GetMediaBuffer0(void *arg) {
 			image->dataFd = fd;
 			image->frameId = stChnStatus.u32CurFrameID;
 
-			ROCKIVA_PushFrame(iva_ctx->handle, image);
+			ROCKIVA_PushFrame(iva_ctx->handle, image, NULL);
 			usleep(100000);
 
 			// 7.release the frame
@@ -295,7 +292,7 @@ void FrameReleaseCallback(const RockIvaReleaseFrames* releaseFrames, void* userd
 {
 	//printf("*****************FrameReleaseCallback count=%d******************\n", releaseFrames->count);
 	for (int i = 0; i < releaseFrames->count; i++) {
-		uint32_t frameId = releaseFrames->frameId[i];
+		uint32_t frameId = releaseFrames->frames[i].frameId;
 		printf("frameId = %d\n",frameId);
 	}
 }
@@ -367,35 +364,68 @@ int InitIvaCommon(IvaAppContext* ctx)
 static int InitIvaFace(IvaAppContext* ctx)
 {
 	printf("\n========%s========\n", __func__);
-	RockIvaFaceTaskParams* faceParams = &ctx->faceParams;
 
-	faceParams->faceTaskType.faceCaptureEnable = 1;
-	faceParams->faceTaskType.faceAttributeEnable = 1;
-	faceParams->faceTaskType.faceRecognizeEnable = 0;
 
-	faceParams->faceCaptureRule.optType = ROCKIVA_FACE_OPT_FAST;
-	faceParams->faceCaptureRule.faceQualityThrehold = 80;
+    RockIvaFaceTaskParams* faceParams = &ctx->faceParams;
+ 
+    faceParams->faceTaskType.faceCaptureEnable = 1;
+    faceParams->faceTaskType.faceAttributeEnable = 0;
+    faceParams->faceTaskType.faceRecognizeEnable = 0;
+ 
+    // 开启戴口罩人脸抓拍
+    faceParams->faceCaptureRule.captureWithMask = 0;
+ 
+    // 最优质量抓拍（人脸消失或超时选一张质量最高人脸）
+    faceParams->faceCaptureRule.optType = ROCKIVA_FACE_OPT_BEST;
+    // 超时时间，如果一个人脸超过设定时间还未消失也会触发抓拍
+    faceParams->faceCaptureRule.optBestOverTime = 10000;
+ 
+    // 快速抓拍（人脸质量超过设定阈值就触发抓拍）
+    // faceParams->faceCaptureRule.optType = ROCKIVA_FACE_OPT_FAST;
+    // faceParams->faceCaptureRule.faceQualityThrehold = 60;
+ 
+    // 人脸过滤配置
+    // 最低人脸质量分阈值，小于阈值将过滤
+    faceParams->faceCaptureRule.qualityConfig.minScore = 50;
+    // 遮挡阈值，小于阈值将过滤
+    faceParams->faceCaptureRule.qualityConfig.minEyescore = 60;
+    faceParams->faceCaptureRule.qualityConfig.minMouthScore = 0;
+ 
+    // 抓拍小图配置
+    faceParams->faceCaptureRule.faceCapacity.maxCaptureNum = 10;
+    faceParams->faceCaptureRule.captureImageConfig.mode = 1;
+    faceParams->faceCaptureRule.captureImageConfig.resizeMode = 1;
+    faceParams->faceCaptureRule.captureImageConfig.imageInfo.width = 240;
+    faceParams->faceCaptureRule.captureImageConfig.imageInfo.height = 320;
+    faceParams->faceCaptureRule.captureImageConfig.imageInfo.format = ROCKIVA_IMAGE_FORMAT_RGB888;
+    faceParams->faceCaptureRule.captureImageConfig.alignWidth = 16;
+ 
+    faceParams->faceCaptureRule.captureImageConfig.expand.up = 1;
+    faceParams->faceCaptureRule.captureImageConfig.expand.down = 1;
+    faceParams->faceCaptureRule.captureImageConfig.expand.left = 1;
+    faceParams->faceCaptureRule.captureImageConfig.expand.right = 1;
+ 
+    // 检测区域配置
+    faceParams->faceCaptureRule.detectAreaEn = 0;
+    faceParams->faceCaptureRule.detectArea.pointNum = 4;
+    faceParams->faceCaptureRule.detectArea.points[0].x = 1000;
+    faceParams->faceCaptureRule.detectArea.points[0].y = 1000;
+    faceParams->faceCaptureRule.detectArea.points[1].x = 9000;
+    faceParams->faceCaptureRule.detectArea.points[1].y = 1000;
+    faceParams->faceCaptureRule.detectArea.points[2].x = 9000;
+    faceParams->faceCaptureRule.detectArea.points[2].y = 9000;
+    faceParams->faceCaptureRule.detectArea.points[3].x = 1000;
+    faceParams->faceCaptureRule.detectArea.points[3].y = 9000;
+ 
+    RockIvaFaceCallback callback;
+    callback.detCallback = FaceDetResultCallback;
+    callback.analyseCallback = FaceAnalyseResultCallback;
+    RockIvaRetCode ret = ROCKIVA_FACE_Init(ctx->handle, &ctx->faceParams, callback);
+    if (ret != ROCKIVA_RET_SUCCESS) {
+        printf("ROCKIVA_FACE_Init error %d\n", ret);
+        return -1;
+    }
 
-	faceParams->faceCaptureRule.captureImageFlag = 1;
-	faceParams->faceCaptureRule.faceCapacity.maxCaptureNum = 3;
-	faceParams->faceCaptureRule.captureImageInfo.width = 240;
-	faceParams->faceCaptureRule.captureImageInfo.height = 320;
-	faceParams->faceCaptureRule.captureImageInfo.format = ROCKIVA_IMAGE_FORMAT_YUV420SP_NV12;//ROCKIVA_IMAGE_FORMAT_RGB888;
-	faceParams->faceCaptureRule.alignWidth = 16;
-
-	faceParams->faceCaptureRule.captureExpand.up = 1;
-	faceParams->faceCaptureRule.captureExpand.down = 1;
-	faceParams->faceCaptureRule.captureExpand.left = 1;
-	faceParams->faceCaptureRule.captureExpand.right = 1;
-
-	RockIvaFaceCallback callback;
-	callback.detCallback = FaceDetResultCallback;
-	callback.analyseCallback = FaceAnalyseResultCallback;
-	RockIvaRetCode ret = ROCKIVA_FACE_Init(ctx->handle, &ctx->faceParams, callback);
-	if (ret != ROCKIVA_RET_SUCCESS) {
-		printf("ROCKIVA_FACE_Init error %d\n", ret);
-		return -1;
-	}
 	return 0;
 }
 

@@ -62,7 +62,7 @@ RK_S32 SAMPLE_COMM_ISP_SetFecEn(RK_S32 CamId, RK_BOOL bFECEnable);
 RK_S32 SAMPLE_COMM_ISP_Run(RK_S32 CamId); // isp stop before vi streamoff
 RK_S32 SAMPLE_COMM_ISP_DumpExpInfo(RK_S32 CamId, rk_aiq_working_mode_t WDRMode);
 RK_S32 SAMPLE_COMM_ISP_SetFrameRate(RK_S32 CamId, RK_U32 uFps);
-RK_S32 SAMPLE_COMM_ISP_SetLDCHLevel(RK_S32 CamId, RK_U32 level);
+RK_S32 SAMPLE_COMM_ISP_SetLDCH(RK_S32 CamId, RK_U32 level, RK_BOOL bIfEnable);
 RK_S32 SAMPLE_COMM_ISP_SetWDRModeDyn(RK_S32 CamId, rk_aiq_working_mode_t WDRMode);
 RK_S32 SAMPLE_COMM_ISP_SET_Brightness(RK_S32 CamId, RK_U32 value);
 RK_S32 SAMPLE_COMM_ISP_SET_Contrast(RK_S32 CamId, RK_U32 value);

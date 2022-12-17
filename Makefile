@@ -43,6 +43,7 @@ endif
 
 ifeq ($(CONFIG_RK_IVA),y)
 	LD_FLAGS += -DROCKIVA
+	LD_FLAGS += -DROCKIVA -lrockiva
 endif
 
 ifeq ($(CONFIG_RK_SAMPLE),y)
@@ -69,8 +70,13 @@ COMM_OBJ := $(COMM_SRC:%.c=%.o)
 INC_FLAGS := -I$(COMM_DIR)
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq
-#INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/uAPI
+ifeq ($(RK_MEDIA_CHIP), rv1126)
+INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/uAPI
+LD_FLAGS += -DUAPI
+else
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/uAPI2
+LD_FLAGS += -DUAPI2
+endif
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/common
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/xcore
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/algos
@@ -85,7 +91,7 @@ LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic -lpthread -lr
 LD_FLAGS += -L$(CURRENT_DIR)/lib/$(RK_MEDIA_CROSS) -Wl,-Bstatic -lrtsp -Wl,-Bdynamic -Wl,--gc-sections -Wl,--as-needed
 else
 LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib  -lrockit -lrockchip_mpp -lrkaiq -lpthread -lm -ldl
-LD_FLAGS += -L$(CURRENT_DIR)/lib/$(RK_MEDIA_CROSS) -lrtsp -lrockiva
+LD_FLAGS += -L$(CURRENT_DIR)/lib/$(RK_MEDIA_CROSS) -lrtsp
 endif
 
 ifeq ($(RK_MEDIA_CHIP), rv1126)

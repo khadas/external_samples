@@ -1,22 +1,11 @@
 # Rockchip sample Makefile
+SOURCES_C     = $(wildcard *.c)
+OBJECTS       = $(basename $(SOURCES_C))
+all: $(OBJECTS)
 
-SRCS := $(wildcard *.c)
-OBJS  := $(SRCS:%.c=%.o)
-TARGET := $(SRCS:%.c=%)
-
-.PHONY : clean all
-
-TARGET1 = sample_vi_vo
-
-all: $(TARGET1)
-
-$(TARGET1):$(COMM_OBJ) $(TARGET1).o
-	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) -o $@ $^ $(LD_FLAGS)
-
+sample_vi_vo: sample_vi_vo.c
+	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
 install:
-	@mv -f $(TARGET1) $(SAMPLE_OUT_DIR)/bin
-
+	@mv -f $(OBJECTS) $(SAMPLE_OUT_DIR)/bin
 clean:
-	@rm -f $(TARGET1)
-	@rm -f $(OBJS)
-
+	@echo "clean sample/vo"

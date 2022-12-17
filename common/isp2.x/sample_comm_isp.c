@@ -222,7 +222,7 @@ RK_S32 SAMPLE_COMM_ISP_SetFrameRate(RK_S32 CamId, RK_U32 uFps) {
 	return ret;
 }
 
-RK_S32 SAMPLE_COMM_ISP_SetLDCHLevel(RK_S32 CamId, RK_U32 level) {
+RK_S32 SAMPLE_COMM_ISP_SetLDCH(RK_S32 CamId, RK_U32 level, RK_BOOL bIfEnable) {
 	if (CamId >= MAX_AIQ_CTX || !g_aiq_ctx[CamId]) {
 		printf("%s : CamId is over 3 or not init\n", __FUNCTION__);
 		return -1;

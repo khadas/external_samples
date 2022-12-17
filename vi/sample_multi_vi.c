@@ -68,7 +68,7 @@ static const struct option long_options[] = {
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s -w 2560 -h 1520 -a /etc/iqfiles/ -n 6 -l 10 -o /data/\n", name);
-#ifdef RKAIQ
+#if(defined RKAIQ) && (defined UAPI2)
 	printf("\t-a | --aiq: enable aiq with dirpath provided, eg:-a /etc/iqfiles/, "
 	       "set dirpath empty to using path by default, without this option aiq "
 	       "should run in other application\n");
@@ -174,7 +174,7 @@ int main(int argc, char *argv[]) {
 
 	signal(SIGINT, sigterm_handler);
 
-#ifdef RKAIQ
+#if(defined RKAIQ) && (defined UAPI2)
 	RK_BOOL bMultictx = RK_FALSE;
 #endif
 	int c;
@@ -230,7 +230,7 @@ int main(int argc, char *argv[]) {
 		case 'o':
 			pOutPath = optarg;
 			break;
-#ifdef RKAIQ
+#if(defined RKAIQ) && (defined UAPI2)
 		case 'M':
 			if (atoi(optarg)) {
 				bMultictx = RK_TRUE;
@@ -248,7 +248,7 @@ int main(int argc, char *argv[]) {
 	printf("#Output Path: %s\n", pOutPath);
 	printf("#IQ Path: %s\n", iq_file_dir);
 	if (iq_file_dir) {
-#ifdef RKAIQ
+#if(defined RKAIQ) && (defined UAPI2)
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
 		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
@@ -305,7 +305,7 @@ int main(int argc, char *argv[]) {
 __FAILED:
 	RK_MPI_SYS_Exit();
 	if (iq_file_dir) {
-#ifdef RKAIQ
+#if(defined RKAIQ) && (defined UAPI2)
 		SAMPLE_COMM_ISP_CamGroup_Stop(0);
 #endif
 	}

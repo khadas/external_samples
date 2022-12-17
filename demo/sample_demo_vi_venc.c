@@ -77,7 +77,9 @@ typedef struct _rkMpiCtx {
 	SAMPLE_RGN_CTX_S rgn[RGN_CHN_MAX];
 	SAMPLE_TDE_CTX_S tde;
 	SAMPLE_IVS_CTX_S ivs;
+#ifdef ROCKIVA
 	SAMPLE_IVA_CTX_S iva;
+#endif
 } SAMPLE_MPI_CTX_S;
 
 /* global param */

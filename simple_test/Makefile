@@ -12,11 +12,13 @@ SIMPLE_FAST_CLIENT_LD_FLAGS += -L$(SAMPLE_SRC_DIR)/../lib/$(RK_MEDIA_CROSS) -Wl,
 
 
 SOURCES_C     = $(wildcard *.c)
-ifneq ($(CONFIG_ROCKIVA), y)
-SOURCES_C     = $(filter-out simple_vi_rockiva.c, $(wildcard *.c))
+ifneq ($(RK_MEDIA_CHIP), rv1106)
+SOURCES_C     = $(filter-out simple_vi_rockiva.c simple_dual_camera.c simple_fast_client.c, $(wildcard *.c))
 endif
+
 OBJECTS       = $(basename $(SOURCES_C))
 
+$(warning "here add the debug info $(OBJECTS)")
 all: $(OBJECTS)
 
 simple_adec_ao: simple_adec_ao.c
@@ -47,11 +49,8 @@ simple_vi_ivs: simple_vi_ivs.c
 	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
 
 simple_vi_rockiva: simple_vi_rockiva.c
-	@echo "build iva simple"
-ifeq ($(CONFIG_ROCKIVA), y)
 	@make -C $(RK_MEDIA_TOP_DIR)/iva
 	$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS) -DROCKIVA -lrockiva -lrknnmrt -I$(RK_MEDIA_OUTPUT)/include/rockiva
-endif
 
 simple_vi_venc: simple_vi_venc.c
 	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
