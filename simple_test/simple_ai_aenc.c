@@ -220,7 +220,7 @@ static void print_usage(const RK_CHAR *name) {
 
 // 编码g726的时候，只支持8000 单声道，所以需要设置所以需要设置track_mode为8
 int main(int argc, char *argv[]) {
-	RK_S32 u32SampleRate = 16000;
+	RK_S32 u32SampleRate = 8000;
 	RK_U32 u32FrameCnt = 1024;
 	RK_CHAR *pOutPath = "/tmp/aenc.g726";
 	RK_CHAR *pCodecName = "g726";

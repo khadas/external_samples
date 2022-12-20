@@ -272,7 +272,8 @@ int main(int argc, char *argv[]) {
 		timeStamp++;
 	}
 
-	RK_MPI_AO_WaitEos(0, 0, -1);
+	if (!quit)
+		RK_MPI_AO_WaitEos(0, 0, -1);
 
 	if (adec_file) {
 		fclose(adec_file);
