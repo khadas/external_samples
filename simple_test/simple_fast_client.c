@@ -560,7 +560,7 @@ int main(int argc, char *argv[]) {
 
 	rk_aiq_sys_ctx_t *aiq_ctx;
 	rk_aiq_static_info_t aiq_static_info;
-	rk_aiq_uapi2_sysctl_enumStaticMetas(s32chnlId, &aiq_static_info);
+	rk_aiq_uapi2_sysctl_enumStaticMetasByPhyId(s32chnlId, &aiq_static_info);
 
 	if (rk_color_mode) {
 		printf("=====night mode=====\n");
