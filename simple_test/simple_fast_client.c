@@ -136,9 +136,8 @@ static void load_ir_configs(float d2n, float n2d, float rbase, float bbase, floa
 static void *switch_ir_thread(void *args) {
 	sample_smartIr_t *smartIr_ctx = &g_sample_smartIr_ctx;
 	int init_stat = smartIr_ctx->ir_ctx->state;
-	int ret, switch_flag, sleep_count;
+	int ret, switch_flag, sleep_count = 15;
 	FILE *fp;
-	sleep_count = 0;
 
 	ret |= rk_gpio_export_direction(ircut_on_gpio, GPIO_DIRECTION_OUTPUT);
 	ret |= rk_gpio_export_direction(ircut_off_gpio, GPIO_DIRECTION_OUTPUT);
@@ -150,6 +149,13 @@ static void *switch_ir_thread(void *args) {
 	} else {
 		switch_flag = 1;
 		rk_gpio_set_value(irled_enable_gpio, 0);
+	}
+	while (--sleep_count >= 0) {
+		if ((access("/dev/block/by-name/meta", F_OK)) == 0) {
+			printf("load meta partition finished\n");
+			break;
+		}
+		usleep(1000 * 1000);
 	}
 
 	ret = rk_pwm_init(irled_pwm_channel, irled_pwm_period, irled_pwm_duty, PWM_POLARITY_NORMAL);
@@ -170,33 +176,26 @@ static void *switch_ir_thread(void *args) {
 				if (rk_pwm_set_enable(irled_pwm_channel, false))
 					printf("pwm%d disable failed %d\n", irled_pwm_channel);
 				rk_isp_enable_ircut(true);
-				usleep(300 * 1000);
 				rk_aiq_uapi2_sysctl_switch_scene(smartIr_ctx->aiq_ctx, "normal", "day");
 
 				printf("SAMPLE_SMART_IR: switch to DAY\n");
-				if ((access("/dev/block/by-name/meta", F_OK)) == 0)
-					system("make_meta --update --meta_path /dev/block/by-name/meta "
-				       "--rk_color_mode 0");
+				system("make_meta --update --meta_path /dev/block/by-name/meta "
+					"--rk_color_mode 0");
 			}
-
 		} else if (smartIr_ctx->ir_res.status == RK_SMART_IR_STATUS_NIGHT) {
 			if (switch_flag != 1) {
 				switch_flag = 1;
 				rk_aiq_uapi2_sysctl_switch_scene(smartIr_ctx->aiq_ctx, "normal", "night");
-				usleep(300 * 1000);
 				rk_isp_enable_ircut(false);
 				rk_gpio_set_value(irled_enable_gpio, 1);
 				if (rk_pwm_set_enable(irled_pwm_channel, true))
 					printf("pwm%d enable failed %d\n", irled_pwm_channel);
 
 				printf("SAMPLE_SMART_IR: switch to Night\n");
-				if ((access("/dev/block/by-name/meta", F_OK)) == 0)
-					system("make_meta --update --meta_path /dev/block/by-name/meta "
-				       "--rk_color_mode 1");
+				system("make_meta --update --meta_path /dev/block/by-name/meta "
+					"--rk_color_mode 1");
 			}
 		}
-
-		usleep(30 * 1000);
 	}
 
 	return NULL;
