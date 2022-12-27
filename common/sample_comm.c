@@ -101,6 +101,8 @@ RK_S32 SAMPLE_COMM_GetBmpResolution(RK_CHAR *pBmpFile, RK_U32 *width, RK_U32 *he
 	RK_U16 bfType;
 	OSD_BITMAPINFO pBmpInfo;
 
+	*width = 256;
+	*height = 256;
 	if (pBmpFile == RK_NULL) {
 		RK_LOGE("bmp file not exist");
 		return RK_FAILURE;

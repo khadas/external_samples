@@ -323,6 +323,8 @@ RK_S32 SAMPLE_COMM_TDE_ReleaseMB(SAMPLE_TDE_CTX_S *ctx);
 RK_S32 SAMPLE_COMM_TDE_Destroy(SAMPLE_TDE_CTX_S *ctx);
 
 RK_S32 SAMPLE_COMM_DumpMeminfo(RK_CHAR *callFunc, RK_S32 moduleTestType);
+RK_S32 SAMPLE_COMM_FillImage(RK_U8 *buf, RK_U32 width, RK_U32 height, RK_U32 hor_stride,
+                             RK_U32 ver_stride, PIXEL_FORMAT_E fmt, RK_U32 frame_count);
 
 #ifdef __cplusplus
 #if __cplusplus

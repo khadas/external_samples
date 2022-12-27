@@ -137,9 +137,7 @@ static const struct option long_options[] = {
  ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
-	printf("\t%s -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path "
-	       "/userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp \n",
-	       name);
+	printf("\t%s -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 \n", name);
 #ifdef RKAIQ
 	printf(
 	    "\t-a | --aiq : enable aiq with dirpath provided, eg:-a /etc/iqfiles/, \n"

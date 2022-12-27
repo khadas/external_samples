@@ -32,10 +32,12 @@ static RK_S32 test_rgn_load_bmp(SAMPLE_RGN_CTX_S *ctx) {
 	OSD_SURFACE_S Surface;
 	OSD_BITMAPFILEHEADER bmpFileHeader;
 	OSD_BITMAPINFO bmpInfo;
+	RK_BOOL bCPU = RK_FALSE;
 
 	if (get_bmp_info(ctx->srcFileBmpName, &bmpFileHeader, &bmpInfo) < 0) {
-		RK_LOGE("GetBmpInfo err!\n");
-		return RK_FAILURE;
+		RK_LOGE("GetBmpInfo err, generate from cpu!\n");
+		bCPU = RK_TRUE;
+		// return RK_FAILURE;
 	}
 
 	switch (ctx->u32BmpFormat) {
@@ -53,6 +55,23 @@ static RK_S32 test_rgn_load_bmp(SAMPLE_RGN_CTX_S *ctx) {
 		break;
 	default:
 		return RK_FAILURE;
+	}
+
+	if (bCPU) {
+		ctx->stBitmap.pData =
+		    malloc(4 * (ctx->stRegion.u32Width) * (ctx->stRegion.u32Height));
+
+		if (RK_NULL == ctx->stBitmap.pData) {
+			RK_LOGE("malloc osd memroy err!");
+			return RK_FAILURE;
+		}
+		SAMPLE_COMM_FillImage(ctx->stBitmap.pData, ctx->stRegion.u32Width,
+		                      ctx->stRegion.u32Height, ctx->stRegion.u32Width,
+		                      ctx->stRegion.u32Height, ctx->u32BmpFormat, 0);
+		ctx->stBitmap.u32Width = ctx->stRegion.u32Width;
+		ctx->stBitmap.u32Height = ctx->stRegion.u32Height;
+		ctx->stBitmap.enPixelFormat = ctx->u32BmpFormat;
+		return RK_SUCCESS;
 	}
 
 	ctx->stBitmap.pData =
@@ -119,7 +138,7 @@ RK_S32 SAMPLE_COMM_RGN_CreateChn(SAMPLE_RGN_CTX_S *ctx) {
 		ctx->stRgnChnAttr.unChnAttr.stMosaicChn.stRect.u32Width = ctx->stRegion.u32Width;
 		ctx->stRgnChnAttr.unChnAttr.stMosaicChn.stRect.u32Height =
 		    ctx->stRegion.u32Height;
-		ctx->stRgnChnAttr.unChnAttr.stMosaicChn.enBlkSize = MOSAIC_BLK_SIZE_8;
+		ctx->stRgnChnAttr.unChnAttr.stMosaicChn.enBlkSize = MOSAIC_BLK_SIZE_64;
 		ctx->stRgnChnAttr.unChnAttr.stMosaicChn.u32Layer = ctx->u32Layer;
 	} break;
 	default:
@@ -212,7 +231,7 @@ RK_S32 SAMPLE_COMM_RGN_CreateChn(SAMPLE_RGN_CTX_S *ctx) {
 		ctx->stRgnChnAttr.unChnAttr.stMosaicChn.stRect.u32Width = ctx->stRegion.u32Width;
 		ctx->stRgnChnAttr.unChnAttr.stMosaicChn.stRect.u32Height =
 		    ctx->stRegion.u32Height;
-		ctx->stRgnChnAttr.unChnAttr.stMosaicChn.enBlkSize = MOSAIC_BLK_SIZE_8;
+		ctx->stRgnChnAttr.unChnAttr.stMosaicChn.enBlkSize = MOSAIC_BLK_SIZE_64;
 		ctx->stRgnChnAttr.unChnAttr.stMosaicChn.u32Layer = ctx->u32Layer;
 	} break;
 	default:
