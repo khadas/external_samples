@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Rockchip Electronics Co. LTD
+ * Copyright 2022 Rockchip Electronics Co. LTD
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,19 +46,17 @@ static void sigterm_handler(int sig) {
 	quit = true;
 }
 
-static RK_CHAR optstr[] = "?::a::d:f:w:h:c:o:e:n:I:i:l:M:";
+static RK_CHAR optstr[] = "?::a::d:c:f:w:h:o:I:l:m:";
 static const struct option long_options[] = {
     {"aiq", optional_argument, NULL, 'a'},
-    {"pixel_format", optional_argument, NULL, 'f'},
     {"device_name", required_argument, NULL, 'd'},
-    {"camera_num", required_argument, NULL, 'n'},
+    {"chn_id", required_argument, NULL, 'c'},
+    {"pixel_format", optional_argument, NULL, 'f'},
     {"width", required_argument, NULL, 'w'},
     {"height", required_argument, NULL, 'h'},
-    {"loop_count", required_argument, NULL, 'l'},
     {"output_path", required_argument, NULL, 'o'},
     {"camid", required_argument, NULL, 'I'},
-    {"multictx", required_argument, NULL, 'M'},
-    {"fps", required_argument, NULL, 'f'},
+    {"loop_count", required_argument, NULL, 'l'},
     {"hdr_mode", required_argument, NULL, 'h' + 'm'},
     {"help", optional_argument, NULL, '?'},
     {NULL, 0, NULL, 0},
@@ -69,24 +67,22 @@ static const struct option long_options[] = {
  ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
-	printf("\t%s -w 2560 -h 1520 -a /etc/iqfiles/ -l 10 -o /data/\n", name);
+	printf("\t%s -w 1920 -h 1080 -a /etc/iqfiles/ -l 10 -o /data/\n", name);
 #ifdef RKAIQ
 	printf("\t-a | --aiq: enable aiq with dirpath provided, eg:-a /etc/iqfiles/, "
 	       "set dirpath empty to using path by default, without this option aiq "
 	       "should run in other application\n");
-	printf("\t-M | --multictx: switch of multictx in isp, set 0 to disable, set "
-	       "1 to enable. Default: 0\n");
 #endif
 	printf("\t-d | --device_name: set pcDeviceName, eg: /dev/video0 Default "
 	       "NULL\n");
-	printf("\t-I | --camid: camera ctx id, Default 0\n");
-	printf("\t-n | --camera_num: camera number, Default 6\n");
+	printf("\t-c | --chn_id: channel id, default: 0\n");
+	printf("\t-f | --pixel_format: camera Format, Default nv12, "
+	       "Value:nv12,nv16,uyvy,rgb565,xbgr8888\n");
 	printf("\t-w | --width: camera with, Default 1920\n");
 	printf("\t-h | --height: camera height, Default 1080\n");
-	printf("\t-f | --pixel_format: camera Format, Default nv12, "
-	       "Value:nv12,nv16,yuyv,uyvy,afbc\n");
-	printf("\t-l | --loop_count: loop count, Default -1\n");
 	printf("\t-o | --output_path: vi output file path, Default NULL\n");
+	printf("\t-I | --camid: camera ctx id, Default 0\n");
+	printf("\t-l | --loop_count: loop count, Default -1\n");
 	printf("\t--hdr_mode: set hdr mode, 0: normal 1: HDR2, 2: HDR3, Default: 0\n");
 }
 
@@ -203,27 +199,26 @@ int main(int argc, char *argv[]) {
 		case 'd':
 			pDeviceName = optarg;
 			break;
+		case 'c':
+			s32ChnId = atoi(optarg);
+			break;
 		case 'f':
 			if (!strcmp(optarg, "nv12")) {
-				s32ChnId = 0;
 				PixelFormat = RK_FMT_YUV420SP;
-				CompressMode = COMPRESS_MODE_NONE;
 			} else if (!strcmp(optarg, "nv16")) {
-				s32ChnId = 0;
 				PixelFormat = RK_FMT_YUV422SP;
-				CompressMode = COMPRESS_MODE_NONE;
-			} else if (!strcmp(optarg, "yuyv")) {
-				s32ChnId = 0;
-				PixelFormat = RK_FMT_YUV422_YUYV;
-				CompressMode = COMPRESS_MODE_NONE;
 			} else if (!strcmp(optarg, "uyvy")) {
-				s32ChnId = 0;
 				PixelFormat = RK_FMT_YUV422_UYVY;
-				CompressMode = COMPRESS_MODE_NONE;
-			} else if (!strcmp(optarg, "afbc")) {
-				s32ChnId = 2;
-				PixelFormat = RK_FMT_YUV420SP;
-				CompressMode = COMPRESS_AFBC_16x16;
+			} else if (!strcmp(optarg, "rgb565")) {
+				PixelFormat = RK_FMT_RGB565;
+				s32ChnId = 1;
+			} else if (!strcmp(optarg, "xbgr8888")) {
+				PixelFormat = RK_FMT_XBGR8888;
+				s32ChnId = 1;
+			} else {
+				RK_LOGE("this pixel_format is not supported in the sample");
+				print_usage(argv[0]);
+				goto __FAILED2;
 			}
 			break;
 		case 'w':
@@ -254,13 +249,6 @@ int main(int argc, char *argv[]) {
 				goto __FAILED2;
 			}
 			break;
-#ifdef RKAIQ
-		case 'M':
-			if (atoi(optarg)) {
-				bMultictx = RK_TRUE;
-			}
-			break;
-#endif
 		case '?':
 		default:
 			print_usage(argv[0]);
@@ -292,9 +280,9 @@ int main(int argc, char *argv[]) {
 	ctx->vi.s32DevId = s32CamId;
 	ctx->vi.u32PipeId = ctx->vi.s32DevId;
 	ctx->vi.s32ChnId = s32ChnId;
-	ctx->vi.stChnAttr.stIspOpt.u32BufCount = 3;
+	ctx->vi.stChnAttr.stIspOpt.u32BufCount = 2;
 	ctx->vi.stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
-	ctx->vi.stChnAttr.u32Depth = 2;
+	ctx->vi.stChnAttr.u32Depth = 1;
 	ctx->vi.stChnAttr.enPixelFormat = PixelFormat;
 	ctx->vi.stChnAttr.enCompressMode = CompressMode;
 	ctx->vi.stChnAttr.stFrameRate.s32SrcFrameRate = -1;

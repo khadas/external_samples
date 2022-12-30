@@ -85,7 +85,7 @@ static void sigterm_handler(int sig) {
 	program_normal_exit(__func__, __LINE__);
 }
 
-static RK_CHAR optstr[] = "?::a::d:f:w:h:o:I:l:p:m:c:";
+static RK_CHAR optstr[] = "?::a::d:f:w:h:o:I:l:p:m:c:i:";
 static const struct option long_options[] = {
     {"aiq", optional_argument, NULL, 'a'},
     {"device_name", required_argument, NULL, 'd'},
@@ -100,6 +100,7 @@ static const struct option long_options[] = {
     {"mode_test_type", required_argument, NULL, 'm'},
     {"mode_test_loop", required_argument, NULL, 't' + 'l'},
     {"test_frame_count", required_argument, NULL, 'c'},
+    {"chn_id", required_argument, NULL, 'c' + 'i'},
     {"help", optional_argument, NULL, '?'},
     {NULL, 0, NULL, 0},
 };
@@ -117,7 +118,7 @@ static void print_usage(const RK_CHAR *name) {
 #endif
 	printf("\t-d | --device_name : set pcDeviceName, eg: /dev/video0 Default: "
 	       "NULL\n");
-	printf("\t-w | --width : camera with, Default: 1920\n");
+	printf("\t-w | --width : camera width, Default: 1920\n");
 	printf("\t-h | --height : camera height, Default: 1080\n");
 	printf("\t-o | --output_path : vi output file path, Default: NULL\n");
 	printf("\t-I | --camid : camera id, Default: 0\n");
@@ -125,13 +126,15 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-f | --fps : isp output fps, Default: -1\n");
 	printf("\t-m | --mode_test_type : test type, 0:none, 1:P/N switch test, 2:HDR switch "
 	       "test, 3:frame rate switch test, 4: LDCH mode test. Default: 0\n");
-	printf("\t--pixel_format : camera Format, Value:nv12,nv16,yuyv,uyvy,afbc. Default: "
+	printf("\t--pixel_format : camera Format, Value:nv12,nv16,uyvy,rgb565,xbgr8888. "
+	       "Default: "
 	       "nv12\n");
 	printf("\t--hdr_mode : set camera hdr mode, 0: normal, 1: HDR2. Default: "
 	       "0\n");
 	printf("\t--mode_test_loop : module test loop, default: -1\n");
 	printf("\t--test_frame_count : set the venc reveive frame count for every test "
 	       "loop, default: 500\n");
+	printf("\t--chn_id : channel id, default: 0\n");
 }
 
 static void *vi_get_stream(void *pArgs) {
@@ -467,6 +470,7 @@ int main(int argc, char *argv[]) {
 	RK_S32 s32CamId = 0;
 	RK_S32 s32loopCnt = -1;
 	RK_S32 s32ChnId = 0;
+	RK_S32 s32FrameRate = -1;
 	RK_BOOL bMultictx = RK_FALSE;
 	rk_aiq_working_mode_t eHdrMode = RK_AIQ_WORKING_MODE_NORMAL;
 	PIXEL_FORMAT_E ePixelFormat = RK_FMT_YUV420SP;
@@ -507,25 +511,21 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'p' + 'f':
 			if (!strcmp(optarg, "nv12")) {
-				s32ChnId = 0;
 				ePixelFormat = RK_FMT_YUV420SP;
-				eCompressMode = COMPRESS_MODE_NONE;
 			} else if (!strcmp(optarg, "nv16")) {
-				s32ChnId = 0;
 				ePixelFormat = RK_FMT_YUV422SP;
-				eCompressMode = COMPRESS_MODE_NONE;
-			} else if (!strcmp(optarg, "yuyv")) {
-				s32ChnId = 0;
-				ePixelFormat = RK_FMT_YUV422_YUYV;
-				eCompressMode = COMPRESS_MODE_NONE;
 			} else if (!strcmp(optarg, "uyvy")) {
-				s32ChnId = 0;
 				ePixelFormat = RK_FMT_YUV422_UYVY;
-				eCompressMode = COMPRESS_MODE_NONE;
-			} else if (!strcmp(optarg, "afbc")) {
-				s32ChnId = 2;
-				ePixelFormat = RK_FMT_YUV420SP;
-				eCompressMode = COMPRESS_AFBC_16x16;
+			} else if (!strcmp(optarg, "rgb565")) {
+				ePixelFormat = RK_FMT_RGB565;
+				s32ChnId = 1;
+			} else if (!strcmp(optarg, "xbgr8888")) {
+				ePixelFormat = RK_FMT_XBGR8888;
+				s32ChnId = 1;
+			} else {
+				RK_LOGE("this pixel_format is not supported in the sample");
+				print_usage(argv[0]);
+				goto __FAILED2;
 			}
 			break;
 		case 'w':
@@ -539,6 +539,9 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'l':
 			s32loopCnt = atoi(optarg);
+			break;
+		case 'f':
+			s32FrameRate = atoi(optarg);
 			break;
 		case 'o':
 			pOutPath = optarg;
@@ -563,6 +566,9 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'c':
 			gModeTest->u32TestFrameCount = atoi(optarg);
+			break;
+		case 'c' + 'i':
+			s32ChnId = atoi(optarg);
 			break;
 		case '?':
 		default:
@@ -602,13 +608,13 @@ int main(int argc, char *argv[]) {
 	ctx->vi.s32DevId = s32CamId;
 	ctx->vi.u32PipeId = ctx->vi.s32DevId;
 	ctx->vi.s32ChnId = s32ChnId;
-	ctx->vi.stChnAttr.stIspOpt.u32BufCount = 3;
+	ctx->vi.stChnAttr.stIspOpt.u32BufCount = 2;
 	ctx->vi.stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
-	ctx->vi.stChnAttr.u32Depth = 2;
+	ctx->vi.stChnAttr.u32Depth = 1;
 	ctx->vi.stChnAttr.enPixelFormat = ePixelFormat;
 	ctx->vi.stChnAttr.enCompressMode = eCompressMode;
-	ctx->vi.stChnAttr.stFrameRate.s32SrcFrameRate = -1;
-	ctx->vi.stChnAttr.stFrameRate.s32DstFrameRate = -1;
+	ctx->vi.stChnAttr.stFrameRate.s32SrcFrameRate = s32FrameRate;
+	ctx->vi.stChnAttr.stFrameRate.s32DstFrameRate = s32FrameRate;
 	ctx->vi.dstFilePath = pOutPath;
 	ctx->vi.s32loopCount = s32loopCnt;
 	if (pDeviceName) {

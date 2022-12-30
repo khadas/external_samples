@@ -46,18 +46,16 @@ static void sigterm_handler(int sig) {
 	quit = true;
 }
 
-static RK_CHAR optstr[] = "?::a::f:w:h:c:o:e:n:I:i:l:M:";
+static RK_CHAR optstr[] = "?::a::f:w:h:c:o:n:l:m:";
 static const struct option long_options[] = {
     {"aiq", optional_argument, NULL, 'a'},
     {"pixel_format", optional_argument, NULL, 'f'},
-    {"camera_num", required_argument, NULL, 'n'},
     {"width", required_argument, NULL, 'w'},
     {"height", required_argument, NULL, 'h'},
-    {"loop_count", required_argument, NULL, 'l'},
+    {"chn_id", required_argument, NULL, 'c'},
     {"output_path", required_argument, NULL, 'o'},
-    {"camid", required_argument, NULL, 'I'},
-    {"multictx", required_argument, NULL, 'M'},
-    {"fps", required_argument, NULL, 'f'},
+    {"camera_num", required_argument, NULL, 'n'},
+    {"loop_count", required_argument, NULL, 'l'},
     {"hdr_mode", required_argument, NULL, 'h' + 'm'},
     {"help", optional_argument, NULL, '?'},
     {NULL, 0, NULL, 0},
@@ -68,21 +66,21 @@ static const struct option long_options[] = {
  ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
-	printf("\t%s -w 2560 -h 1520 -a /etc/iqfiles/ -n 6 -l 10 -o /data/\n", name);
+	printf("\t%s -w 1920 -h 1080 -a /etc/iqfiles/ -n 2 -l 10 -o /data/\n", name);
 #if (defined RKAIQ) && (defined UAPI2)
 	printf("\t-a | --aiq: enable aiq with dirpath provided, eg:-a /etc/iqfiles/, "
 	       "set dirpath empty to using path by default, without this option aiq "
 	       "should run in other application\n");
-	printf("\t-M | --multictx: switch of multictx in isp, set 0 to disable, set "
-	       "1 to enable. Default: 0\n");
 #endif
-	printf("\t-n | --camera_num: camera number, Default 6\n");
-	printf("\t-w | --width: camera with, Default 1920\n");
-	printf("\t-h | --height: camera height, Default 1080\n");
 	printf("\t-f | --pixel_format: camera Format, Default nv12, "
-	       "Value:nv12,nv16,yuyv,uyvy,afbc\n");
-	printf("\t-l | --loop_count: loop count, Default -1\n");
+	       "Value:nv12,nv16,uyvy,rgb565,xbgr8888.\n");
+	printf("\t-w | --width: camera width, Default 1920\n");
+	printf("\t-h | --height: camera height, Default 1080\n");
+	printf("\t-c | --chn_id: channel id, default: 0\n");
 	printf("\t-o | --output_path: vi output file path, Default NULL\n");
+	printf("\t-n | --camera_num: camera number, Default 2\n");
+	printf("\t-l | --loop_count: loop count, Default -1\n");
+	printf("\t--hdr_mode: set hdr mode, 0: normal 1: HDR2, 2: HDR3, Default: 0\n");
 }
 
 /******************************************************************************
@@ -157,11 +155,12 @@ int main(int argc, char *argv[]) {
 	int video_height = 1080;
 	RK_CHAR *pOutPath = NULL;
 	RK_S32 i;
-	RK_S32 s32CamNum = 6;
+	RK_S32 s32CamNum = 2;
 	RK_S32 s32ChnId = 0;
 	RK_S32 s32loopCnt = -1;
 	PIXEL_FORMAT_E PixelFormat = RK_FMT_YUV420SP;
 	COMPRESS_MODE_E CompressMode = COMPRESS_MODE_NONE;
+	rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
 	MPP_CHN_S stSrcChn, stDestChn;
 	pthread_t vi_thread_id[6];
 
@@ -195,25 +194,21 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'f':
 			if (!strcmp(optarg, "nv12")) {
-				s32ChnId = 0;
 				PixelFormat = RK_FMT_YUV420SP;
-				CompressMode = COMPRESS_MODE_NONE;
 			} else if (!strcmp(optarg, "nv16")) {
-				s32ChnId = 0;
 				PixelFormat = RK_FMT_YUV422SP;
-				CompressMode = COMPRESS_MODE_NONE;
-			} else if (!strcmp(optarg, "yuyv")) {
-				s32ChnId = 0;
-				PixelFormat = RK_FMT_YUV422_YUYV;
-				CompressMode = COMPRESS_MODE_NONE;
 			} else if (!strcmp(optarg, "uyvy")) {
-				s32ChnId = 0;
 				PixelFormat = RK_FMT_YUV422_UYVY;
-				CompressMode = COMPRESS_MODE_NONE;
-			} else if (!strcmp(optarg, "afbc")) {
-				s32ChnId = 2;
-				PixelFormat = RK_FMT_YUV420SP;
-				CompressMode = COMPRESS_AFBC_16x16;
+			} else if (!strcmp(optarg, "rgb565")) {
+				PixelFormat = RK_FMT_RGB565;
+				s32ChnId = 1;
+			} else if (!strcmp(optarg, "xbgr8888")) {
+				PixelFormat = RK_FMT_XBGR8888;
+				s32ChnId = 1;
+			} else {
+				RK_LOGE("this pixel_format is not supported in the sample");
+				print_usage(argv[0]);
+				goto __FAILED2;
 			}
 			break;
 		case 'w':
@@ -222,22 +217,31 @@ int main(int argc, char *argv[]) {
 		case 'h':
 			video_height = atoi(optarg);
 			break;
+		case 'c':
+			s32ChnId = atoi(optarg);
+			break;
+		case 'o':
+			pOutPath = optarg;
+			break;
 		case 'n':
 			s32CamNum = atoi(optarg);
 			break;
 		case 'l':
 			s32loopCnt = atoi(optarg);
 			break;
-		case 'o':
-			pOutPath = optarg;
-			break;
-#if (defined RKAIQ) && (defined UAPI2)
-		case 'M':
-			if (atoi(optarg)) {
-				bMultictx = RK_TRUE;
+		case 'h' + 'm':
+			if (atoi(optarg) == 0) {
+				hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
+			} else if (atoi(optarg) == 1) {
+				hdr_mode = RK_AIQ_WORKING_MODE_ISP_HDR2;
+			} else if (atoi(optarg) == 2) {
+				hdr_mode = RK_AIQ_WORKING_MODE_ISP_HDR3;
+			} else {
+				RK_LOGE("input hdr_mode is not support(error)");
+				print_usage(argv[0]);
+				goto __FAILED2;
 			}
 			break;
-#endif
 		case '?':
 		default:
 			print_usage(argv[0]);
@@ -252,7 +256,6 @@ int main(int argc, char *argv[]) {
 #if (defined RKAIQ) && (defined UAPI2)
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
-		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
 		rk_aiq_camgroup_instance_cfg_t camgroup_cfg;
 
 		memset(&camgroup_cfg, 0, sizeof(camgroup_cfg));
@@ -274,9 +277,9 @@ int main(int argc, char *argv[]) {
 		ctx->vi[i].s32DevId = i;
 		ctx->vi[i].u32PipeId = ctx->vi[i].s32DevId;
 		ctx->vi[i].s32ChnId = s32ChnId;
-		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 3;
+		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 2;
 		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
-		ctx->vi[i].stChnAttr.u32Depth = 2;
+		ctx->vi[i].stChnAttr.u32Depth = 1;
 		ctx->vi[i].stChnAttr.enPixelFormat = PixelFormat;
 		ctx->vi[i].stChnAttr.enCompressMode = CompressMode;
 		ctx->vi[i].stChnAttr.stFrameRate.s32SrcFrameRate = -1;
