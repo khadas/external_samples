@@ -51,14 +51,13 @@ static int index_num = 3;
 #define ircut_off_gpio GPIO(RK_GPIO1, RK_PD3)
 #define irled_enable_gpio GPIO(RK_GPIO1, RK_PD0)
 #define irled_pwm_channel 11
-#define irled_pwm_period 5000
-#define irled_pwm_duty 5000
 static float d2n_envL_th = 0.04f;
 static float n2d_envL_th = 0.20f;
 static float rggain_base = 1.0f;
 static float bggain_base = 1.0f;
 static float awbgain_rad = 0.10f;
 static float awbgain_dis = 0.22f;
+int rk_led_value = 100;
 
 rtsp_demo_handle g_rtsplive = NULL;
 static rtsp_session_handle g_rtsp_session;
@@ -137,6 +136,7 @@ static void *switch_ir_thread(void *args) {
 	sample_smartIr_t *smartIr_ctx = &g_sample_smartIr_ctx;
 	int init_stat = smartIr_ctx->ir_ctx->state;
 	int ret, switch_flag, sleep_count = 15;
+	int irled_pwm_period = 5000, irled_pwm_duty = 0;
 	FILE *fp;
 
 	ret |= rk_gpio_export_direction(ircut_on_gpio, GPIO_DIRECTION_OUTPUT);
@@ -150,6 +150,7 @@ static void *switch_ir_thread(void *args) {
 		switch_flag = 1;
 		rk_gpio_set_value(irled_enable_gpio, 0);
 	}
+
 	while (--sleep_count >= 0) {
 		if ((access("/dev/block/by-name/meta", F_OK)) == 0) {
 			printf("load meta partition finished\n");
@@ -158,10 +159,12 @@ static void *switch_ir_thread(void *args) {
 		usleep(1000 * 1000);
 	}
 
+	irled_pwm_duty = MIN(rk_led_value, 100) / 100 * irled_pwm_period;
 	ret = rk_pwm_init(irled_pwm_channel, irled_pwm_period, irled_pwm_duty, PWM_POLARITY_NORMAL);
 	if (ret) {
 		printf("rk_pwm_init error ret [%d]\n", ret);
 	}
+
 	while (!smartIr_ctx->tquit && (quit == false)) {
 		rk_aiq_uapi2_sysctl_get3AStatsBlk(smartIr_ctx->aiq_ctx, &smartIr_ctx->isp_status,
 		                                  -1);
@@ -762,6 +765,8 @@ int main(int argc, char *argv[]) {
 
 	RK_S64 s64AiqInitStart = TEST_COMM_GetNowUs();
 
+	rk_led_value = (int)get_cmd_val("rk_led_value", 0);
+	int rk_night_mode = (int)get_cmd_val("rk_night_mode", 0);
 	int cam_hdr = (int)get_cmd_val("rk_cam_hdr", 0);
 	rk_aiq_working_mode_t hdr_mode =
 	    (cam_hdr == 5) ? RK_AIQ_WORKING_MODE_ISP_HDR2 : RK_AIQ_WORKING_MODE_NORMAL;
@@ -787,7 +792,7 @@ int main(int argc, char *argv[]) {
 	rk_aiq_static_info_t aiq_static_info;
 	rk_aiq_uapi2_sysctl_enumStaticMetasByPhyId(s32chnlId, &aiq_static_info);
 
-	if (rk_color_mode) {
+	if ((rk_night_mode == 2 && rk_color_mode) || rk_night_mode == 4) {
 		printf("=====night mode=====\n");
 		ret = rk_aiq_uapi2_sysctl_preInit_scene(aiq_static_info.sensor_info.sensor_name,
 		                                        "normal", "night");
@@ -831,13 +836,15 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 	klog("aiq start");
-	smartIr_ctx->aiq_ctx = aiq_ctx;
-	smartIr_ctx->ir_ctx = rk_smart_ir_init(aiq_ctx);
-	smartIr_ctx->ir_ctx->state = rk_color_mode;
-	load_ir_configs(d2n, n2d, rbase, bbase, rad, dis, switch_cnt);
-	smartIr_ctx->tquit = false;
-	pthread_create(&smartIr_ctx->tid, NULL, switch_ir_thread, NULL);
-	smartIr_ctx->started = true;
+	if (rk_night_mode == 2) {
+		smartIr_ctx->aiq_ctx = aiq_ctx;
+		smartIr_ctx->ir_ctx = rk_smart_ir_init(aiq_ctx);
+		smartIr_ctx->ir_ctx->state = rk_color_mode;
+		load_ir_configs(d2n, n2d, rbase, bbase, rad, dis, switch_cnt);
+		smartIr_ctx->tquit = false;
+		pthread_create(&smartIr_ctx->tid, NULL, switch_ir_thread, NULL);
+		smartIr_ctx->started = true;
+	}
 
 	RK_S64 s64AiqInitEnd = TEST_COMM_GetNowUs();
 	printf("Aiq:%lld us\n", s64AiqInitEnd - s64AiqInitStart);
@@ -877,12 +884,13 @@ __FAILED:
 		munmap(mem, MAP_SIZE_NIGHT);
 	if (iq_mem != MAP_FAILED)
 		munmap(iq_mem, file_size);
-
-	rk_gpio_unexport(irled_enable_gpio);
-	rk_gpio_unexport(ircut_on_gpio);
-	rk_gpio_unexport(ircut_off_gpio);
-	pthread_join(smartIr_ctx->tid, RK_NULL);
-	sample_smartIr_stop();
+	if (rk_night_mode == 2) {
+		rk_gpio_unexport(irled_enable_gpio);
+		rk_gpio_unexport(ircut_on_gpio);
+		rk_gpio_unexport(ircut_off_gpio);
+		pthread_join(smartIr_ctx->tid, RK_NULL);
+		sample_smartIr_stop();
+	}
 	rk_aiq_uapi2_sysctl_stop(aiq_ctx, false);
 	rk_aiq_uapi2_sysctl_deinit(aiq_ctx);
 #endif
