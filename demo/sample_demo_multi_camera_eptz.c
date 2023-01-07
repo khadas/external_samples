@@ -40,19 +40,20 @@ extern "C" {
 
 #define VI_CHN_MAX 2
 #define CAM_NUM_MAX 2
+
 #define BUFFER_SIZE 255
 #define SEND_FRAME_TIMEOUT 2000
 #define GET_FRAME_TIMEOUT 2000
-
 typedef struct _rkModeTest {
 	RK_BOOL bIfMainThreadQuit;
 	RK_BOOL bIfViHandleThreadQuit;
 	RK_BOOL bIfVencThreadQuit;
-	RK_BOOL bIfEptzTestEnable;
 	RK_S32 s32EptzTestLoop;
 	RK_S32 s32EptzViIndex;
 	RK_U32 u32ViTestFrame;
 	RK_U32 u32ZoomStep;
+	RK_U32 u32ZoomSwitch;
+	RK_U32 u32ZoomLimit;
 	RK_U32 u32CamNum;
 } RK_MODE_TEST_S;
 
@@ -95,22 +96,20 @@ static void sigterm_handler(int sig) {
 	program_normal_exit(__func__, __LINE__);
 }
 
-static RK_CHAR optstr[] = "?::a::w:h:o:l:e:z:t:f:s:i:";
+static RK_CHAR optstr[] = "?::a::w:h:o:e:s:t:l:f:i:";
 static const struct option long_options[] = {
-    {"aiq", optional_argument, NULL, 'a'},
-    {"width", required_argument, NULL, 'w'},
-    {"height", required_argument, NULL, 'h'},
-    {"output_path", required_argument, NULL, 'o'},
-    {"loop_count", required_argument, NULL, 'l'},
-    {"encode", required_argument, NULL, 'e'},
-    {"zoom", required_argument, NULL, 'z'},
-    {"zoom_step", required_argument, NULL, 's'},
-    {"eptz_test", required_argument, NULL, 't'},
-    {"test_loop", required_argument, NULL, 't' + 'l'},
-    {"test_frame", required_argument, NULL, 't' + 'f'},
-    {"ispLaunchMode", required_argument, NULL, 'i'},
-    {"help", optional_argument, NULL, '?'},
-    {NULL, 0, NULL, 0},
+	{"aiq", optional_argument, NULL, 'a'},
+	{"width", required_argument, NULL, 'w'},
+	{"height", required_argument, NULL, 'h'},
+	{"output_path", required_argument, NULL, 'o'},
+	{"encode", required_argument, NULL, 'e'},
+	{"zoom_step", required_argument, NULL, 's'},
+	{"zoom_switch", required_argument, NULL, 't'},
+	{"zoom_limit", required_argument, NULL, 't' + 'l'},
+	{"test_frame", required_argument, NULL, 't' + 'f'},
+	{"ispLaunchMode", required_argument, NULL, 'i'},
+	{"help", optional_argument, NULL, '?'},
+	{NULL, 0, NULL, 0},
 };
 
 /******************************************************************************
@@ -118,29 +117,25 @@ static const struct option long_options[] = {
  ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
-	printf("\t%s -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 -o /userdata/\n", name);
+	printf("\t%s -w 1920 -h 1080 -a /etc/iqfiles/ -s -1 -o /userdata/\n", name);
 #if (defined RKAIQ) && (defined UAPI2)
 	printf(
-	    "\t-a | --aiq : enable aiq with dirpath provided, eg:-a /etc/iqfiles/, \n"
-	    "\t		set dirpath empty to using path by default, without this option aiq \n"
-	    "\t		should run in other application\n");
+		"\t-a | --aiq : enable aiq with dirpath provided, eg:-a /etc/iqfiles/, \n"
+		"\t		set dirpath empty to using path by default, without this option aiq \n"
+		"\t		should run in other application\n");
 #endif
 	printf("\t-w | --width : camera width, Default: 1920\n");
 	printf("\t-h | --height : camera height, Default: 1080\n");
 	printf("\t-o | --output_path : encode output file path, Default: NULL\n");
-	printf("\t-l | --loop_count : loop count, Default: -1\n");
 	printf("\t-e | --encode : set encode type, Value: h264cbr, h264vbr, h265cbr, "
-	       "h265vbr, default: h264cbr \n");
-	printf(
-	    "\t-z | --zoom : multiple of zoom, 0: none, 1: 1x, 2: 2x, 3: 3x, 4: 4x, 5: 5x,\n "
-	    "\t             6: 6x, 7: 7x, 8: 8x. default: 0\n");
-	printf("\t-s | --zoom_step : zoom step, 1: 0.1, 2: 0.2, 3: 0.3, 4: 0.4, 5: 0.5. "
-	       "default: 1\n");
-	printf("\t--eptz_test : enable eptz test, 0: disable, 1: enable. default: 0\n");
-	printf("\t--test_loop : eptz test loop. default: -1\n");
-	printf("\t--test_frame : when Vi outputs frameCount equal to "
-	       "<test_frame>, eptz_test start next loop, default: 500\n");
-	printf("\t--ispLaunchMode : 0: single cam init, 1: camera group init. default: 0\n");
+		"h265vbr, default: h264cbr \n");
+	printf("\t-s | --zoom_step : zoom step, 1: 0.1, 2: 0.2, 3: 0.3, 4: 0.4, 5: 0.5, 6:0.6"
+		"default: 1\n");
+	printf("\t-t --zoom_switch : Switching to camera 1, Default: 20\n");
+	printf("\t-l --zoom_limit : max zoom, Default: 60\n");
+    printf("\t-f --test_frame : when Vi outputs frameCount equal to "
+		"<test_frame>\n");
+	printf("\t-i --ispLaunchMode : 0: single cam init, 1: camera group init. default: 0\n");
 }
 
 static RK_S32 isp_init(RK_ISP_INIT_PARAM_S *pstIspParam) {
@@ -150,8 +145,8 @@ static RK_S32 isp_init(RK_ISP_INIT_PARAM_S *pstIspParam) {
 	if (pstIspParam->bIfIspGroupInit == RK_FALSE) {
 		for (RK_S32 i = 0; i < pstIspParam->u32CamNum; i++) {
 			s32Ret =
-			    SAMPLE_COMM_ISP_Init(pstIspParam->s32CamId[i], pstIspParam->eHdrMode,
-			                         pstIspParam->bMultictx, pstIspParam->pIqFileDir);
+				SAMPLE_COMM_ISP_Init(pstIspParam->s32CamId[i], pstIspParam->eHdrMode,
+									pstIspParam->bMultictx, pstIspParam->pIqFileDir);
 			s32Ret |= SAMPLE_COMM_ISP_Run(pstIspParam->s32CamId[i]);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("ISP init failure camid:%d", i);
@@ -164,8 +159,8 @@ static RK_S32 isp_init(RK_ISP_INIT_PARAM_S *pstIspParam) {
 		camgroup_cfg.sns_num = pstIspParam->u32CamNum;
 		camgroup_cfg.config_file_dir = pstIspParam->pIqFileDir;
 		s32Ret = SAMPLE_COMM_ISP_CamGroup_Init(pstIspParam->s32CamGroupId,
-		                                       pstIspParam->eHdrMode,
-		                                       pstIspParam->bMultictx, &camgroup_cfg);
+												pstIspParam->eHdrMode,
+												pstIspParam->bMultictx, &camgroup_cfg);
 		if (s32Ret != RK_SUCCESS) {
 			printf("%s : isp cam group init\n", __func__);
 			return RK_FAILURE;
@@ -209,48 +204,38 @@ static RK_S32 sample_eptz_switch(SAMPLE_VI_CTX_S *ctx) {
 	RK_U32 u32SrcHeight = ctx->u32Height * 10;
 	static RK_U32 u32MultipleOfZoom = 10;
 	VI_CROP_INFO_S stCropInfo;
-
 	memset(&stCropInfo, 0, sizeof(VI_CROP_INFO_S));
 	s32Ret = RK_MPI_VI_GetEptz(ctx->u32PipeId, ctx->s32ChnId, &stCropInfo);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_VI_GetEptz failure:%#X  pipe:%d chnid:%d index:%d", s32Ret,
-		        ctx->u32PipeId, ctx->s32ChnId, gModeTest->s32EptzViIndex);
+				ctx->u32PipeId, ctx->s32ChnId, gModeTest->s32EptzViIndex);
 		program_handle_error(__func__, __LINE__);
 		return s32Ret;
 	}
-	RK_LOGE("------eptz_get--------w:%d   h:%d  x:%d  y:%d",
-	        stCropInfo.stCropRect.u32Width, stCropInfo.stCropRect.u32Height,
-	        stCropInfo.stCropRect.s32X, stCropInfo.stCropRect.s32Y);
 
 	stCropInfo.stCropRect.u32Width = RK_ALIGN_2(u32SrcWidth / u32MultipleOfZoom);
 	stCropInfo.stCropRect.u32Height = RK_ALIGN_2(u32SrcHeight / u32MultipleOfZoom);
 	stCropInfo.stCropRect.s32X =
-	    RK_ALIGN_2((ctx->u32Width - stCropInfo.stCropRect.u32Width) / 2);
+		RK_ALIGN_2((ctx->u32Width - stCropInfo.stCropRect.u32Width) / 2);
 	stCropInfo.stCropRect.s32Y =
-	    RK_ALIGN_2((ctx->u32Height - stCropInfo.stCropRect.u32Height) / 2);
+		RK_ALIGN_2((ctx->u32Height - stCropInfo.stCropRect.u32Height) / 2);
 	s32Ret = RK_MPI_VI_SetEptz(ctx->u32PipeId, ctx->s32ChnId, stCropInfo);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_VI_SetEptz failure:%#X  pipe:%d chnid:%d", s32Ret, ctx->u32PipeId,
-		        ctx->s32ChnId);
+				ctx->s32ChnId);
 		program_handle_error(__func__, __LINE__);
 		return s32Ret;
 	}
-	RK_LOGE("------eptz_set--------w:%d   h:%d  x:%d  y:%d",
-	        stCropInfo.stCropRect.u32Width, stCropInfo.stCropRect.u32Height,
-	        stCropInfo.stCropRect.s32X, stCropInfo.stCropRect.s32Y);
 	u32MultipleOfZoom += gModeTest->u32ZoomStep;
-	if (u32MultipleOfZoom > 80) {
+	if (u32MultipleOfZoom > gModeTest->u32ZoomLimit) {
 		u32MultipleOfZoom = 10;
 	}
 
-	if (u32MultipleOfZoom > 50) {
+	if (u32MultipleOfZoom > gModeTest->u32ZoomSwitch) {
 		gModeTest->s32EptzViIndex = 1;
 	} else {
 		gModeTest->s32EptzViIndex = 0;
 	}
-
-	RK_LOGE("---------------eptz_test--camera_idx:%d--Zoom:%0.1f",
-	        gModeTest->s32EptzViIndex, (float)u32MultipleOfZoom / 10);
 	return RK_SUCCESS;
 }
 
@@ -263,64 +248,59 @@ static RK_VOID *handle_vi_stream(RK_VOID *pArgs) {
 	while (!gModeTest->bIfViHandleThreadQuit) {
 
 		s32Ret = RK_MPI_VI_GetChnFrame(ctx->vi[0].u32PipeId, ctx->vi[0].s32ChnId,
-		                               &ctx->vi[0].stViFrame, GET_FRAME_TIMEOUT);
+										&ctx->vi[0].stViFrame, GET_FRAME_TIMEOUT);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("RK_MPI_VI_GetChnFrame failure:%#X, pipe:%d chnid:%d ", s32Ret,
-			        ctx->vi[0].u32PipeId, ctx->vi[0].s32ChnId);
+					ctx->vi[0].u32PipeId, ctx->vi[0].s32ChnId);
 			continue;
 		}
 		s32Ret = RK_MPI_VI_GetChnFrame(ctx->vi[1].u32PipeId, ctx->vi[1].s32ChnId,
-		                               &ctx->vi[1].stViFrame, GET_FRAME_TIMEOUT);
+										&ctx->vi[1].stViFrame, GET_FRAME_TIMEOUT);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("RK_MPI_VI_GetChnFrame failure:%#X, pipe:%d chnid:%d ", s32Ret,
 			        ctx->vi[1].u32PipeId, ctx->vi[1].s32ChnId);
 			RK_MPI_VI_ReleaseChnFrame(ctx->vi[0].u32PipeId, ctx->vi[0].s32ChnId,
-			                          &ctx->vi[0].stViFrame);
+									&ctx->vi[0].stViFrame);
 			continue;
 		}
 
 		/* eptz handle */
-		if (gModeTest->bIfEptzTestEnable &&
-		    u32GetStreamCount == gModeTest->u32ViTestFrame) {
+		if (u32GetStreamCount == gModeTest->u32ViTestFrame) {
 			u32GetStreamCount = 0;
 			s32Ret = sample_eptz_switch(&ctx->vi[gModeTest->s32EptzViIndex]);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("sample_eptz_switch failure:%#X Vi index:%d", s32Ret,
-				        gModeTest->s32EptzViIndex);
+						gModeTest->s32EptzViIndex);
 				program_handle_error(__func__, __LINE__);
 			}
 
 			s32EptzTestloop++;
-			RK_LOGE("-------------eptz test total:%d  now count:%d",
-			        gModeTest->s32EptzTestLoop, s32EptzTestloop);
 
 			if (gModeTest->s32EptzTestLoop > 0 &&
-			    s32EptzTestloop > gModeTest->s32EptzTestLoop) {
+				s32EptzTestloop > gModeTest->s32EptzTestLoop) {
 				RK_LOGE("---------------Eptz test end:%d ", gModeTest->s32EptzTestLoop);
 				program_normal_exit(__func__, __LINE__);
 			}
 		}
 
 		/* send frame to venc */
-		s32Ret = RK_MPI_VENC_SendFrame(0, &ctx->vi[gModeTest->s32EptzViIndex].stViFrame,
-		                               SEND_FRAME_TIMEOUT);
+		s32Ret = RK_MPI_VENC_SendFrame(0, &ctx->vi[gModeTest->s32EptzViIndex].stViFrame, SEND_FRAME_TIMEOUT);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("RK_MPI_VENC_SendFrame timeout:%#X vi index:%d", s32Ret,
-			        gModeTest->s32EptzViIndex);
+					gModeTest->s32EptzViIndex);
 			program_handle_error(__func__, __LINE__);
 		}
 
 		/* release vi frame */
 		for (RK_U32 i = 0; i < gModeTest->u32CamNum; i++) {
 			RK_MPI_VI_ReleaseChnFrame(ctx->vi[i].u32PipeId, ctx->vi[i].s32ChnId,
-			                          &ctx->vi[i].stViFrame);
+									&ctx->vi[i].stViFrame);
 		}
 		u32GetStreamCount++;
-		RK_LOGE("-------------------------------------------------- vi handle count:%d",
-		        u32GetStreamCount);
+		RK_LOGD("-------------------------------------------------- vi handle u32GetStreamCount:%d", u32GetStreamCount);
 	}
 
-	RK_LOGE("-------------------------handle vi thread eixt");
+	RK_LOGD("-------------------------handle vi thread eixt");
 	return RK_NULL;
 }
 
@@ -354,14 +334,11 @@ static RK_VOID *venc_get_stream(RK_VOID *pArgs) {
 
 			if (g_rtsp_ifenbale) {
 				rtsp_tx_video(g_rtsp_session, pData, ctx->stFrame.pstPack->u32Len,
-				              ctx->stFrame.pstPack->u64PTS);
+							ctx->stFrame.pstPack->u64PTS);
 				rtsp_do_event(g_rtsplive);
 			} else {
 				RK_LOGD("venc %d get_stream count: %d", ctx->s32ChnId, s32LoopCount);
 			}
-
-			RK_LOGD("venc %d get_stream count: %d", ctx->s32ChnId, s32LoopCount);
-
 			SAMPLE_COMM_VENC_ReleaseStream(ctx);
 			s32LoopCount++;
 
@@ -378,7 +355,7 @@ static RK_VOID *venc_get_stream(RK_VOID *pArgs) {
 		fp = RK_NULL;
 	}
 
-	RK_LOGE("chnId:%d venc_get_stream exit!!!", ctx->s32ChnId);
+	RK_LOGD("chnId:%d venc_get_stream exit!!!", ctx->s32ChnId);
 	return RK_NULL;
 }
 
@@ -394,7 +371,7 @@ static RK_S32 rtsp_init(CODEC_TYPE_E enCodecType) {
 		return RK_SUCCESS;
 	}
 	rtsp_sync_video_ts(g_rtsp_session, rtsp_get_reltime(), rtsp_get_ntptime());
-	RK_LOGE("rtsp <%s> init success", "/live/0");
+	RK_LOGD("rtsp <%s> init success", "/live/0");
 	g_rtsp_ifenbale = RK_TRUE;
 	return RK_SUCCESS;
 }
@@ -413,10 +390,10 @@ static RK_S32 globol_param_init(void) {
 		return RK_FAILURE;
 	}
 	memset(gModeTest, 0, sizeof(RK_MODE_TEST_S));
-
-	gModeTest->u32ViTestFrame = 500;
 	gModeTest->s32EptzTestLoop = -1;
 	gModeTest->u32ZoomStep = 1;
+	gModeTest->u32ZoomSwitch = 20;
+	gModeTest->u32ZoomLimit = 60;
 
 	g_ProExitReturnValue = RK_SUCCESS;
 	return RK_SUCCESS;
@@ -432,7 +409,6 @@ static RK_S32 globol_param_deinit(void) {
 
 int main(int argc, char *argv[]) {
 	RK_S32 s32Ret = RK_FAILURE;
-	RK_S32 s32LoopCnt = -1;
 	RK_U32 u32VideoWidth = 1920;
 	RK_U32 u32VideoHeight = 1080;
 	RK_U32 u32CamNum = 2;
@@ -503,9 +479,6 @@ int main(int argc, char *argv[]) {
 		case 'o':
 			pOutPathVenc = optarg;
 			break;
-		case 'l':
-			s32LoopCnt = atoi(optarg);
-			break;
 		case 'e':
 			if (!strcmp(optarg, "h264cbr")) {
 				enCodecType = RK_CODEC_TYPE_H264;
@@ -539,10 +512,10 @@ int main(int argc, char *argv[]) {
 			gModeTest->u32ZoomStep = atoi(optarg);
 			break;
 		case 't':
-			gModeTest->bIfEptzTestEnable = atoi(optarg);
+			gModeTest->u32ZoomSwitch = atoi(optarg);
 			break;
 		case 't' + 'l':
-			gModeTest->s32EptzTestLoop = atoi(optarg);
+			gModeTest->u32ZoomLimit = atoi(optarg);
 			break;
 		case 't' + 'f':
 			gModeTest->u32ViTestFrame = atoi(optarg);
@@ -598,10 +571,9 @@ int main(int argc, char *argv[]) {
 		ctx->vi[i].s32ChnId = 0;
 		ctx->vi[i].stChnAttr.stIspOpt.stMaxSize.u32Width = u32VideoWidth;
 		ctx->vi[i].stChnAttr.stIspOpt.stMaxSize.u32Height = u32VideoHeight;
-		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 3;
+		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 2;
 		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
 		ctx->vi[i].stChnAttr.u32Depth = 2;
-		ctx->vi[i].s32loopCount = s32LoopCnt;
 		ctx->vi[i].stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
 		ctx->vi[i].stChnAttr.enCompressMode = COMPRESS_MODE_NONE;
 		ctx->vi[i].stChnAttr.stFrameRate.s32SrcFrameRate = -1;
@@ -610,13 +582,13 @@ int main(int argc, char *argv[]) {
 		if (u32MultipleOfZoom && i == 0) {
 			ctx->vi[i].bIfOpenEptz = RK_TRUE;
 			ctx->vi[i].stCropInfo.stCropRect.u32Width =
-			    RK_ALIGN_2(ctx->vi[i].u32Width / u32MultipleOfZoom);
+				RK_ALIGN_2(ctx->vi[i].u32Width / u32MultipleOfZoom);
 			ctx->vi[i].stCropInfo.stCropRect.u32Height =
-			    RK_ALIGN_2(ctx->vi[i].u32Height / u32MultipleOfZoom);
+				RK_ALIGN_2(ctx->vi[i].u32Height / u32MultipleOfZoom);
 			ctx->vi[i].stCropInfo.stCropRect.s32X = RK_ALIGN_2(
-			    (ctx->vi[i].u32Width - ctx->vi[i].stCropInfo.stCropRect.u32Width) / 2);
+				(ctx->vi[i].u32Width - ctx->vi[i].stCropInfo.stCropRect.u32Width) / 2);
 			ctx->vi[i].stCropInfo.stCropRect.s32Y = RK_ALIGN_2(
-			    (ctx->vi[i].u32Height - ctx->vi[i].stCropInfo.stCropRect.u32Height) / 2);
+				(ctx->vi[i].u32Height - ctx->vi[i].stCropInfo.stCropRect.u32Height) / 2);
 		}
 		SAMPLE_COMM_VI_CreateChn(&ctx->vi[i]);
 	}
@@ -642,8 +614,8 @@ int main(int argc, char *argv[]) {
 	ctx->venc.u32BitRate = u32BitRate;
 	ctx->venc.enCodecType = enCodecType;
 	ctx->venc.enRcMode = enRcMode;
+	ctx->venc.enable_buf_share = 1;
 	ctx->venc.getStreamCbFunc = venc_get_stream;
-	ctx->venc.s32loopCount = s32LoopCnt;
 	ctx->venc.dstFilePath = pOutPathVenc;
 	/*
 	H264  66：Baseline  77：Main Profile 100：High Profile
@@ -662,11 +634,11 @@ int main(int argc, char *argv[]) {
 	/* vi handle thread launch */
 	pthread_create(&vi_handle_thread_id, RK_NULL, handle_vi_stream, (void *)ctx);
 
-	RK_LOGE("multi camerm eptz init finish");
+	RK_LOGD("multi camerm eptz init finish");
 	while (!gModeTest->bIfMainThreadQuit) {
 		sleep(1);
 	}
-	RK_LOGE("multi camerm eptz exit");
+	RK_LOGD("multi camerm eptz exit");
 
 	/* venc deinit */
 	gModeTest->bIfVencThreadQuit = RK_TRUE;
@@ -687,7 +659,7 @@ __VI_INITFAIL:
 			s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
-				        ctx->vi[i].u32PipeId);
+						ctx->vi[i].u32PipeId);
 				g_ProExitReturnValue = RK_FALSE;
 			}
 		}
