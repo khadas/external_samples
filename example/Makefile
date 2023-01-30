@@ -28,7 +28,6 @@ SAMPLE_AR := $(RK_MEDIA_CROSS)-ar
 
 PKG_NAME := sample
 PKG_BIN ?= out
-PKG_BUILD ?= build
 
 RK_MEDIA_OPTS += -Wl,-rpath-link,${RK_MEDIA_OUTPUT}/lib:$(RK_MEDIA_OUTPUT)/root/usr/lib
 PKG_CONF_OPTS += -DRKPLATFORM=ON
@@ -91,7 +90,6 @@ SAMPLE_CFLAGS += -DISP_HW_V30
 endif
 
 export SAMPLE_OUT_DIR=$(CURRENT_DIR)/out
-export SAMPLE_SRC_DIR=$(CURRENT_DIR)/simple_test/
 export PKG_CONF_OPTS RK_MEDIA_OPTS
 export COMM_OBJ COMM_SRC COMM_DIR
 export SAMPLE_CC SAMPLE_AR

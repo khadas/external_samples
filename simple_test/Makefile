@@ -7,7 +7,7 @@ endif
 SIMPLE_CC := $(RK_MEDIA_CROSS)-gcc
 
 CURRENT_DIR := $(shell pwd)
-SIMPLE_OUT_DIR :=$(CURRENT_DIR)/../out
+SIMPLE_OUT_DIR :=$(CURRENT_DIR)/out
 
 SIMPLE_PKG_CONF_OPTS += -DRKPLATFORM=ON
 
@@ -25,11 +25,9 @@ ifeq ($(CONFIG_RK_IVA),y)
 	SIMPLE_LD_FLAGS += -DROCKIVA -lrockiva
 endif
 
-COMM_DIR := $(CURRENT_DIR)/../common
 
 SIMPLE_OPTS += -Wl,-rpath-link,${RK_MEDIA_OUTPUT}/lib
 
-INC_FLAGS := -I$(COMM_DIR)
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq
 ifeq ($(RK_MEDIA_CHIP), rv1126)
@@ -54,29 +52,12 @@ SIMPLE_LD_FLAGS += $(SIMPLE_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic -lpthrea
 SIMPLE_LD_FLAGS += -Wl,-Bstatic -Wl,-Bdynamic -Wl,--gc-sections -Wl,--as-needed
 
 
-
-
-
 SIMPLE_FAST_CLIENT_LD_FLAGS += $(SIMPLE_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic -lpthread -lrockit \
 	-lrockchip_mpp -lrksysutils -lsmartIr \
 	-lrkaudio_detect -laec_bf_process \
 	-lrga -Wl,-Bdynamic \
 	-lrkaiq -lstdc++ -lm
 SIMPLE_FAST_CLIENT_LD_FLAGS += -Wl,-Bstatic -lrtsp -Wl,-Bdynamic -Wl,--gc-sections -Wl,--as-needed
-
-
-ifeq ($(RK_MEDIA_CHIP), rv1126)
-INC_FLAGS += -I$(COMM_DIR)/isp2.x
-SIMPLE_CFLAGS += -DISP_HW_V20
-SIMPLE_LD_FLAGS += -L$(RK_MEDIA_OUTPUT)/root/usr/lib -lasound
-SIMPLE_CFLAGS += -DHAVE_VO
-SIMPLE_LD_FLAGS += -ldrm
-endif
-
-ifeq ($(RK_MEDIA_CHIP), rv1106)
-INC_FLAGS += -I$(COMM_DIR)/isp3.x
-SIMPLE_CFLAGS += -DISP_HW_V30
-endif
 
 
 SOURCES_C     = $(wildcard *.c)
@@ -88,6 +69,7 @@ OBJECTS       = $(basename $(SOURCES_C))
 
 $(warning "here add the debug info $(OBJECTS)")
 all: $(OBJECTS)
+	@mkdir -p $(SIMPLE_OUT_DIR)/bin
 
 simple_adec_ao: simple_adec_ao.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
@@ -149,6 +131,8 @@ simple_vi_eptz_test: simple_vi_eptz_test.c
 
 install:
 	@mv -f $(OBJECTS) $(SIMPLE_OUT_DIR)/bin
+	$(call MAROC_COPY_PKG_TO_MEDIA_OUTPUT, $(RK_MEDIA_OUTPUT)/bin, $(SIMPLE_OUT_DIR)/bin)
 
 clean:
 	@echo "clean simple"
+	@rm -rf $(SIMPLE_OUT_DIR)
