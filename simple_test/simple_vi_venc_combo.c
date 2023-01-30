@@ -27,8 +27,30 @@ extern "C" {
 #include <pthread.h>
 #include <semaphore.h>
 #include <signal.h>
+#include <stdbool.h>
 
-#include <sample_comm.h>
+#include <rk_aiq_user_api2_camgroup.h>
+#include <rk_aiq_user_api2_imgproc.h>
+#include <rk_aiq_user_api2_sysctl.h>
+
+#include "rk_debug.h"
+#include "rk_defines.h"
+#include "rk_mpi_adec.h"
+#include "rk_mpi_aenc.h"
+#include "rk_mpi_ai.h"
+#include "rk_mpi_ao.h"
+#include "rk_mpi_avs.h"
+#include "rk_mpi_cal.h"
+#include "rk_mpi_ivs.h"
+#include "rk_mpi_mb.h"
+#include "rk_mpi_rgn.h"
+#include "rk_mpi_sys.h"
+#include "rk_mpi_tde.h"
+#include "rk_mpi_vdec.h"
+#include "rk_mpi_venc.h"
+#include "rk_mpi_vi.h"
+#include "rk_mpi_vo.h"
+#include "rk_mpi_vpss.h"
 
 #define MAX_AIQ_CTX 8
 static rk_aiq_sys_ctx_t *g_aiq_ctx[MAX_AIQ_CTX];
@@ -42,6 +64,8 @@ static atomic_bool g_should_quit = false;
 #define BUFFER_SIZE 255
 #define VENC_CHN_MAX 2
 #define VENC_COMBO_CHN 1
+#define RK_ALIGN(x, a) (((x) + (a)-1) & ~((a)-1))
+#define RK_ALIGN_2(x) RK_ALIGN(x, 2)
 
 static RK_BOOL g_quit = RK_FALSE;
 static RK_S32 g_exit_result = RK_SUCCESS;
@@ -340,7 +364,7 @@ static RK_S32 vi_init(RK_S32 s32DevId, RK_S32 s32ChnId, RK_U32 u32Width,
 
 	return RK_SUCCESS;
 
-	/* disable dev(will diabled all chn) */
+/* disable dev(will diabled all chn) */
 __FAILED2:
 	s32Ret = RK_MPI_VI_DisableDev(s32DevId);
 	RK_LOGE("RK_MPI_VI_DisableDev with %#x!\n", s32Ret);
@@ -349,16 +373,16 @@ __FAILED1:
 }
 
 static RK_S32 venc_init(RK_S32 s32ChnId, RK_U32 u32Width, RK_U32 u32Height,
-                        CODEC_TYPE_E enCodecType, RK_BOOL bIfEnableCombo) {
+                        RK_CODEC_ID_E enCodecType, RK_BOOL bIfEnableCombo) {
 	RK_S32 s32Ret = RK_FAILURE;
 	VENC_RECV_PIC_PARAM_S stRecvParam;
 	VENC_CHN_ATTR_S stAttr;
 
 	memset(&stAttr, 0, sizeof(VENC_CHN_ATTR_S));
 	/* set venc_attr*/
-	if (enCodecType == RK_CODEC_TYPE_H264) {
+	if (enCodecType == RK_VIDEO_ID_AVC) {
 		stAttr.stVencAttr.enType = RK_VIDEO_ID_AVC;
-	} else if (enCodecType == RK_CODEC_TYPE_JPEG) {
+	} else if (enCodecType == RK_VIDEO_ID_JPEG) {
 		stAttr.stVencAttr.enType = RK_VIDEO_ID_JPEG;
 	} else {
 		RK_LOGE("the enType is no support in this simple");
@@ -377,11 +401,11 @@ static RK_S32 venc_init(RK_S32 s32ChnId, RK_U32 u32Width, RK_U32 u32Height,
 	stAttr.stVencAttr.u32BufSize = u32Width * u32Height / 2;
 
 	/* set rc_attr */
-	if (enCodecType == RK_CODEC_TYPE_H264) {
+	if (enCodecType == RK_VIDEO_ID_AVC) {
 		stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H264CBR;
 		stAttr.stRcAttr.stH264Cbr.u32Gop = 50;
 		stAttr.stRcAttr.stH264Cbr.u32BitRate = 2 * 1024;
-	} else if (enCodecType == RK_CODEC_TYPE_JPEG) {
+	} else if (enCodecType == RK_VIDEO_ID_JPEG) {
 		stAttr.stRcAttr.enRcMode = VENC_RC_MODE_MJPEGCBR;
 		stAttr.stVencAttr.stAttrJpege.bSupportDCF = RK_FALSE;
 		stAttr.stVencAttr.stAttrJpege.stMPFCfg.u8LargeThumbNailNum = 0;
@@ -389,9 +413,9 @@ static RK_S32 venc_init(RK_S32 s32ChnId, RK_U32 u32Width, RK_U32 u32Height,
 	}
 
 	/* set gop_attr */
-	if (enCodecType == RK_CODEC_TYPE_H264) {
+	if (enCodecType == RK_VIDEO_ID_AVC) {
 		stAttr.stGopAttr.enGopMode = VENC_GOPMODE_NORMALP;
-	} else if (enCodecType == RK_CODEC_TYPE_JPEG) {
+	} else if (enCodecType == RK_VIDEO_ID_JPEG) {
 		stAttr.stGopAttr.enGopMode = VENC_GOPMODE_INIT;
 	}
 
@@ -417,7 +441,7 @@ static RK_S32 venc_init(RK_S32 s32ChnId, RK_U32 u32Width, RK_U32 u32Height,
 	}
 
 	memset(&stRecvParam, 0, sizeof(VENC_RECV_PIC_PARAM_S));
-	if (enCodecType == RK_CODEC_TYPE_JPEG) {
+	if (enCodecType == RK_VIDEO_ID_JPEG) {
 		stRecvParam.s32RecvPicNum = g_s32JpegCaptureNum;
 	} else {
 		stRecvParam.s32RecvPicNum = -1;
@@ -530,7 +554,6 @@ RK_S32 SIMPLE_COMM_ISP_Stop(RK_S32 CamId) {
 	return 0;
 }
 
-
 /******************************************************************************
  * function    : main()
  * Description : main
@@ -634,11 +657,11 @@ int main(int argc, char *argv[]) {
 	vi_init(s32ViDevId, s32ViChnId, g_u32MainVencWidth, g_u32MainVencHeight);
 
 	/* Init VENC[0] */
-	venc_init(s32MainVencChnId, g_u32MainVencWidth, g_u32MainVencHeight,
-	          RK_CODEC_TYPE_H264, RK_FALSE);
+	venc_init(s32MainVencChnId, g_u32MainVencWidth, g_u32MainVencHeight, RK_VIDEO_ID_AVC,
+	          RK_FALSE);
 	/* Init combo VENC[1] */
 	venc_init(s32ComboVencChnId, g_u32MainVencWidth, g_u32MainVencHeight,
-	          RK_CODEC_TYPE_JPEG, RK_TRUE);
+	          RK_VIDEO_ID_JPEG, RK_TRUE);
 
 	/* VI[0] bind VENC[0] */
 	stSrcChn.enModId = RK_ID_VI;

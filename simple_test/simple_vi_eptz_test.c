@@ -17,13 +17,35 @@
 #include <errno.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <sys/poll.h>
 #include <time.h>
 #include <unistd.h>
 
 #include "rtsp_demo.h"
-#include "sample_comm.h"
+#include <rk_aiq_user_api2_camgroup.h>
+#include <rk_aiq_user_api2_imgproc.h>
+#include <rk_aiq_user_api2_sysctl.h>
+
+#include "rk_debug.h"
+#include "rk_defines.h"
+#include "rk_mpi_adec.h"
+#include "rk_mpi_aenc.h"
+#include "rk_mpi_ai.h"
+#include "rk_mpi_ao.h"
+#include "rk_mpi_avs.h"
+#include "rk_mpi_cal.h"
+#include "rk_mpi_ivs.h"
+#include "rk_mpi_mb.h"
+#include "rk_mpi_rgn.h"
+#include "rk_mpi_sys.h"
+#include "rk_mpi_tde.h"
+#include "rk_mpi_vdec.h"
+#include "rk_mpi_venc.h"
+#include "rk_mpi_vi.h"
+#include "rk_mpi_vo.h"
+#include "rk_mpi_vpss.h"
 
 #define STEP_COUNT 10
 #define PORT_NUMBER 554
@@ -359,7 +381,6 @@ RK_S32 SIMPLE_COMM_ISP_Stop(RK_S32 CamId) {
 	g_aiq_ctx[CamId] = NULL;
 	return 0;
 }
-
 
 static RK_CHAR optstr[] = "?::a::w:h:c:I:e:";
 static void print_usage(const RK_CHAR *name) {

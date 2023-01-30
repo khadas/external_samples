@@ -27,13 +27,35 @@ extern "C" {
 #include <pthread.h>
 #include <semaphore.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <sys/poll.h>
 #include <sys/prctl.h>
 #include <time.h>
 #include <unistd.h>
 
-#include "sample_comm.h"
+#include <rk_aiq_user_api2_camgroup.h>
+#include <rk_aiq_user_api2_imgproc.h>
+#include <rk_aiq_user_api2_sysctl.h>
+
+#include "rk_debug.h"
+#include "rk_defines.h"
+#include "rk_mpi_adec.h"
+#include "rk_mpi_aenc.h"
+#include "rk_mpi_ai.h"
+#include "rk_mpi_ao.h"
+#include "rk_mpi_avs.h"
+#include "rk_mpi_cal.h"
+#include "rk_mpi_ivs.h"
+#include "rk_mpi_mb.h"
+#include "rk_mpi_rgn.h"
+#include "rk_mpi_sys.h"
+#include "rk_mpi_tde.h"
+#include "rk_mpi_vdec.h"
+#include "rk_mpi_venc.h"
+#include "rk_mpi_vi.h"
+#include "rk_mpi_vo.h"
+#include "rk_mpi_vpss.h"
 
 #define MAX_AIQ_CTX 8
 static rk_aiq_sys_ctx_t *g_aiq_ctx[MAX_AIQ_CTX];
@@ -155,7 +177,6 @@ RK_S32 SIMPLE_COMM_ISP_Stop(RK_S32 CamId) {
 	return 0;
 }
 
-
 static RK_CHAR optstr[] = "?::a::w:h:o:l:";
 static const struct option long_options[] = {
     {"aiq", optional_argument, NULL, 'a'},
@@ -260,7 +281,7 @@ static RK_S32 vi_init(RK_S32 s32DevId, RK_S32 s32ChnId, RK_U32 u32Width,
 
 	return RK_SUCCESS;
 
-	/* disable dev(will diabled all chn) */
+/* disable dev(will diabled all chn) */
 __FAILED2:
 	s32Ret = RK_MPI_VI_DisableDev(s32DevId);
 	RK_LOGE("RK_MPI_VI_DisableDev with %#x!\n", s32Ret);

@@ -48,12 +48,6 @@ INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/smartIr
 
 SIMPLE_CFLAGS += -g -Wall $(INC_FLAGS) $(SIMPLE_PKG_CONF_OPTS)
 
-#SIMPLE_LD_FLAGS += $(SIMPLE_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic -lpthread -lrockit \
-#					-lrockchip_mpp -lrkaiq -lrkaudio_detect -laec_bf_process \
-#					-lm -lrga -lstdc++ -Wl,-Bdynamic
-#SIMPLE_LD_FLAGS += -L$(CURRENT_DIR)/../lib/$(RK_MEDIA_CROSS) -Wl,-Bstatic -lrtsp -Wl,-Bdynamic -Wl,--gc-sections -Wl,--as-needed
-
-
 SIMPLE_LD_FLAGS += $(SIMPLE_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic -lpthread -lrockit \
 					-lrockchip_mpp  -lrkaudio_detect -laec_bf_process \
 					-lm -lrga -lstdc++ -Wl,-Bdynamic

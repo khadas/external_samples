@@ -35,9 +35,11 @@ all: $(PKG_TARGET)
 
 sample-build:
 	@make -C $(CURRENT_DIR)/example/
+	@make -C $(CURRENT_DIR)/simple_test/
 
 clean:
 	@make -C $(CURRENT_DIR)/example/ clean
+	@make -C $(CURRENT_DIR)/simple_test/ clean
 
 help:
 	@echo "help message:"

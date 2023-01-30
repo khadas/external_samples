@@ -1,12 +1,30 @@
 #include <errno.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <sys/poll.h>
 #include <time.h>
 #include <unistd.h>
 
-#include "sample_comm.h"
+#include "rk_debug.h"
+#include "rk_defines.h"
+#include "rk_mpi_adec.h"
+#include "rk_mpi_aenc.h"
+#include "rk_mpi_ai.h"
+#include "rk_mpi_ao.h"
+#include "rk_mpi_avs.h"
+#include "rk_mpi_cal.h"
+#include "rk_mpi_ivs.h"
+#include "rk_mpi_mb.h"
+#include "rk_mpi_rgn.h"
+#include "rk_mpi_sys.h"
+#include "rk_mpi_tde.h"
+#include "rk_mpi_vdec.h"
+#include "rk_mpi_venc.h"
+#include "rk_mpi_vi.h"
+#include "rk_mpi_vo.h"
+#include "rk_mpi_vpss.h"
 
 static FILE *venc0_file;
 static RK_S32 g_s32FrameCnt = -1;
@@ -205,7 +223,7 @@ RK_S32 test_rgn_overlay_process() {
 	RK_LOGI("Handle:%d, space time %lld us, load bmp success!", RgnHandle,
 	        s64ShowBmpEnd - s64ShowBmpStart);
 
-	//另一种刷osd的方式
+//另一种刷osd的方式
 #if 0
 	/*********************************************
 	step 4: use update canvas interface

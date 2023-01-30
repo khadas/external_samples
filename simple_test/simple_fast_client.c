@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -16,7 +17,20 @@
 #include "rk_mpi_venc.h"
 #include "rk_mpi_vi.h"
 #include "rk_type.h"
-#include "sample_comm.h"
+
+#include "rk_mpi_adec.h"
+#include "rk_mpi_aenc.h"
+#include "rk_mpi_ai.h"
+#include "rk_mpi_ao.h"
+#include "rk_mpi_avs.h"
+#include "rk_mpi_cal.h"
+#include "rk_mpi_ivs.h"
+#include "rk_mpi_mb.h"
+#include "rk_mpi_rgn.h"
+#include "rk_mpi_tde.h"
+#include "rk_mpi_vdec.h"
+#include "rk_mpi_vo.h"
+#include "rk_mpi_vpss.h"
 
 #include "rk_gpio.h"
 #include "rk_pwm.h"
@@ -160,7 +174,8 @@ static void *switch_ir_thread(void *args) {
 	}
 
 	irled_pwm_duty = MIN(rk_led_value, 100) / 100 * irled_pwm_period;
-	ret = rk_pwm_init(irled_pwm_channel, irled_pwm_period, irled_pwm_duty, PWM_POLARITY_NORMAL);
+	ret = rk_pwm_init(irled_pwm_channel, irled_pwm_period, irled_pwm_duty,
+	                  PWM_POLARITY_NORMAL);
 	if (ret) {
 		printf("rk_pwm_init error ret [%d]\n", ret);
 	}
@@ -183,7 +198,7 @@ static void *switch_ir_thread(void *args) {
 
 				printf("SAMPLE_SMART_IR: switch to DAY\n");
 				system("make_meta --update --meta_path /dev/block/by-name/meta "
-					"--rk_color_mode 0");
+				       "--rk_color_mode 0");
 			}
 		} else if (smartIr_ctx->ir_res.status == RK_SMART_IR_STATUS_NIGHT) {
 			if (switch_flag != 1) {
@@ -196,7 +211,7 @@ static void *switch_ir_thread(void *args) {
 
 				printf("SAMPLE_SMART_IR: switch to Night\n");
 				system("make_meta --update --meta_path /dev/block/by-name/meta "
-					"--rk_color_mode 1");
+				       "--rk_color_mode 1");
 			}
 		}
 	}
@@ -663,37 +678,38 @@ int main(int argc, char *argv[]) {
 		while ((c = getopt_long(argc, argv, optstr, long_options, NULL)) != -1) {
 			const char *tmp_optarg = optarg;
 			switch (c) {
-				case 's':
-					switch_cnt = atoi(optarg);
-					break;
-				case 'd':
-					d2n = atof(optarg);
-					break;
-				case 'n':
-					n2d = atof(optarg);
-					break;
-				case 'r':
-					rbase = atof(optarg);
-					break;
-				case 'b':
-					bbase = atof(optarg);
-					break;
-				case 'R':
-					rad = atof(optarg);
-					break;
-				case 'D':
-					dis = atof(optarg);
-					break;
-				case '?':
-				default:
-					print_usage(argv[0]);
-					return 0;
+			case 's':
+				switch_cnt = atoi(optarg);
+				break;
+			case 'd':
+				d2n = atof(optarg);
+				break;
+			case 'n':
+				n2d = atof(optarg);
+				break;
+			case 'r':
+				rbase = atof(optarg);
+				break;
+			case 'b':
+				bbase = atof(optarg);
+				break;
+			case 'R':
+				rad = atof(optarg);
+				break;
+			case 'D':
+				dis = atof(optarg);
+				break;
+			case '?':
+			default:
+				print_usage(argv[0]);
+				return 0;
 			}
 		}
 	}
-	printf("d2n_envL_th:%f, n2d_envL_th:%f, rggain_base:%f, bggain_base:%f, awbgain_rad:%f,"
-		"awbgain_dis:%f, switch_cnts_th:%d\n",
-		d2n, n2d, rbase, bbase, rad, dis, switch_cnt);
+	printf(
+	    "d2n_envL_th:%f, n2d_envL_th:%f, rggain_base:%f, bggain_base:%f, awbgain_rad:%f,"
+	    "awbgain_dis:%f, switch_cnts_th:%d\n",
+	    d2n, n2d, rbase, bbase, rad, dis, switch_cnt);
 	if (d2n < 0 || n2d < 0 || rbase < 0 || bbase < 0 || rad < 0 || dis < 0 ||
 	    switch_cnt < 0) {
 		printf("invalid input param,please check!\n");
