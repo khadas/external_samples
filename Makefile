@@ -24,7 +24,7 @@ PKG_NAME := sample
 PKG_BUILD ?= build
 
 ifeq ($(CONFIG_RK_SAMPLE),y)
-PKG_TARGET := sample-build
+PKG_TARGET := example-build simple_test-build
 else
 PKG_TARGET :=
 $(warning Not config source RK_SAMPLE, Skip...)
@@ -33,10 +33,11 @@ endif
 all: $(PKG_TARGET)
 	@echo "build $(PKG_NAME) done";
 
-sample-build:
-	@make -C $(CURRENT_DIR)/example/
-	@make -C $(CURRENT_DIR)/simple_test/
-	@make -C $(CURRENT_DIR)/simple_test/ install
+example-build:
+	@make -C $(CURRENT_DIR)/example/ -j$(RK_MEDIA_JOBS)
+
+simple_test-build:
+	@make -C $(CURRENT_DIR)/simple_test/ -j$(RK_MEDIA_JOBS)
 
 clean:
 	@make -C $(CURRENT_DIR)/example/ clean

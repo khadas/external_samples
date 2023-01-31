@@ -70,6 +70,8 @@ OBJECTS       = $(basename $(SOURCES_C))
 $(warning "here add the debug info $(OBJECTS)")
 all: $(OBJECTS)
 	@mkdir -p $(SIMPLE_OUT_DIR)/bin
+	@mv -f $(OBJECTS) $(SIMPLE_OUT_DIR)/bin
+	$(call MAROC_COPY_PKG_TO_MEDIA_OUTPUT, $(RK_MEDIA_OUTPUT)/bin, $(SIMPLE_OUT_DIR)/bin)
 
 simple_adec_ao: simple_adec_ao.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
@@ -128,10 +130,6 @@ simple_vi_venc_combo: simple_vi_venc_combo.c
 
 simple_vi_eptz_test: simple_vi_eptz_test.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
-
-install:
-	@mv -f $(OBJECTS) $(SIMPLE_OUT_DIR)/bin
-	$(call MAROC_COPY_PKG_TO_MEDIA_OUTPUT, $(RK_MEDIA_OUTPUT)/bin, $(SIMPLE_OUT_DIR)/bin)
 
 clean:
 	@echo "clean simple"
