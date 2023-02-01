@@ -98,8 +98,9 @@ export SAMPLE_CFLAGS RK_MEDIA_CROSS
 all: $(PKG_TARGET)
 	@echo "build $(PKG_NAME) done";
 
-sample-build: libasound librkaiq librockit librockiva librksysutils COMM_LIB
+sample-build: libasound librkaiq librockit librockiva librksysutils
 	@mkdir -p $(SAMPLE_OUT_DIR)/bin
+	@make COMM_LIB
 	@make -C $(CURRENT_DIR)/audio;
 	@make -C $(CURRENT_DIR)/audio install;
 	@make -C $(CURRENT_DIR)/vi;
