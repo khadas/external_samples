@@ -177,10 +177,9 @@ int main(int argc, char *argv[]) {
 	AUDIO_FRAME_S frame;
 	RK_S32 result = 0;
 	RK_S32 s32MilliSec = -1;
+	srcData = calloc(1024, sizeof(RK_U8));
+	memset(srcData, 0, 1024);
 	while (!quit) {
-		srcData = calloc(1024, sizeof(RK_U8));
-		memset(srcData, 0, 1024);
-
 		srcSize = fread(srcData, 1, 1024, ao_file);
 		frame.u32Len = srcSize;
 		frame.u64TimeStamp = timeStamp++;
