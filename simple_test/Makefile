@@ -46,23 +46,14 @@ INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/smartIr
 
 SIMPLE_CFLAGS += -g -Wall $(INC_FLAGS) $(SIMPLE_PKG_CONF_OPTS)
 
-SIMPLE_LD_FLAGS += $(SIMPLE_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic -lpthread -lrockit \
+SIMPLE_LD_FLAGS += $(SIMPLE_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -lpthread -lrockit \
 					-lrockchip_mpp  -lrkaudio_detect -laec_bf_process \
-					-lm -lrga -lstdc++ -Wl,-Bdynamic
-SIMPLE_LD_FLAGS += -Wl,-Bstatic -Wl,-Bdynamic -Wl,--gc-sections -Wl,--as-needed
-
-
-SIMPLE_FAST_CLIENT_LD_FLAGS += $(SIMPLE_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bstatic -lpthread -lrockit \
-	-lrockchip_mpp -lrksysutils -lsmartIr \
-	-lrkaudio_detect -laec_bf_process \
-	-lrga -Wl,-Bdynamic \
-	-lrkaiq -lstdc++ -lm
-SIMPLE_FAST_CLIENT_LD_FLAGS += -Wl,-Bstatic -lrtsp -Wl,-Bdynamic -Wl,--gc-sections -Wl,--as-needed
-
+					-lm -lrga -lstdc++
+SIMPLE_LD_FLAGS += -Wl,--gc-sections -Wl,--as-needed
 
 SOURCES_C     = $(wildcard *.c)
 ifneq ($(RK_MEDIA_CHIP), rv1106)
-SOURCES_C     = $(filter-out simple_vi_rockiva.c simple_dual_camera.c simple_fast_client.c, $(wildcard *.c))
+SOURCES_C     = $(filter-out simple_vi_rockiva.c , $(wildcard *.c))
 endif
 
 OBJECTS       = $(basename $(SOURCES_C))
@@ -84,9 +75,6 @@ simple_ai: simple_ai.c
 
 simple_ao: simple_ao.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
-
-simple_fast_client: simple_fast_client.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_FAST_CLIENT_LD_FLAGS)
 
 simple_venc_jpeg: simple_venc_jpeg.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
