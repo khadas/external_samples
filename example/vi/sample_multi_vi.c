@@ -262,7 +262,7 @@ int main(int argc, char *argv[]) {
 		camgroup_cfg.sns_num = s32CamNum;
 		camgroup_cfg.config_file_dir = iq_file_dir;
 
-		SAMPLE_COMM_ISP_CamGroup_Init(0, hdr_mode, bMultictx, &camgroup_cfg);
+		SAMPLE_COMM_ISP_CamGroup_Init(0, hdr_mode, bMultictx, 0, RK_NULL, &camgroup_cfg);
 #endif
 	}
 
@@ -277,6 +277,7 @@ int main(int argc, char *argv[]) {
 		ctx->vi[i].s32DevId = i;
 		ctx->vi[i].u32PipeId = ctx->vi[i].s32DevId;
 		ctx->vi[i].s32ChnId = s32ChnId;
+		ctx->vi[i].bIfIspGroupInit = RK_TRUE;
 		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 2;
 		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
 		ctx->vi[i].stChnAttr.u32Depth = 1;

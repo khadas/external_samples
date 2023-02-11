@@ -111,6 +111,8 @@ ifneq ($(RK_MEDIA_CHIP), rv1106)
 endif
 	@make -C $(CURRENT_DIR)/venc;
 	@make -C $(CURRENT_DIR)/venc install;
+	@make -C $(CURRENT_DIR)/avs;
+	@make -C $(CURRENT_DIR)/avs  install;
 	@make -C $(CURRENT_DIR)/test;
 	@make -C $(CURRENT_DIR)/test install;
 	@make -C $(CURRENT_DIR)/demo;

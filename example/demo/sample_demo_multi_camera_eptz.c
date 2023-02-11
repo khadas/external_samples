@@ -98,18 +98,18 @@ static void sigterm_handler(int sig) {
 
 static RK_CHAR optstr[] = "?::a::w:h:o:e:s:t:l:f:i:";
 static const struct option long_options[] = {
-	{"aiq", optional_argument, NULL, 'a'},
-	{"width", required_argument, NULL, 'w'},
-	{"height", required_argument, NULL, 'h'},
-	{"output_path", required_argument, NULL, 'o'},
-	{"encode", required_argument, NULL, 'e'},
-	{"zoom_step", required_argument, NULL, 's'},
-	{"zoom_switch", required_argument, NULL, 't'},
-	{"zoom_limit", required_argument, NULL, 't' + 'l'},
-	{"test_frame", required_argument, NULL, 't' + 'f'},
-	{"ispLaunchMode", required_argument, NULL, 'i'},
-	{"help", optional_argument, NULL, '?'},
-	{NULL, 0, NULL, 0},
+    {"aiq", optional_argument, NULL, 'a'},
+    {"width", required_argument, NULL, 'w'},
+    {"height", required_argument, NULL, 'h'},
+    {"output_path", required_argument, NULL, 'o'},
+    {"encode", required_argument, NULL, 'e'},
+    {"zoom_step", required_argument, NULL, 's'},
+    {"zoom_switch", required_argument, NULL, 't'},
+    {"zoom_limit", required_argument, NULL, 't' + 'l'},
+    {"test_frame", required_argument, NULL, 't' + 'f'},
+    {"ispLaunchMode", required_argument, NULL, 'i'},
+    {"help", optional_argument, NULL, '?'},
+    {NULL, 0, NULL, 0},
 };
 
 /******************************************************************************
@@ -120,22 +120,23 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t%s -w 1920 -h 1080 -a /etc/iqfiles/ -s -1 -o /userdata/\n", name);
 #if (defined RKAIQ) && (defined UAPI2)
 	printf(
-		"\t-a | --aiq : enable aiq with dirpath provided, eg:-a /etc/iqfiles/, \n"
-		"\t		set dirpath empty to using path by default, without this option aiq \n"
-		"\t		should run in other application\n");
+	    "\t-a | --aiq : enable aiq with dirpath provided, eg:-a /etc/iqfiles/, \n"
+	    "\t		set dirpath empty to using path by default, without this option aiq \n"
+	    "\t		should run in other application\n");
 #endif
 	printf("\t-w | --width : camera width, Default: 1920\n");
 	printf("\t-h | --height : camera height, Default: 1080\n");
 	printf("\t-o | --output_path : encode output file path, Default: NULL\n");
 	printf("\t-e | --encode : set encode type, Value: h264cbr, h264vbr, h265cbr, "
-		"h265vbr, default: h264cbr \n");
+	       "h265vbr, default: h264cbr \n");
 	printf("\t-s | --zoom_step : zoom step, 1: 0.1, 2: 0.2, 3: 0.3, 4: 0.4, 5: 0.5, 6:0.6"
-		"default: 1\n");
+	       "default: 1\n");
 	printf("\t-t --zoom_switch : Switching to camera 1, Default: 20\n");
 	printf("\t-l --zoom_limit : max zoom, Default: 60\n");
-    printf("\t-f --test_frame : when Vi outputs frameCount equal to "
-		"<test_frame>\n");
-	printf("\t-i --ispLaunchMode : 0: single cam init, 1: camera group init. default: 0\n");
+	printf("\t-f --test_frame : when Vi outputs frameCount equal to "
+	       "<test_frame>\n");
+	printf(
+	    "\t-i --ispLaunchMode : 0: single cam init, 1: camera group init. default: 0\n");
 }
 
 static RK_S32 isp_init(RK_ISP_INIT_PARAM_S *pstIspParam) {
@@ -145,8 +146,8 @@ static RK_S32 isp_init(RK_ISP_INIT_PARAM_S *pstIspParam) {
 	if (pstIspParam->bIfIspGroupInit == RK_FALSE) {
 		for (RK_S32 i = 0; i < pstIspParam->u32CamNum; i++) {
 			s32Ret =
-				SAMPLE_COMM_ISP_Init(pstIspParam->s32CamId[i], pstIspParam->eHdrMode,
-									pstIspParam->bMultictx, pstIspParam->pIqFileDir);
+			    SAMPLE_COMM_ISP_Init(pstIspParam->s32CamId[i], pstIspParam->eHdrMode,
+			                         pstIspParam->bMultictx, pstIspParam->pIqFileDir);
 			s32Ret |= SAMPLE_COMM_ISP_Run(pstIspParam->s32CamId[i]);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("ISP init failure camid:%d", i);
@@ -158,9 +159,9 @@ static RK_S32 isp_init(RK_ISP_INIT_PARAM_S *pstIspParam) {
 		memset(&camgroup_cfg, 0, sizeof(rk_aiq_camgroup_instance_cfg_t));
 		camgroup_cfg.sns_num = pstIspParam->u32CamNum;
 		camgroup_cfg.config_file_dir = pstIspParam->pIqFileDir;
-		s32Ret = SAMPLE_COMM_ISP_CamGroup_Init(pstIspParam->s32CamGroupId,
-												pstIspParam->eHdrMode,
-												pstIspParam->bMultictx, &camgroup_cfg);
+		s32Ret = SAMPLE_COMM_ISP_CamGroup_Init(
+		    pstIspParam->s32CamGroupId, pstIspParam->eHdrMode, pstIspParam->bMultictx, 0,
+		    RK_NULL, &camgroup_cfg);
 		if (s32Ret != RK_SUCCESS) {
 			printf("%s : isp cam group init\n", __func__);
 			return RK_FAILURE;
@@ -208,7 +209,7 @@ static RK_S32 sample_eptz_switch(SAMPLE_VI_CTX_S *ctx) {
 	s32Ret = RK_MPI_VI_GetEptz(ctx->u32PipeId, ctx->s32ChnId, &stCropInfo);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_VI_GetEptz failure:%#X  pipe:%d chnid:%d index:%d", s32Ret,
-				ctx->u32PipeId, ctx->s32ChnId, gModeTest->s32EptzViIndex);
+		        ctx->u32PipeId, ctx->s32ChnId, gModeTest->s32EptzViIndex);
 		program_handle_error(__func__, __LINE__);
 		return s32Ret;
 	}
@@ -216,13 +217,13 @@ static RK_S32 sample_eptz_switch(SAMPLE_VI_CTX_S *ctx) {
 	stCropInfo.stCropRect.u32Width = RK_ALIGN_2(u32SrcWidth / u32MultipleOfZoom);
 	stCropInfo.stCropRect.u32Height = RK_ALIGN_2(u32SrcHeight / u32MultipleOfZoom);
 	stCropInfo.stCropRect.s32X =
-		RK_ALIGN_2((ctx->u32Width - stCropInfo.stCropRect.u32Width) / 2);
+	    RK_ALIGN_2((ctx->u32Width - stCropInfo.stCropRect.u32Width) / 2);
 	stCropInfo.stCropRect.s32Y =
-		RK_ALIGN_2((ctx->u32Height - stCropInfo.stCropRect.u32Height) / 2);
+	    RK_ALIGN_2((ctx->u32Height - stCropInfo.stCropRect.u32Height) / 2);
 	s32Ret = RK_MPI_VI_SetEptz(ctx->u32PipeId, ctx->s32ChnId, stCropInfo);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_VI_SetEptz failure:%#X  pipe:%d chnid:%d", s32Ret, ctx->u32PipeId,
-				ctx->s32ChnId);
+		        ctx->s32ChnId);
 		program_handle_error(__func__, __LINE__);
 		return s32Ret;
 	}
@@ -248,19 +249,19 @@ static RK_VOID *handle_vi_stream(RK_VOID *pArgs) {
 	while (!gModeTest->bIfViHandleThreadQuit) {
 
 		s32Ret = RK_MPI_VI_GetChnFrame(ctx->vi[0].u32PipeId, ctx->vi[0].s32ChnId,
-										&ctx->vi[0].stViFrame, GET_FRAME_TIMEOUT);
+		                               &ctx->vi[0].stViFrame, GET_FRAME_TIMEOUT);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("RK_MPI_VI_GetChnFrame failure:%#X, pipe:%d chnid:%d ", s32Ret,
-					ctx->vi[0].u32PipeId, ctx->vi[0].s32ChnId);
+			        ctx->vi[0].u32PipeId, ctx->vi[0].s32ChnId);
 			continue;
 		}
 		s32Ret = RK_MPI_VI_GetChnFrame(ctx->vi[1].u32PipeId, ctx->vi[1].s32ChnId,
-										&ctx->vi[1].stViFrame, GET_FRAME_TIMEOUT);
+		                               &ctx->vi[1].stViFrame, GET_FRAME_TIMEOUT);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("RK_MPI_VI_GetChnFrame failure:%#X, pipe:%d chnid:%d ", s32Ret,
 			        ctx->vi[1].u32PipeId, ctx->vi[1].s32ChnId);
 			RK_MPI_VI_ReleaseChnFrame(ctx->vi[0].u32PipeId, ctx->vi[0].s32ChnId,
-									&ctx->vi[0].stViFrame);
+			                          &ctx->vi[0].stViFrame);
 			continue;
 		}
 
@@ -270,34 +271,37 @@ static RK_VOID *handle_vi_stream(RK_VOID *pArgs) {
 			s32Ret = sample_eptz_switch(&ctx->vi[gModeTest->s32EptzViIndex]);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("sample_eptz_switch failure:%#X Vi index:%d", s32Ret,
-						gModeTest->s32EptzViIndex);
+				        gModeTest->s32EptzViIndex);
 				program_handle_error(__func__, __LINE__);
 			}
 
 			s32EptzTestloop++;
 
 			if (gModeTest->s32EptzTestLoop > 0 &&
-				s32EptzTestloop > gModeTest->s32EptzTestLoop) {
+			    s32EptzTestloop > gModeTest->s32EptzTestLoop) {
 				RK_LOGE("---------------Eptz test end:%d ", gModeTest->s32EptzTestLoop);
 				program_normal_exit(__func__, __LINE__);
 			}
 		}
 
 		/* send frame to venc */
-		s32Ret = RK_MPI_VENC_SendFrame(0, &ctx->vi[gModeTest->s32EptzViIndex].stViFrame, SEND_FRAME_TIMEOUT);
+		s32Ret = RK_MPI_VENC_SendFrame(0, &ctx->vi[gModeTest->s32EptzViIndex].stViFrame,
+		                               SEND_FRAME_TIMEOUT);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("RK_MPI_VENC_SendFrame timeout:%#X vi index:%d", s32Ret,
-					gModeTest->s32EptzViIndex);
+			        gModeTest->s32EptzViIndex);
 			program_handle_error(__func__, __LINE__);
 		}
 
 		/* release vi frame */
 		for (RK_U32 i = 0; i < gModeTest->u32CamNum; i++) {
 			RK_MPI_VI_ReleaseChnFrame(ctx->vi[i].u32PipeId, ctx->vi[i].s32ChnId,
-									&ctx->vi[i].stViFrame);
+			                          &ctx->vi[i].stViFrame);
 		}
 		u32GetStreamCount++;
-		RK_LOGD("-------------------------------------------------- vi handle u32GetStreamCount:%d", u32GetStreamCount);
+		RK_LOGD("-------------------------------------------------- vi handle "
+		        "u32GetStreamCount:%d",
+		        u32GetStreamCount);
 	}
 
 	RK_LOGD("-------------------------handle vi thread eixt");
@@ -334,7 +338,7 @@ static RK_VOID *venc_get_stream(RK_VOID *pArgs) {
 
 			if (g_rtsp_ifenbale) {
 				rtsp_tx_video(g_rtsp_session, pData, ctx->stFrame.pstPack->u32Len,
-							ctx->stFrame.pstPack->u64PTS);
+				              ctx->stFrame.pstPack->u64PTS);
 				rtsp_do_event(g_rtsplive);
 			} else {
 				RK_LOGD("venc %d get_stream count: %d", ctx->s32ChnId, s32LoopCount);
@@ -582,13 +586,13 @@ int main(int argc, char *argv[]) {
 		if (u32MultipleOfZoom && i == 0) {
 			ctx->vi[i].bIfOpenEptz = RK_TRUE;
 			ctx->vi[i].stCropInfo.stCropRect.u32Width =
-				RK_ALIGN_2(ctx->vi[i].u32Width / u32MultipleOfZoom);
+			    RK_ALIGN_2(ctx->vi[i].u32Width / u32MultipleOfZoom);
 			ctx->vi[i].stCropInfo.stCropRect.u32Height =
-				RK_ALIGN_2(ctx->vi[i].u32Height / u32MultipleOfZoom);
+			    RK_ALIGN_2(ctx->vi[i].u32Height / u32MultipleOfZoom);
 			ctx->vi[i].stCropInfo.stCropRect.s32X = RK_ALIGN_2(
-				(ctx->vi[i].u32Width - ctx->vi[i].stCropInfo.stCropRect.u32Width) / 2);
+			    (ctx->vi[i].u32Width - ctx->vi[i].stCropInfo.stCropRect.u32Width) / 2);
 			ctx->vi[i].stCropInfo.stCropRect.s32Y = RK_ALIGN_2(
-				(ctx->vi[i].u32Height - ctx->vi[i].stCropInfo.stCropRect.u32Height) / 2);
+			    (ctx->vi[i].u32Height - ctx->vi[i].stCropInfo.stCropRect.u32Height) / 2);
 		}
 		SAMPLE_COMM_VI_CreateChn(&ctx->vi[i]);
 	}
@@ -659,7 +663,7 @@ __VI_INITFAIL:
 			s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
-						ctx->vi[i].u32PipeId);
+				        ctx->vi[i].u32PipeId);
 				g_ProExitReturnValue = RK_FALSE;
 			}
 		}

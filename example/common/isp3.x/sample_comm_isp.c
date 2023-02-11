@@ -95,6 +95,7 @@ RK_S32 SAMPLE_COMM_ISP_GetSofCnt(void) { return g_sof_cnt; }
 static XCamReturn SAMPLE_COMM_ISP_ErrCb(rk_aiq_err_msg_t *msg) {
 	if (msg->err_code == XCAM_RETURN_BYPASS)
 		g_should_quit = true;
+	return XCAM_RETURN_NO_ERROR;
 }
 
 RK_BOOL SAMPLE_COMM_ISP_ShouldQuit() { return g_should_quit; }
@@ -138,20 +139,105 @@ RK_S32 SAMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL
 	return 0;
 }
 
+static int isp_get_ldch_mesh_size(uint16_t *meshdata) {
+	int file_size = 0;
+	if (!meshdata) {
+		printf("meshdata is null \n");
+		return -1;
+	}
+	unsigned short hpic, vpic, hsize, vsize, hstep, vstep = 0;
+	hpic = (unsigned short)meshdata[0];
+	vpic = (unsigned short)meshdata[1];
+	hsize = (unsigned short)meshdata[2];
+	vsize = (unsigned short)meshdata[3];
+	hstep = (unsigned short)meshdata[4];
+	vstep = (unsigned short)meshdata[5];
+	printf("----------lut info: [%d-%d-%d-%d-%d-%d]\n", hpic, vpic, hsize, vsize, hstep,
+	       vstep);
+	file_size = hsize * vsize * sizeof(unsigned short) + 12;
+
+	return file_size;
+}
+
+XCamReturn SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(int CamGrpId, uint8_t SetLdchMode,
+                                                  uint16_t **LdchMesh) {
+	XCamReturn ret = XCAM_RETURN_NO_ERROR;
+	rk_aiq_sys_ctx_t *aiq_ctx = NULL;
+	rk_aiq_camgroup_camInfos_t camInfos;
+	rk_aiq_ldch_v21_attrib_t ldchAttr;
+	rk_isp_ldch_path *prk_isp_ldch_path;
+	memset(&camInfos, 0, sizeof(camInfos));
+	if (SetLdchMode < 1 || SetLdchMode > 2) {
+		printf("this Ldch mode:%d, if want to set ldch, 1: read file set ldch, 2: read "
+		       "buff set ldch\n",
+		       SetLdchMode);
+		return -1;
+	}
+	if (rk_aiq_uapi2_camgroup_getCamInfos(g_aiq_camgroup_ctx[CamGrpId], &camInfos) ==
+	    XCAM_RETURN_NO_ERROR) {
+		for (int i = 0; i < camInfos.valid_sns_num; i++) {
+			aiq_ctx = rk_aiq_uapi2_camgroup_getAiqCtxBySnsNm(g_aiq_camgroup_ctx[CamGrpId],
+			                                                 camInfos.sns_ent_nm[i]);
+			if (!aiq_ctx) {
+				printf("rk_aiq_uapi2_camgroup_getAiqCtxBySnsNm return aiq_ctx is Null\n");
+				return -1;
+			}
+			printf("aiq_ctx sns name: %s, camPhyId %d\n", camInfos.sns_ent_nm[i],
+			       camInfos.sns_camPhyId[i]);
+			memset(&ldchAttr, 0, sizeof(rk_aiq_ldch_v21_attrib_t));
+
+			ret = rk_aiq_user_api2_aldch_v21_GetAttrib(aiq_ctx, &ldchAttr);
+			if (ret == XCAM_RETURN_NO_ERROR) {
+				if (SetLdchMode == 2) {
+					ldchAttr.update_lut_mode =
+					    RK_AIQ_LDCH_UPDATE_LUT_FROM_EXTERNAL_BUFFER;
+					ldchAttr.en = true;
+					ldchAttr.lut.update_flag = true;
+					ldchAttr.lut.u.buffer.addr = LdchMesh[i];
+					ldchAttr.lut.u.buffer.size = isp_get_ldch_mesh_size(LdchMesh[i]);
+				} else {
+					prk_isp_ldch_path = (rk_isp_ldch_path *)LdchMesh[i];
+					ldchAttr.en = true;
+					ldchAttr.lut.update_flag = true;
+					ldchAttr.update_lut_mode = RK_AIQ_LDCH_UPDATE_LUT_FROM_EXTERNAL_FILE;
+					sprintf(ldchAttr.lut.u.file.config_file_dir, "%s",
+					        prk_isp_ldch_path->pCLdchPath);
+					sprintf(ldchAttr.lut.u.file.mesh_file_name, "%s",
+					        prk_isp_ldch_path->pCLdchName);
+					printf("lut file_dir %s, mesh_file %s\n",
+					       ldchAttr.lut.u.file.config_file_dir,
+					       ldchAttr.lut.u.file.mesh_file_name);
+				}
+				ret = rk_aiq_user_api2_aldch_v21_SetAttrib(aiq_ctx, &ldchAttr);
+				if (ret != XCAM_RETURN_NO_ERROR) {
+					printf("Failed to set ldch attrib : %d\n", ret);
+					return ret;
+				}
+			}
+		}
+	}
+	return ret;
+}
+
 RK_S32 SAMPLE_COMM_ISP_CamGroup_Init(RK_S32 CamGroupId, rk_aiq_working_mode_t WDRMode,
-                                     bool MultiCam,
+                                     bool MultiCam, int OpenLdch, void *LdchMesh[],
                                      rk_aiq_camgroup_instance_cfg_t *pCamGroupCfg) {
 	int i, ret;
 	char sensor_name_array[MAX_AIQ_CTX][128];
 	rk_aiq_static_info_t aiq_static_info;
 
 	if (CamGroupId >= MAX_AIQ_CTX) {
-		printf("%s : CamId is over 3\n", __FUNCTION__);
+		printf("%s : CamId is over %d\n", __FUNCTION__, MAX_AIQ_CTX);
 		return -1;
 	}
 
 	for (i = 0; i < pCamGroupCfg->sns_num; i++) {
-		rk_aiq_uapi2_sysctl_enumStaticMetasByPhyId(i, &aiq_static_info);
+		ret = rk_aiq_uapi2_sysctl_enumStaticMetasByPhyId(i, &aiq_static_info);
+		if (ret != 0) {
+			printf("rk_aiq_uapi2_sysctl_enumStaticMetasByPhyId failure \n");
+			return -1;
+		}
+
 		printf("CamGroupId:%d, cam_id: %d, sensor_name is %s, iqfiles is %s\n",
 		       CamGroupId, i, aiq_static_info.sensor_info.sensor_name,
 		       pCamGroupCfg->config_file_dir);
@@ -160,6 +246,12 @@ RK_S32 SAMPLE_COMM_ISP_CamGroup_Init(RK_S32 CamGroupId, rk_aiq_working_mode_t WD
 		pCamGroupCfg->sns_ent_nm_array[i] = sensor_name_array[i];
 		printf("pCamGroupCfg->sns_ent_nm_array[%d] is %s\n", i,
 		       pCamGroupCfg->sns_ent_nm_array[i]);
+		ret = rk_aiq_uapi2_sysctl_preInit_devBufCnt(
+		    aiq_static_info.sensor_info.sensor_name, "rkraw_rx", 2);
+		if (ret != 0) {
+			printf("rk_aiq_uapi2_sysctl_preInit_devBufCnt failure\n");
+			return -1;
+		}
 	}
 
 	g_aiq_camgroup_ctx[CamGroupId] = rk_aiq_uapi2_camgroup_create(pCamGroupCfg);
@@ -167,11 +259,18 @@ RK_S32 SAMPLE_COMM_ISP_CamGroup_Init(RK_S32 CamGroupId, rk_aiq_working_mode_t WD
 		printf("create camgroup ctx error!\n");
 		return -1;
 	}
+	/* set LDCH must before <camgroup prepare>*/
+	if (OpenLdch) {
+		SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(CamGroupId, OpenLdch, LdchMesh);
+	}
 
-	printf("rk_aiq_uapi2_camgroup_create over\n");
 	ret = rk_aiq_uapi2_camgroup_prepare(g_aiq_camgroup_ctx[CamGroupId], WDRMode);
-	printf("rk_aiq_uapi2_camgroup_prepare over\n");
+
 	ret |= rk_aiq_uapi2_camgroup_start(g_aiq_camgroup_ctx[CamGroupId]);
+	if (ret != 0) {
+		printf("rk_aiq_uapi2_camgroup_prepare / start failure \n");
+		return -1;
+	}
 	printf("rk_aiq_uapi2_camgroup_start over\n");
 
 	return ret;
@@ -203,6 +302,7 @@ RK_S32 SAMPLE_COMM_ISP_CamGroup_Stop(RK_S32 CamGroupId) {
 	rk_aiq_uapi2_camgroup_destroy(g_aiq_camgroup_ctx[CamGroupId]);
 	printf("rk_aiq_uapi2_camgroup_destroy exit\n");
 	g_aiq_camgroup_ctx[CamGroupId] = NULL;
+
 	return 0;
 }
 
@@ -241,6 +341,27 @@ RK_S32 SAMPLE_COMM_ISP_SetFrameRate(RK_S32 CamId, RK_U32 uFps) {
 	}
 
 	ret = rk_aiq_user_api2_ae_setExpSwAttr(g_aiq_ctx[CamId], expSwAttr);
+	return ret;
+}
+
+RK_S32 SAMPLE_COMM_ISP_CamGroup_SetFrameRate(RK_S32 CamId, RK_U32 uFps) {
+	if (CamId >= MAX_AIQ_CTX || !g_aiq_camgroup_ctx[CamId]) {
+		printf("%s : CamId is over 3 or not init\n", __FUNCTION__);
+		return -1;
+	}
+	int ret;
+	Uapi_ExpSwAttrV2_t expSwAttr;
+	ret = rk_aiq_user_api2_ae_getExpSwAttr((rk_aiq_sys_ctx_t *)g_aiq_camgroup_ctx[CamId],
+	                                       &expSwAttr);
+	if (uFps == 0) {
+		expSwAttr.stAuto.stFrmRate.isFpsFix = false;
+	} else {
+		expSwAttr.stAuto.stFrmRate.isFpsFix = true;
+		expSwAttr.stAuto.stFrmRate.FpsValue = uFps;
+	}
+
+	ret = rk_aiq_user_api2_ae_setExpSwAttr((rk_aiq_sys_ctx_t *)g_aiq_camgroup_ctx[CamId],
+	                                       expSwAttr);
 	return ret;
 }
 

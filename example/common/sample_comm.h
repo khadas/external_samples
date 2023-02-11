@@ -205,7 +205,13 @@ typedef struct _rkMpiVPSSCtx {
 } SAMPLE_VPSS_CTX_S;
 
 typedef struct _rkMpiAVSCtx {
+	RK_BOOL bIfSetStitchDistance;
 	RK_S32 s32loopCount;
+	RK_U32 u32SrcWidth;
+	RK_U32 u32SrcHeight;
+	RK_FLOAT fDistance;
+	RK_U16 **pLdchMeshData;
+	RK_U32 u32LdchMeshSize;
 	AVS_GRP s32GrpId;
 	AVS_CHN s32ChnId;
 	AVS_MOD_PARAM_S stAvsModParam;
@@ -325,6 +331,8 @@ RK_S32 SAMPLE_COMM_TDE_Destroy(SAMPLE_TDE_CTX_S *ctx);
 RK_S32 SAMPLE_COMM_DumpMeminfo(RK_CHAR *callFunc, RK_S32 moduleTestType);
 RK_S32 SAMPLE_COMM_FillImage(RK_U8 *buf, RK_U32 width, RK_U32 height, RK_U32 hor_stride,
                              RK_U32 ver_stride, PIXEL_FORMAT_E fmt, RK_U32 frame_count);
+RK_S32 SAMPLE_COMM_GetLdchMesh(RK_CHAR *cam0LdchPath, RK_CHAR *cam1LdchPath,
+                               RK_S32 s32MeshDataSize, RK_U16 **pLdchMesh);
 
 #ifdef __cplusplus
 #if __cplusplus

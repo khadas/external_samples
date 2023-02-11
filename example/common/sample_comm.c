@@ -143,6 +143,46 @@ RK_S32 SAMPLE_COMM_DumpMeminfo(RK_CHAR *callFunc, RK_S32 moduleTestType) {
 	system("cat /proc/meminfo | grep MemAvailable >> /tmp/testLog.txt");
 }
 
+RK_S32 SAMPLE_COMM_GetLdchMesh(RK_CHAR *cam0LdchPath, RK_CHAR *cam1LdchPath,
+                               RK_S32 s32MeshDataSize, RK_U16 **pLdchMesh) {
+	FILE *fpCam0 = RK_NULL;
+	FILE *fpCam1 = RK_NULL;
+
+	fpCam0 = fopen(cam0LdchPath, "rb");
+	fpCam1 = fopen(cam1LdchPath, "rb");
+	if (!fpCam0 || !fpCam1) {
+		RK_LOGE("open %s or %s failure fpCam0:%p fpCam1:%p", cam0LdchPath, cam1LdchPath,
+		        fpCam0, fpCam1);
+		goto READ_FILE_FAIL;
+	}
+
+	if (s32MeshDataSize != fread(pLdchMesh[0], 1, s32MeshDataSize, fpCam0) ||
+	    s32MeshDataSize != fread(pLdchMesh[1], 1, s32MeshDataSize, fpCam1)) {
+		RK_LOGE("fread %s or %s data failure", cam0LdchPath, cam1LdchPath);
+		goto READ_FILE_FAIL;
+	}
+
+	if (fpCam0 && fpCam1) {
+		fclose(fpCam0);
+		fclose(fpCam1);
+		fpCam0 = RK_NULL;
+		fpCam1 = RK_NULL;
+	}
+
+	return RK_SUCCESS;
+
+READ_FILE_FAIL:
+	if (fpCam0) {
+		fclose(fpCam0);
+		fpCam0 = RK_NULL;
+	}
+	if (fpCam1) {
+		fclose(fpCam1);
+		fpCam1 = RK_NULL;
+	}
+	return RK_FAILURE;
+}
+
 #ifdef __cplusplus
 #if __cplusplus
 }

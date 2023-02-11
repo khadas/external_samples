@@ -137,9 +137,9 @@ static RK_S32 isp_init(void) {
 		memset(&camgroup_cfg, 0, sizeof(rk_aiq_camgroup_instance_cfg_t));
 		camgroup_cfg.sns_num = gModeTest->u32CamNum;
 		camgroup_cfg.config_file_dir = gModeTest->pIqFileDir;
-		s32Ret =
-		    SAMPLE_COMM_ISP_CamGroup_Init(gModeTest->s32CamGroupId, gModeTest->eHdrMode,
-		                                  gModeTest->bMultictx, &camgroup_cfg);
+		s32Ret = SAMPLE_COMM_ISP_CamGroup_Init(gModeTest->s32CamGroupId,
+		                                       gModeTest->eHdrMode, gModeTest->bMultictx,
+		                                       0, RK_NULL, &camgroup_cfg);
 		if (s32Ret != RK_SUCCESS) {
 			printf("%s : isp cam group init\n", __func__);
 			return RK_FAILURE;

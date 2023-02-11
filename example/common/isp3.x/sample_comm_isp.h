@@ -55,20 +55,26 @@ typedef enum {
  //RK_AIQ_WORKING_MODE_SENSOR_HDR = 10, // sensor built-in hdr mode
 } rk_aiq_working_mode_t;
 */
+typedef struct _rkIspLdchPath {
+	RK_CHAR *pCLdchPath;
+	RK_CHAR *pCLdchName;
+} rk_isp_ldch_path;
+
 RK_BOOL SAMPLE_COMM_ISP_ShouldQuit();
 RK_S32 SAMPLE_COMM_ISP_GetSofCnt(void);
 RK_S32 SAMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL MultiCam,
                             const char *iq_file_dir);
-RK_S32
-SAMPLE_COMM_ISP_CamGroup_Init(RK_S32 CamGroupId, rk_aiq_working_mode_t WDRMode,
-                              bool MultiCam,
-                              rk_aiq_camgroup_instance_cfg_t *pCamGroupCfg);
+RK_S32 SAMPLE_COMM_ISP_CamGroup_Init(RK_S32 CamGroupId, rk_aiq_working_mode_t WDRMode,
+                                     bool MultiCam, int OpenLdch, void *LdchMesh[],
+                                     rk_aiq_camgroup_instance_cfg_t *pCamGroupCfg);
 RK_S32 SAMPLE_COMM_ISP_Stop(RK_S32 CamId);
 RK_S32 SAMPLE_COMM_ISP_Run(RK_S32 CamId); // isp stop before vi streamoff
 RK_S32 SAMPLE_COMM_ISP_CamGroup_Stop(RK_S32 CamGroupId);
 RK_S32 SAMPLE_COMM_ISP_SetFrameRate(RK_S32 CamId, RK_U32 uFps);
 RK_S32 SAMPLE_COMM_ISP_SetMirrorFlip(int cam_id, int mirror, int flip);
 RK_S32 SAMPLE_COMM_ISP_SetLDCH(RK_U32 CamId, RK_U32 u32Level, RK_BOOL bIfEnable);
+XCamReturn SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(int CamGrpId, uint8_t SetLdchMode,
+                                                  uint16_t **LdchMesh);
 #ifdef __cplusplus
 #if __cplusplus
 }
