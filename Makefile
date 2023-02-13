@@ -4,7 +4,11 @@ ifeq ($(MEDIA_PARAM), )
     include $(MEDIA_PARAM)
 endif
 
-export CONFIG_RK_SAMPLE=y
+ifneq ($(findstring $(RK_ENABLE_SAMPLE),n y),)
+CONFIG_RK_SAMPLE=$(RK_ENABLE_SAMPLE)
+else
+CONFIG_RK_SAMPLE=y
+endif
 
 CURRENT_DIR := $(shell pwd)
 
