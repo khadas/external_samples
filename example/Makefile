@@ -76,17 +76,19 @@ INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/algos
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/iq_parser
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/iq_parser_v2
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/smartIr
-SAMPLE_CFLAGS += -g -Wall $(INC_FLAGS) $(PKG_CONF_OPTS)
+SAMPLE_CFLAGS += -g -Wall $(INC_FLAGS) $(PKG_CONF_OPTS) -lpthread
 
 ifeq ($(RK_MEDIA_CHIP), rv1126)
 INC_FLAGS += -I$(COMM_DIR)/isp2.x
 SAMPLE_CFLAGS += -DISP_HW_V20
-SAMPLE_CFLAGS += -DHAVE_VO
+CHIP_RV1126 := 1
+SAMPLE_CFLAGS += -DHAVE_VO -DCHIP_RV1126
 endif
 
 ifeq ($(RK_MEDIA_CHIP), rv1106)
 INC_FLAGS += -I$(COMM_DIR)/isp3.x
-SAMPLE_CFLAGS += -DISP_HW_V30
+CHIP_RV1106 := 1
+SAMPLE_CFLAGS += -DISP_HW_V30 -DCHIP_RV1106 -DROCKIVA -DROCKIVS -DROCKCOMBO
 endif
 
 export SAMPLE_OUT_DIR=$(CURRENT_DIR)/out
@@ -98,7 +100,13 @@ export SAMPLE_CFLAGS RK_MEDIA_CROSS
 all: $(PKG_TARGET)
 	@echo "build $(PKG_NAME) done";
 
+ifeq ($(RK_MEDIA_CHIP), rv1106)
 sample-build: libasound librkaiq librockit librockiva librksysutils
+endif
+
+ifeq ($(RK_MEDIA_CHIP), rv1126)
+sample-build: librkaiq librockit
+endif
 	@mkdir -p $(SAMPLE_OUT_DIR)/bin
 	@make COMM_LIB
 	@make -C $(CURRENT_DIR)/audio;

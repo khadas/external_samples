@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Rockchip Electronics Co. LTD
+ * Copyright 2023 Rockchip Electronics Co. LTD
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,14 +51,12 @@ static void sigterm_handler(int sig) {
 static RK_CHAR optstr[] = "?::a::w:h:d:D:I:L:M:";
 static const struct option long_options[] = {
     {"aiq", optional_argument, NULL, 'a'},
-    {"device_name", required_argument, NULL, 'd'},
-    {"disp_devid", required_argument, NULL, 'D'},
     {"width", required_argument, NULL, 'w'},
     {"height", required_argument, NULL, 'h'},
+    {"device_name", required_argument, NULL, 'd'},
+    {"disp_devid", required_argument, NULL, 'D'},
     {"camid", required_argument, NULL, 'I'},
     {"disp_layerid", required_argument, NULL, 'L'},
-    {"multictx", required_argument, NULL, 'M'},
-    {"fps", required_argument, NULL, 'f'},
     {"hdr_mode", required_argument, NULL, 'h' + 'm'},
     {"help", optional_argument, NULL, '?'},
     {NULL, 0, NULL, 0},
@@ -69,7 +67,7 @@ static const struct option long_options[] = {
  ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
-	printf("\t%s -w 2560 -h 1520 -a /etc/iqfiles/ -I 0 -D 3 -L 0\n", name);
+	printf("\t%s -w 1920 -h 1080 -a /etc/iqfiles/ -I 0 -D 0 -L 0\n", name);
 #ifdef RKAIQ
 	printf("\t-a | --aiq: enable aiq with dirpath provided, eg:-a "
 	       "/etc/iqfiles/, "
@@ -78,12 +76,13 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-M | --multictx: switch of multictx in isp, set 0 to disable, set "
 	       "1 to enable. Default: 0\n");
 #endif
-	printf("\t-d | --device_name: encode save file path, Default NULL\n");
-	printf("\t-I | --camid: camera ctx id, Default 0\n");
 	printf("\t-w | --width: camera with, Default 1920\n");
 	printf("\t-h | --height: camera height, Default 1080\n");
+	printf("\t-d | --device_name: encode save file path, Default NULL\n");
 	printf("\t-D | --disp_devid: display DevId, Default 0\n");
+	printf("\t-I | --camid: camera ctx id, Default 0\n");
 	printf("\t-L | --disp_layerid: display LayerId, Default 0\n");
+	printf("\t--hdr_mode: set HDR mode, 0: normal, 1: HDR2. default: 0\n");
 }
 
 /******************************************************************************
@@ -91,16 +90,16 @@ static void print_usage(const RK_CHAR *name) {
  * Description : main
  ******************************************************************************/
 int main(int argc, char *argv[]) {
-	RK_S32 s32Ret = RK_FAILURE;
 	SAMPLE_MPI_CTX_S *ctx;
-	int video_width = 1920;
-	int video_height = 1080;
-	int disp_width = 1080;
-	int disp_height = 1920;
+	RK_U32 video_width = 1920;
+	RK_U32 video_height = 1080;
+	RK_U32 disp_width = 720;
+	RK_U32 disp_height = 1280;
 	RK_CHAR *pDeviceName = NULL;
 	RK_S32 s32CamId = 0;
 	RK_S32 s32DisId = 0;
 	RK_S32 s32DisLayerId = 0;
+	rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
 	MPP_CHN_S stSrcChn, stDestChn;
 
 	if (argc < 2) {
@@ -137,11 +136,11 @@ int main(int argc, char *argv[]) {
 		case 'D':
 			s32DisId = atoi(optarg);
 			if (s32DisId == 3) { // MIPI
-				disp_width = 1080;
-				disp_height = 1920;
-			} else {
 				disp_width = 1920;
 				disp_height = 1080;
+			} else {
+				disp_width = 720;
+				disp_height = 1280;
 			}
 			break;
 		case 'w':
@@ -163,6 +162,13 @@ int main(int argc, char *argv[]) {
 			}
 			break;
 #endif
+		case 'h' + 'm':
+			if (0 == atoi(optarg)) {
+				hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
+			} else if (1 == atoi(optarg)) {
+				hdr_mode = RK_AIQ_WORKING_MODE_ISP_HDR2;
+			}
+			break;
 		case '?':
 		default:
 			print_usage(argv[0]);
@@ -177,7 +183,6 @@ int main(int argc, char *argv[]) {
 #ifdef RKAIQ
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
-		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
 
 		SAMPLE_COMM_ISP_Init(s32CamId, hdr_mode, bMultictx, iq_file_dir);
 		SAMPLE_COMM_ISP_Run(s32CamId);
@@ -198,6 +203,7 @@ int main(int argc, char *argv[]) {
 	ctx->vi.stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
 	ctx->vi.stChnAttr.u32Depth = 2;
 	ctx->vi.stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
+	ctx->vi.stChnAttr.enCompressMode = COMPRESS_MODE_NONE;
 	ctx->vi.stChnAttr.stFrameRate.s32SrcFrameRate = -1;
 	ctx->vi.stChnAttr.stFrameRate.s32DstFrameRate = -1;
 	if (pDeviceName) {
@@ -219,12 +225,12 @@ int main(int argc, char *argv[]) {
 	ctx->vpss.stVpssChnAttr[0].enPixelFormat = RK_FMT_YUV420SP;
 	ctx->vpss.stVpssChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
 	ctx->vpss.stVpssChnAttr[0].stFrameRate.s32DstFrameRate = -1;
-	ctx->vpss.stVpssChnAttr[0].u32Width = video_width;
-	ctx->vpss.stVpssChnAttr[0].u32Height = video_height;
-	if (s32DisId == 3) { // MIPI
+	ctx->vpss.stVpssChnAttr[0].u32Width = disp_width;
+	ctx->vpss.stVpssChnAttr[0].u32Height = disp_height;
+	if (s32DisId == 0) { // MIPI
 		ctx->vpss.s32ChnRotation[0] = ROTATION_90;
-		ctx->vpss.stVpssChnAttr[0].u32Width = video_height;
-		ctx->vpss.stVpssChnAttr[0].u32Height = video_width;
+		ctx->vpss.stVpssChnAttr[0].u32Width = disp_height;
+		ctx->vpss.stVpssChnAttr[0].u32Height = disp_width;
 	}
 	SAMPLE_COMM_VPSS_CreateChn(&ctx->vpss);
 
@@ -250,12 +256,12 @@ int main(int argc, char *argv[]) {
 	ctx->vo.stChnAttr.stRect.u32Width = disp_width;
 	ctx->vo.stChnAttr.stRect.u32Height = disp_height;
 	ctx->vo.stChnAttr.u32Priority = 1;
-	if (s32DisId == 3) { // MIPI
-		ctx->vo.stVoPubAttr.enIntfType = VO_INTF_MIPI;
-		ctx->vo.stVoPubAttr.enIntfSync = VO_OUTPUT_DEFAULT;
-	} else {
+	if (s32DisId == 3) { // HDMI
 		ctx->vo.stVoPubAttr.enIntfType = VO_INTF_HDMI;
 		ctx->vo.stVoPubAttr.enIntfSync = VO_OUTPUT_1080P60;
+	} else {
+		ctx->vo.stVoPubAttr.enIntfType = VO_INTF_MIPI;
+		ctx->vo.stVoPubAttr.enIntfSync = VO_OUTPUT_DEFAULT;
 	}
 	SAMPLE_COMM_VO_CreateChn(&ctx->vo);
 
@@ -316,7 +322,6 @@ __FAILED:
 		SAMPLE_COMM_ISP_Stop(s32CamId);
 #endif
 	}
-__FAILED2:
 	if (ctx) {
 		free(ctx);
 		ctx = RK_NULL;

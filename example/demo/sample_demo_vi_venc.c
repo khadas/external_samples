@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Rockchip Electronics Co. LTD
+ * Copyright 2023 Rockchip Electronics Co. LTD
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ extern "C" {
 #define LDCH_MAX_CORRECT_LEVEL 255
 #define VI_RGN_NUM 4
 #define VENC_RGN_NUM 3
+#define RGN_COVER_NUM_FOR_1126 4
 
 typedef struct _rkModeTest {
 	RK_BOOL bIfMainThreadQuit;
@@ -69,6 +70,7 @@ typedef struct _rkModeTest {
 	RK_S32 bMultictx;
 	rk_aiq_working_mode_t eHdrMode;
 	RK_CHAR *pIqFileDir;
+	pthread_t vi_venc_thread_id;
 } g_mode_test;
 
 typedef struct _rkMpiCtx {
@@ -155,7 +157,8 @@ static void print_usage(const RK_CHAR *name) {
 	    "encode_resolution_switch, 6: encode_type_switch\n"
 	    "\t            7: smartP_mode_test, 8: SVC_mode_test, 9: motion_deblur_test, 10: "
 	    "force_idr_test, 11: venc_chn_rotation_test, \n"
-	    "\t            12: rgn_attach_and_detach Default: 0\n");
+	    "\t            12: rgn_attach_and_detach, 13: "
+	    "encode_resolution_switch_for_rv1126. Default: 0\n");
 	printf(
 	    "\t-e | --encode : set encode type, Value: h264cbr, h264vbr, h264avbr, h265cbr, "
 	    "h265vbr, h265avbr, default: h264cbr \n");
@@ -1123,7 +1126,7 @@ static RK_S32 rgn_init(void) {
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_U32 u32Width = 0;
 	RK_U32 u32Height = 0;
-
+#if (CHIP_RV1106 == 1)
 	/* cover for vi[0]*/
 	ctx->rgn[0].rgnHandle = 0;
 	ctx->rgn[0].stRgnAttr.enType = COVER_RGN;
@@ -1201,12 +1204,40 @@ static RK_S32 rgn_init(void) {
 		        ctx->rgn[3].rgnHandle);
 		return s32Ret;
 	}
-
+#elif (CHIP_RV1126 == 1)
+	RK_U32 u32Color = 0xFFFFFF;
+	for (RK_S32 i = 0; i < RGN_COVER_NUM_FOR_1126; i++) {
+		// cover for venc
+		ctx->rgn[i].rgnHandle = i;
+		ctx->rgn[i].stRgnAttr.enType = COVER_RGN;
+		ctx->rgn[i].stMppChn.enModId = RK_ID_VENC;
+		ctx->rgn[i].stMppChn.s32ChnId = ctx->venc[0].s32ChnId;
+		ctx->rgn[i].stMppChn.s32DevId = 0;
+		ctx->rgn[i].stRegion.s32X = i * 128;  // must be 16 aligned
+		ctx->rgn[i].stRegion.s32Y = i * 128;  // must be 16 aligned
+		ctx->rgn[i].stRegion.u32Width = 640;  // must be 16 aligned
+		ctx->rgn[i].stRegion.u32Height = 640; // must be 16 aligned
+		ctx->rgn[i].u32Color = u32Color;
+		RK_LOGE("--------------u32Color: %#X", ctx->rgn[i].u32Color);
+		u32Color >>= 4;
+		ctx->rgn[i].u32BgAlpha = 128;
+		ctx->rgn[i].u32FgAlpha = 128;
+		ctx->rgn[i].u32Layer = i;
+		s32Ret = SAMPLE_COMM_RGN_CreateChn(&ctx->rgn[i]);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("SAMPLE_COMM_RGN_CreateChn Failure s32Ret:%#X rgn handle:%d", s32Ret,
+			        ctx->rgn[i].rgnHandle);
+			return s32Ret;
+		}
+	}
+#endif
 	// overlay for venc
 	s32Ret =
 	    SAMPLE_COMM_GetBmpResolution(gModeTest->inputBmp1Path, &u32Width, &u32Height);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("SAMPLE_COMM_GetBmpResolution failure");
+		u32Width = 128;
+		u32Height = 128;
 	}
 	ctx->rgn[4].rgnHandle = 4;
 	ctx->rgn[4].stRgnAttr.enType = OVERLAY_RGN;
@@ -1214,8 +1245,8 @@ static RK_S32 rgn_init(void) {
 	ctx->rgn[4].stMppChn.s32ChnId = ctx->venc[0].s32ChnId;
 	ctx->rgn[4].stMppChn.s32DevId = 0;
 	ctx->rgn[4].stRegion.s32X =
-	    RK_ALIGN_2(ctx->venc[0].u32Width / 2);  // must be 2 aligned
-	ctx->rgn[4].stRegion.s32Y = 0;              // must be 2 aligned
+	    RK_ALIGN_16(ctx->venc[0].u32Width / 2); // must be 16 aligned
+	ctx->rgn[4].stRegion.s32Y = 0;              // must be 16 aligned
 	ctx->rgn[4].stRegion.u32Width = u32Width;   // must be 8 aligned
 	ctx->rgn[4].stRegion.u32Height = u32Height; // must be 8 aligned
 	ctx->rgn[4].u32BmpFormat = RK_FMT_BGRA5551;
@@ -1235,6 +1266,8 @@ static RK_S32 rgn_init(void) {
 	    SAMPLE_COMM_GetBmpResolution(gModeTest->inputBmp2Path, &u32Width, &u32Height);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("SAMPLE_COMM_GetBmpResolution failure");
+		u32Width = 128;
+		u32Height = 128;
 	}
 	ctx->rgn[5].rgnHandle = 5;
 	ctx->rgn[5].stRgnAttr.enType = OVERLAY_RGN;
@@ -1242,11 +1275,11 @@ static RK_S32 rgn_init(void) {
 	ctx->rgn[5].stMppChn.s32ChnId = ctx->venc[0].s32ChnId;
 	ctx->rgn[5].stMppChn.s32DevId = 0;
 	ctx->rgn[5].stRegion.s32X =
-	    RK_ALIGN_2(ctx->venc[0].u32Width / 2); // must be 2 aligned
+	    RK_ALIGN_16(ctx->venc[0].u32Width / 2); // must be 16 aligned
 	ctx->rgn[5].stRegion.s32Y =
-	    RK_ALIGN_2(ctx->venc[0].u32Height / 2); // must be 2 aligned
-	ctx->rgn[5].stRegion.u32Width = u32Width;   // must be 8 aligned
-	ctx->rgn[5].stRegion.u32Height = u32Height; // must be 8 aligned
+	    RK_ALIGN_16(ctx->venc[0].u32Height / 2); // must be 16 aligned
+	ctx->rgn[5].stRegion.u32Width = u32Width;    // must be 8 aligned
+	ctx->rgn[5].stRegion.u32Height = u32Height;  // must be 8 aligned
 	ctx->rgn[5].u32BmpFormat = RK_FMT_BGRA5551;
 	ctx->rgn[5].u32BgAlpha = 128;
 	ctx->rgn[5].u32FgAlpha = 128;
@@ -1264,6 +1297,8 @@ static RK_S32 rgn_init(void) {
 	    SAMPLE_COMM_GetBmpResolution(gModeTest->inputBmp2Path, &u32Width, &u32Height);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("SAMPLE_COMM_GetBmpResolution failure");
+		u32Width = 128;
+		u32Height = 128;
 	}
 	ctx->rgn[6].rgnHandle = 6;
 	ctx->rgn[6].stRgnAttr.enType = OVERLAY_RGN;
@@ -1271,11 +1306,11 @@ static RK_S32 rgn_init(void) {
 	ctx->rgn[6].stMppChn.s32ChnId = ctx->venc[0].s32ChnId;
 	ctx->rgn[6].stMppChn.s32DevId = 0;
 	ctx->rgn[6].stRegion.s32X =
-	    RK_ALIGN_2(ctx->venc[0].u32Width / 2); // must be 2 aligned
+	    RK_ALIGN_16(ctx->venc[0].u32Width / 2); // must be 16 aligned
 	ctx->rgn[6].stRegion.s32Y =
-	    RK_ALIGN_2(ctx->venc[0].u32Height - u32Height); // must be 2 aligned
-	ctx->rgn[6].stRegion.u32Width = u32Width;           // must be 8 aligned
-	ctx->rgn[6].stRegion.u32Height = u32Height;         // must be 8 aligned
+	    RK_ALIGN_16(ctx->venc[0].u32Height - u32Height); // must be 16 aligned
+	ctx->rgn[6].stRegion.u32Width = u32Width;            // must be 8 aligned
+	ctx->rgn[6].stRegion.u32Height = u32Height;          // must be 8 aligned
 	ctx->rgn[6].u32BmpFormat = RK_FMT_BGRA5551;
 	ctx->rgn[6].u32BgAlpha = 128;
 	ctx->rgn[6].u32FgAlpha = 128;
@@ -1316,8 +1351,117 @@ static RK_S32 rgn_attachAndDetach(RK_U32 s32RgnChnNum) {
 		}
 	}
 
-	/* rgn init */
-	for (i = 0; i < s32RgnChnNum; i++) {
+	/* rgn attach */
+	for (RK_S32 i = 0; i < RGN_CHN_MAX; i++) {
+		s32Ret = SAMPLE_COMM_RGN_CreateChn(&ctx->rgn[i]);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("SAMPLE_COMM_RGN_CreateChn Handle:%d Failure Ret:%#X",
+			        ctx->rgn[i].rgnHandle, s32Ret);
+		}
+	}
+	RK_LOGE("rgn_attachAndDetach switch test");
+	return RK_SUCCESS;
+}
+
+static RK_S32 encode_resolution_switch_for_rv1126(RK_S32 s32DstWidth, RK_S32 s32DstHeight,
+                                                  RK_S32 s32ChnId) {
+	RK_S32 s32Ret = RK_FAILURE;
+	MPP_CHN_S stSrcChn, stDestChn;
+
+	/*rgn detach*/
+	for (RK_S32 i = 0; i < RGN_CHN_MAX; i++) {
+		s32Ret = SAMPLE_COMM_RGN_DestroyChn(&ctx->rgn[i]);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("SAMPLE_COMM_RGN_DestroyChn Failure s32Ret:%#X rgn handle:%d", s32Ret,
+			        ctx->rgn[i].rgnHandle);
+		}
+	}
+
+	/* vi_venc thread quit*/
+	gModeTest->bIfViThreadQuit = RK_TRUE;
+	pthread_join(gModeTest->vi_venc_thread_id, RK_NULL);
+
+	/* tde deinit*/
+	SAMPLE_COMM_TDE_Destroy(&ctx->tde);
+
+	/* Venc[0] deinit */
+	gModeTest->bIfVencThreadQuit[0] = RK_TRUE;
+	pthread_join(ctx->venc[0].getStreamThread, RK_NULL);
+
+	/* VI[0] unbind VENC[0] and destroy venc*/
+	stSrcChn.enModId = RK_ID_VI;
+	stSrcChn.s32DevId = ctx->vi[0].s32DevId;
+	stSrcChn.s32ChnId = ctx->vi[0].s32ChnId;
+	stDestChn.enModId = RK_ID_VENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = ctx->venc[0].s32ChnId;
+	s32Ret = SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("VI and VENC bind failure:%X", s32Ret);
+		return s32Ret;
+	}
+	SAMPLE_COMM_VENC_DestroyChn(&ctx->venc[0]);
+
+	/* Disable Chn0 */
+	s32Ret = RK_MPI_VI_DisableChn(ctx->vi[0].u32PipeId, ctx->vi[0].s32ChnId);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("RK_MPI_VI_DisableChn failure:%X", s32Ret);
+		return s32Ret;
+	}
+
+	ctx->vi[0].s32ChnId = s32ChnId;
+	ctx->vi[0].stChnAttr.stSize.u32Width = s32DstWidth;
+	ctx->vi[0].stChnAttr.stSize.u32Height = s32DstHeight;
+	ctx->tde.u32SrcWidth = s32DstWidth;
+	ctx->tde.u32SrcHeight = s32DstHeight;
+	ctx->venc[0].u32Width = s32DstWidth;
+	ctx->venc[0].u32Height = s32DstHeight;
+
+	if (s32ChnId == 0) {
+		ctx->vi[0].stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
+		ctx->tde.enSrcPixelFormat = RK_FMT_YUV420SP;
+		ctx->venc[0].enPixelFormat = RK_FMT_YUV420SP;
+	} else {
+		ctx->vi[0].stChnAttr.enPixelFormat = RK_FMT_YUV422SP;
+		ctx->tde.enSrcPixelFormat = RK_FMT_YUV422SP;
+		ctx->venc[0].enPixelFormat = RK_FMT_YUV422SP;
+	}
+
+	s32Ret = RK_MPI_VI_SetChnAttr(ctx->vi[0].u32PipeId, s32ChnId, &ctx->vi[0].stChnAttr);
+	s32Ret |= RK_MPI_VI_EnableChn(ctx->vi[0].u32PipeId, s32ChnId);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("Restart VI failure");
+		return s32Ret;
+	}
+
+	gModeTest->bIfVencThreadQuit[0] = RK_FALSE;
+	SAMPLE_COMM_VENC_CreateChn(&ctx->venc[0]);
+
+	s32Ret = SAMPLE_COMM_TDE_Create(&ctx->tde);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("SAMPLE_COMM_TDE_Create failure:%#X", s32Ret);
+		return s32Ret;
+	}
+
+	/* vi get stream thread lunch */
+	gModeTest->bIfViThreadQuit = RK_FALSE;
+	pthread_create(&gModeTest->vi_venc_thread_id, 0, vi_venc_thread,
+	               (void *)(&ctx->vi[0]));
+
+	/* bind vi[0] and venc[0]*/
+	stSrcChn.enModId = RK_ID_VI;
+	stSrcChn.s32DevId = ctx->vi[0].s32DevId;
+	stSrcChn.s32ChnId = ctx->vi[0].s32ChnId;
+	stDestChn.enModId = RK_ID_VENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = ctx->venc[0].s32ChnId;
+	s32Ret = SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("SAMPLE_COMM_Bind vi[0] and venc[0] failure:%#X", s32Ret);
+		return s32Ret;
+	}
+
+	for (RK_S32 i = 0; i < RGN_CHN_MAX; i++) {
 		s32Ret = SAMPLE_COMM_RGN_CreateChn(&ctx->rgn[i]);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("SAMPLE_COMM_RGN_CreateChn Handle:%d Failure Ret:%#X",
@@ -1325,7 +1469,8 @@ static RK_S32 rgn_attachAndDetach(RK_U32 s32RgnChnNum) {
 		}
 	}
 
-	return RK_SUCCESS;
+	RK_LOGE("RV1126 encode_resolution_switch success");
+	return s32Ret;
 }
 
 static RK_S32 rgn_change_posit(void) {
@@ -1346,10 +1491,12 @@ static RK_S32 rgn_change_posit(void) {
 		return s32Ret;
 	}
 
-	stChnAttr.unChnAttr.stCoverChn.stRect.s32X += 10;
+	stChnAttr.unChnAttr.stCoverChn.stRect.s32X =
+	    RK_ALIGN_16(stChnAttr.unChnAttr.stCoverChn.stRect.s32X + 10);
 	if (stChnAttr.unChnAttr.stCoverChn.stRect.s32X >
 	    ctx->vi[0].u32Width - ctx->rgn[0].stRegion.u32Width - 50) {
-		stChnAttr.unChnAttr.stCoverChn.stRect.s32X = ctx->rgn[0].stRegion.s32X;
+		stChnAttr.unChnAttr.stCoverChn.stRect.s32X =
+		    RK_ALIGN_16(ctx->rgn[0].stRegion.s32X);
 	}
 	s32Ret = RK_MPI_RGN_SetDisplayAttr(ctx->rgn[0].rgnHandle, &ctx->rgn[0].stMppChn,
 	                                   &stChnAttr);
@@ -1368,9 +1515,12 @@ static RK_S32 rgn_change_posit(void) {
 		return s32Ret;
 	}
 
-	stChnAttr.unChnAttr.stCoverChn.stRect.s32Y -= 10;
-	if (stChnAttr.unChnAttr.stCoverChn.stRect.s32Y < 0) {
-		stChnAttr.unChnAttr.stCoverChn.stRect.s32Y = ctx->rgn[1].stRegion.s32Y;
+	stChnAttr.unChnAttr.stCoverChn.stRect.s32X =
+	    RK_ALIGN_16(stChnAttr.unChnAttr.stCoverChn.stRect.s32X + 10);
+	if (stChnAttr.unChnAttr.stCoverChn.stRect.s32X >
+	    ctx->vi[0].u32Width - ctx->rgn[1].stRegion.u32Width - 50) {
+		stChnAttr.unChnAttr.stCoverChn.stRect.s32X =
+		    RK_ALIGN_16(ctx->rgn[1].stRegion.s32X);
 	}
 	s32Ret = RK_MPI_RGN_SetDisplayAttr(ctx->rgn[1].rgnHandle, &ctx->rgn[1].stMppChn,
 	                                   &stChnAttr);
@@ -1389,10 +1539,12 @@ static RK_S32 rgn_change_posit(void) {
 		return s32Ret;
 	}
 
-	stChnAttr.unChnAttr.stCoverChn.stRect.s32Y += 10;
+	stChnAttr.unChnAttr.stCoverChn.stRect.s32Y =
+	    RK_ALIGN_16(stChnAttr.unChnAttr.stCoverChn.stRect.s32Y + 10);
 	if (stChnAttr.unChnAttr.stCoverChn.stRect.s32Y >
 	    ctx->vi[0].u32Height - ctx->rgn[2].stRegion.u32Height) {
-		stChnAttr.unChnAttr.stCoverChn.stRect.s32Y = ctx->rgn[2].stRegion.s32Y;
+		stChnAttr.unChnAttr.stCoverChn.stRect.s32Y =
+		    RK_ALIGN_16(ctx->rgn[2].stRegion.s32Y);
 	}
 	s32Ret = RK_MPI_RGN_SetDisplayAttr(ctx->rgn[2].rgnHandle, &ctx->rgn[2].stMppChn,
 	                                   &stChnAttr);
@@ -1411,9 +1563,11 @@ static RK_S32 rgn_change_posit(void) {
 		return s32Ret;
 	}
 
-	stChnAttr.unChnAttr.stMosaicChn.stRect.s32X -= 10;
+	stChnAttr.unChnAttr.stMosaicChn.stRect.s32X =
+	    RK_ALIGN_16(stChnAttr.unChnAttr.stMosaicChn.stRect.s32X - 10);
 	if (stChnAttr.unChnAttr.stMosaicChn.stRect.s32X < 0) {
-		stChnAttr.unChnAttr.stMosaicChn.stRect.s32X = ctx->rgn[3].stRegion.s32X;
+		stChnAttr.unChnAttr.stMosaicChn.stRect.s32X =
+		    RK_ALIGN_16(ctx->rgn[3].stRegion.s32X);
 	}
 
 	s32Ret = RK_MPI_RGN_SetDisplayAttr(ctx->rgn[3].rgnHandle, &ctx->rgn[3].stMppChn,
@@ -1433,10 +1587,12 @@ static RK_S32 rgn_change_posit(void) {
 		return s32Ret;
 	}
 
-	stChnAttr.unChnAttr.stOverlayChn.stPoint.s32Y += 10;
+	stChnAttr.unChnAttr.stOverlayChn.stPoint.s32Y =
+	    RK_ALIGN_16(stChnAttr.unChnAttr.stOverlayChn.stPoint.s32Y + 10);
 	if (stChnAttr.unChnAttr.stOverlayChn.stPoint.s32Y >
 	    ctx->vi[0].u32Height - ctx->rgn[4].stRegion.u32Height - 50) {
-		stChnAttr.unChnAttr.stOverlayChn.stPoint.s32Y = ctx->rgn[4].stRegion.s32Y;
+		stChnAttr.unChnAttr.stOverlayChn.stPoint.s32Y =
+		    RK_ALIGN_16(ctx->rgn[4].stRegion.s32Y);
 	}
 	s32Ret = RK_MPI_RGN_SetDisplayAttr(ctx->rgn[4].rgnHandle, &ctx->rgn[4].stMppChn,
 	                                   &stChnAttr);
@@ -1451,9 +1607,15 @@ static RK_S32 rgn_change_posit(void) {
 
 static void wait_module_test_switch_success(void) {
 	for (RK_U32 i = 0; i < VENC_CHN_MAX; i++) {
+#if (CHIP_RV1106 == 1)
 		if (gModeTest->bWrapIfEnable && i == TDE_JPEG_CHNID) {
 			continue;
 		}
+#elif (CHIP_RV1126 == 1)
+		if (i == COMBO_JPEG_CHNID) {
+			continue;
+		}
+#endif
 		pthread_mutex_lock(&g_frame_count_mutex[i]);
 		gModeTest->u32VencGetFrameCount[i] = 0;
 		pthread_mutex_unlock(&g_frame_count_mutex[i]);
@@ -1465,7 +1627,11 @@ static void *sample_demo_stresstest(void *pArgs) {
 	prctl(PR_SET_NAME, "sample_demo_stress");
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_U32 u32TestCount = 0;
-
+	RK_S32 s32SrcWidth = ctx->vi[0].u32Width;
+	RK_S32 s32SrcHeight = ctx->vi[0].u32Height;
+	RK_S32 s32DstWidth = 1920;
+	RK_S32 s32DstHeight = 1080;
+	RK_S32 s32ViChnId = 0;
 	wait_module_test_switch_success();
 	SAMPLE_COMM_DumpMeminfo("Enter sample_demo_stresstest", gModeTest->s32ModuleTestType);
 	while (!gModeTest->bModuleTestThreadQuit) {
@@ -1571,6 +1737,26 @@ static void *sample_demo_stresstest(void *pArgs) {
 			s32Ret = rgn_attachAndDetach(RGN_CHN_MAX);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("rgn_attachAndDetach failure %X", s32Ret);
+				program_handle_error(__func__, __LINE__);
+				return RK_NULL;
+			}
+			break;
+		case 13:
+			if (ctx->vi[0].stChnAttr.stSize.u32Width == s32SrcWidth) {
+				s32ViChnId = 1;
+				RK_LOGE("--------------ch:%d w:%d  h:%d", s32ViChnId, s32DstWidth,
+				        s32DstHeight);
+				s32Ret = encode_resolution_switch_for_rv1126(s32DstWidth, s32DstHeight,
+				                                             s32ViChnId);
+			} else {
+				s32ViChnId = 0;
+				RK_LOGE("--------------ch:%d w:%d  h:%d", s32ViChnId, s32SrcWidth,
+				        s32SrcHeight);
+				s32Ret = encode_resolution_switch_for_rv1126(s32SrcWidth, s32SrcHeight,
+				                                             s32ViChnId);
+			}
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("encode_resolution_switch_for_rv1126 failure %X", s32Ret);
 				program_handle_error(__func__, __LINE__);
 				return RK_NULL;
 			}
@@ -1708,8 +1894,7 @@ int main(int argc, char *argv[]) {
 	MPP_CHN_S stSrcChn, stDestChn;
 	rk_aiq_working_mode_t eHdrMode = RK_AIQ_WORKING_MODE_NORMAL;
 
-	pthread_t modeTest_thread_id, vi_venc_thread_id, ivs_detect_thread_id,
-	    vi_iva_thread_id;
+	pthread_t modeTest_thread_id, ivs_detect_thread_id, vi_iva_thread_id;
 
 	if (argc < 2) {
 		print_usage(argv[0]);
@@ -1876,7 +2061,7 @@ int main(int argc, char *argv[]) {
 	ctx->vi[0].u32Height = u32VideoHeight;
 	ctx->vi[0].s32DevId = 0;
 	ctx->vi[0].u32PipeId = ctx->vi[0].s32DevId;
-	ctx->vi[0].s32ChnId = 0;
+	ctx->vi[0].s32ChnId = 1;
 	ctx->vi[0].stChnAttr.stIspOpt.stMaxSize.u32Width = u32VideoWidth;
 	ctx->vi[0].stChnAttr.stIspOpt.stMaxSize.u32Height = u32VideoHeight;
 	ctx->vi[0].stChnAttr.stIspOpt.u32BufCount = u32ViBuffCnt;
@@ -1900,7 +2085,7 @@ int main(int argc, char *argv[]) {
 	ctx->vi[1].u32Height = u32SubVideoHeight;
 	ctx->vi[1].s32DevId = 0;
 	ctx->vi[1].u32PipeId = ctx->vi[1].s32DevId;
-	ctx->vi[1].s32ChnId = 1;
+	ctx->vi[1].s32ChnId = 2;
 	ctx->vi[1].stChnAttr.stIspOpt.stMaxSize.u32Width = u32SubVideoWidth;
 	ctx->vi[1].stChnAttr.stIspOpt.stMaxSize.u32Height = u32SubVideoHeight;
 	ctx->vi[1].stChnAttr.stIspOpt.u32BufCount = 2;
@@ -1917,12 +2102,13 @@ int main(int argc, char *argv[]) {
 		goto __FAILED;
 	}
 
+#ifdef ROCKIVS
 	/* Init VI[2] */
 	ctx->vi[2].u32Width = u32IvsWidth;
 	ctx->vi[2].u32Height = u32IvsHeight;
 	ctx->vi[2].s32DevId = 0;
 	ctx->vi[2].u32PipeId = ctx->vi[2].s32DevId;
-	ctx->vi[2].s32ChnId = 2;
+	ctx->vi[2].s32ChnId = 0;
 	ctx->vi[2].stChnAttr.stIspOpt.stMaxSize.u32Width = u32IvsWidth;
 	ctx->vi[2].stChnAttr.stIspOpt.stMaxSize.u32Height = u32IvsHeight;
 	ctx->vi[2].stChnAttr.stIspOpt.u32BufCount = 2;
@@ -1938,7 +2124,9 @@ int main(int argc, char *argv[]) {
 		RK_LOGE("SAMPLE_COMM_VI_CreateChn failure:%d", s32Ret);
 		goto __FAILED;
 	}
+#endif
 
+#ifdef ROCKIVS
 	/* Init ivs */
 	ctx->ivs.s32ChnId = 0;
 	ctx->ivs.stIvsAttr.enMode = IVS_MODE_MD_OD;
@@ -1960,6 +2148,7 @@ int main(int argc, char *argv[]) {
 		RK_LOGE("SAMPLE_COMM_IVS_Create failure:%X", s32Ret);
 		program_handle_error(__func__, __LINE__);
 	}
+#endif
 
 #ifdef ROCKIVA
 	/* Init iva */
@@ -2079,6 +2268,7 @@ int main(int argc, char *argv[]) {
 		SAMPLE_COMM_VENC_CreateChn(&ctx->venc[2]);
 	}
 
+#ifdef ROCKCOMBO
 	/* Init VENC[3] */
 	ctx->venc[3].s32ChnId = 3;
 	ctx->venc[3].u32Width = u32VideoWidth;
@@ -2110,6 +2300,7 @@ int main(int argc, char *argv[]) {
 	/* VENC_GOPMODE_SMARTP */
 	ctx->venc[3].stChnAttr.stGopAttr.enGopMode = VENC_GOPMODE_INIT;
 	SAMPLE_COMM_VENC_CreateChn(&ctx->venc[3]);
+#endif
 
 	/* tde init */
 	ctx->tde.u32TdeWidth = u32JpegWidth;
@@ -2151,6 +2342,7 @@ int main(int argc, char *argv[]) {
 		program_handle_error(__func__, __LINE__);
 	}
 
+#ifdef ROCKIVS
 	/* VI[2] bind IVS[0]*/
 	stSrcChn.enModId = RK_ID_VI;
 	stSrcChn.s32DevId = ctx->vi[2].s32DevId;
@@ -2163,15 +2355,19 @@ int main(int argc, char *argv[]) {
 		RK_LOGE("VI and IVS bind failure:%X", s32Ret);
 		program_handle_error(__func__, __LINE__);
 	}
+#endif
 
 	if (!bWrapIfEnable) {
 		RK_LOGE("wrap close");
 		/* VI[0] Venc[2] therad launch */
-		pthread_create(&vi_venc_thread_id, 0, vi_venc_thread, (void *)(&ctx->vi[0]));
+		pthread_create(&gModeTest->vi_venc_thread_id, 0, vi_venc_thread,
+		               (void *)(&ctx->vi[0]));
 	}
 
+#ifdef ROCKIVS
 	/* ivs detect thread launch */
 	pthread_create(&ivs_detect_thread_id, 0, ivs_detect_thread, (void *)&ctx->ivs);
+#endif
 
 #ifdef ROCKIVA
 	// /* VI[2] IVA thread launch */
@@ -2207,6 +2403,7 @@ int main(int argc, char *argv[]) {
 	SAMPLE_COMM_IVA_Destroy(&ctx->iva);
 #endif
 
+#ifdef ROCKIVS
 	/* VI[2] unbind IVS[0]*/
 	stSrcChn.enModId = RK_ID_VI;
 	stSrcChn.s32DevId = ctx->vi[2].s32DevId;
@@ -2230,6 +2427,7 @@ int main(int argc, char *argv[]) {
 		RK_LOGE("RK_MPI_IVS_DestroyChn failure:%X", s32Ret);
 		g_exit_result = RK_FAILURE;
 	}
+#endif
 
 	if (!bWrapIfEnable) {
 		RK_LOGE("wrap close");
@@ -2240,16 +2438,17 @@ int main(int argc, char *argv[]) {
 
 		/* vi_venc thread quit*/
 		gModeTest->bIfViThreadQuit = RK_TRUE;
-		pthread_join(vi_venc_thread_id, RK_NULL);
+		pthread_join(gModeTest->vi_venc_thread_id, RK_NULL);
 
 		/* tde deinit*/
 		SAMPLE_COMM_TDE_Destroy(&ctx->tde);
 	}
-
+#ifdef ROCKCOMBO
 	/* venc[3] deinit and Destroy */
 	gModeTest->bIfVencThreadQuit[3] = RK_TRUE;
 	pthread_join(ctx->venc[3].getStreamThread, RK_NULL);
 	SAMPLE_COMM_VENC_DestroyChn(&ctx->venc[3]);
+#endif
 
 	/* Venc[0] deinit */
 	gModeTest->bIfVencThreadQuit[0] = RK_TRUE;
@@ -2290,7 +2489,9 @@ int main(int argc, char *argv[]) {
 	/* Destroy VI[0] VI[1] VI[2] */
 	s32Ret = RK_MPI_VI_DisableChn(ctx->vi[0].u32PipeId, ctx->vi[0].s32ChnId);
 	s32Ret |= RK_MPI_VI_DisableChn(ctx->vi[1].u32PipeId, ctx->vi[1].s32ChnId);
+#ifdef ROCKIVS
 	s32Ret |= RK_MPI_VI_DisableChn(ctx->vi[2].u32PipeId, ctx->vi[2].s32ChnId);
+#endif
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_VI_DisableChn failure:%X", s32Ret);
 		g_exit_result = RK_FAILURE;

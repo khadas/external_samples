@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Rockchip Electronics Co. LTD
+ * Copyright 2023 Rockchip Electronics Co. LTD
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -909,6 +909,7 @@ int main(int argc, char *argv[]) {
 	RK_S32 s32LoopCnt = -1;
 	RK_U32 u32VencFps = 25;
 	RK_U32 u32BitRate = 4 * 1024;
+	PIXEL_FORMAT_E enPixelFormat = RK_FMT_YUV420SP;
 	CODEC_TYPE_E enCodecType = RK_CODEC_TYPE_H264;
 	VENC_RC_MODE_E enRcMode = VENC_RC_MODE_H264CBR;
 	RK_BOOL bMultictx = RK_FALSE;
@@ -1041,13 +1042,13 @@ int main(int argc, char *argv[]) {
 	ctx->vi.u32Height = s32VideoHeight;
 	ctx->vi.s32DevId = s32CamId;
 	ctx->vi.u32PipeId = ctx->vi.s32DevId;
-	ctx->vi.s32ChnId = 0;
+	ctx->vi.s32ChnId = 1;
 	ctx->vi.stChnAttr.stIspOpt.stMaxSize.u32Width = s32VideoWidth;
 	ctx->vi.stChnAttr.stIspOpt.stMaxSize.u32Height = s32VideoHeight;
 	ctx->vi.stChnAttr.stIspOpt.u32BufCount = 3;
 	ctx->vi.stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
 	ctx->vi.stChnAttr.u32Depth = 1;
-	ctx->vi.stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
+	ctx->vi.stChnAttr.enPixelFormat = enPixelFormat;
 	ctx->vi.stChnAttr.enCompressMode = COMPRESS_MODE_NONE;
 	ctx->vi.stChnAttr.stFrameRate.s32SrcFrameRate = 25;
 	ctx->vi.stChnAttr.stFrameRate.s32DstFrameRate = u32VencFps;
@@ -1072,6 +1073,7 @@ int main(int argc, char *argv[]) {
 	ctx->venc.getStreamCbFunc = venc_get_stream;
 	ctx->venc.s32loopCount = s32LoopCnt;
 	ctx->venc.dstFilePath = pOutPathVenc;
+	ctx->venc.enPixelFormat = enPixelFormat;
 	ctx->venc.bWrapIfEnable = bWrapIfEnable;
 	ctx->venc.u32BufferLine = ctx->venc.u32Height / 4;
 	/*

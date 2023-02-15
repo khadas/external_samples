@@ -53,7 +53,6 @@ static void *ai_get_stream(void *pArgs) {
 	FILE *fp = RK_NULL;
 	void *pData = RK_NULL;
 	RK_S32 loopCount = 0;
-	RK_U8 header[7];
 
 	if (ctx->dstFilePath) {
 		snprintf(name, sizeof(name), "/%s/ai_%d.bin", ctx->dstFilePath, ctx->s32ChnId);
@@ -117,7 +116,6 @@ static void print_usage(const RK_CHAR *name) {
 
 int main(int argc, char *argv[]) {
 	SAMPLE_MPI_CTX_S *ctx;
-	MPP_CHN_S stSrcChn, stDestChn;
 	RK_S32 s32DeviceChannel = 2;
 	RK_S32 s32DeviceSampleRate = 16000;
 	AUDIO_BIT_WIDTH_E bitWidth = AUDIO_BIT_WIDTH_16;

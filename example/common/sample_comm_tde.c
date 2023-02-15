@@ -40,7 +40,7 @@ RK_S32 SAMPLE_COMM_TDE_Create(SAMPLE_TDE_CTX_S *ctx) {
 	stPicBufAttr.u32Width = ctx->u32TdeWidth;
 	stPicBufAttr.u32Height = ctx->u32TdeHeight;
 	stPicBufAttr.enPixelFormat = ctx->enSrcPixelFormat;
-	stPicBufAttr.enCompMode = ctx->enSrcPixelFormat;
+	stPicBufAttr.enCompMode = ctx->enSrcCompMode;
 	s32Ret = RK_MPI_CAL_TDE_GetPicBufferSize(&stPicBufAttr, &stMbPicCalResult);
 	RK_LOGD("u32MBSize is %d", stMbPicCalResult.u32MBSize);
 	if (s32Ret != RK_SUCCESS) {
@@ -64,7 +64,7 @@ RK_S32 SAMPLE_COMM_TDE_Create(SAMPLE_TDE_CTX_S *ctx) {
 	ctx->stVideoFrames.stVFrame.u32VirWidth = ctx->u32TdeWidth;
 	ctx->stVideoFrames.stVFrame.u32VirHeight = ctx->u32TdeHeight;
 	ctx->stVideoFrames.stVFrame.enPixelFormat = ctx->enSrcPixelFormat;
-	ctx->stVideoFrames.stVFrame.enCompressMode = ctx->enSrcPixelFormat;
+	ctx->stVideoFrames.stVFrame.enCompressMode = ctx->enSrcCompMode;
 	ctx->tde_frame_pool = RK_MPI_MB_CreatePool(&stMbPoolCfg);
 	if (ctx->tde_frame_pool == MB_INVALID_POOLID) {
 		RK_LOGE("RK_MPI_MB_CreatePool Failure, the pool is MB_INVALID_POOLID");
@@ -74,7 +74,7 @@ RK_S32 SAMPLE_COMM_TDE_Create(SAMPLE_TDE_CTX_S *ctx) {
 	ctx->pstSrc.u32Width = ctx->u32SrcWidth;
 	ctx->pstSrc.u32Height = ctx->u32SrcHeight;
 	ctx->pstSrc.enColorFmt = ctx->enSrcPixelFormat;
-	ctx->pstSrc.enComprocessMode = ctx->enSrcPixelFormat;
+	ctx->pstSrc.enComprocessMode = ctx->enSrcCompMode;
 	ctx->pstSrcRect.s32Xpos = 0;
 	ctx->pstSrcRect.s32Ypos = 0;
 	ctx->pstSrcRect.u32Width = ctx->u32TdeWidth;

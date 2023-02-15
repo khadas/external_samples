@@ -796,7 +796,6 @@ __FAILED:
 		isp_deinit();
 #endif
 	}
-__FAILED2:
 	global_param_deinit();
 
 	return g_exit_result;

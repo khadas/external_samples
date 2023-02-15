@@ -56,6 +56,7 @@ typedef struct _rkModeTest {
 	RK_U32 u32ViGetFrameCount;
 	rk_aiq_working_mode_t eHdrMode;
 	RK_CHAR *pIqFileDir;
+	RK_CHAR *pIqFilePath;
 } g_mode_test;
 
 typedef struct _rkMpiCtx {
@@ -85,7 +86,7 @@ static void sigterm_handler(int sig) {
 	program_normal_exit(__func__, __LINE__);
 }
 
-static RK_CHAR optstr[] = "?::a::d:f:w:h:o:I:l:p:m:c:i:";
+static RK_CHAR optstr[] = "?::a::d:f:w:h:o:I:l:p:m:c:i:n:";
 static const struct option long_options[] = {
     {"aiq", optional_argument, NULL, 'a'},
     {"device_name", required_argument, NULL, 'd'},
@@ -101,6 +102,7 @@ static const struct option long_options[] = {
     {"mode_test_loop", required_argument, NULL, 't' + 'l'},
     {"test_frame_count", required_argument, NULL, 'c'},
     {"chn_id", required_argument, NULL, 'c' + 'i'},
+    {"iqfilePath", required_argument, NULL, 'i' + 'n'},
     {"help", optional_argument, NULL, '?'},
     {NULL, 0, NULL, 0},
 };
@@ -125,7 +127,8 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-l | --loop_count : loop count, Default: -1\n");
 	printf("\t-f | --fps : isp output fps, Default: -1\n");
 	printf("\t-m | --mode_test_type : test type, 0:none, 1:P/N switch test, 2:HDR switch "
-	       "test, 3:frame rate switch test, 4: LDCH mode test. Default: 0\n");
+	       "test, 3:frame rate switch test, 4: LDCH mode test 5: iqfile switch test. "
+	       "6: isp_deinit_init, Default: 0\n");
 	printf("\t--pixel_format : camera Format, Value:nv12,nv16,uyvy,rgb565,xbgr8888. "
 	       "Default: "
 	       "nv12\n");
@@ -135,6 +138,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t--test_frame_count : set the venc reveive frame count for every test "
 	       "loop, default: 500\n");
 	printf("\t--chn_id : channel id, default: 0\n");
+	printf("\t--iqfile_name : iq file name\n");
 }
 
 static void *vi_get_stream(void *pArgs) {
@@ -253,8 +257,8 @@ static void hdr_mode_switch_test(RK_S32 test_loop) {
 	RK_S32 s32Ret = RK_FAILURE;
 
 	while (!gModeTest->bModuleTestThreadQuit) {
+#if (CHIP_RV1106 == 1)
 		RK_MPI_VI_PauseChn(ctx->vi.u32PipeId, ctx->vi.s32ChnId);
-
 		SAMPLE_COMM_ISP_Stop(gModeTest->s32CamId);
 
 		if (gModeTest->eHdrMode == RK_AIQ_WORKING_MODE_NORMAL) {
@@ -274,7 +278,23 @@ static void hdr_mode_switch_test(RK_S32 test_loop) {
 		}
 
 		RK_MPI_VI_ResumeChn(ctx->vi.u32PipeId, ctx->vi.s32ChnId);
+#elif (CHIP_RV1126 == 1)
+		if (gModeTest->eHdrMode == RK_AIQ_WORKING_MODE_NORMAL) {
+			gModeTest->eHdrMode = RK_AIQ_WORKING_MODE_ISP_HDR2;
+		} else if (gModeTest->eHdrMode == RK_AIQ_WORKING_MODE_ISP_HDR2) {
+			gModeTest->eHdrMode = RK_AIQ_WORKING_MODE_NORMAL;
+		} else {
+			gModeTest->eHdrMode = RK_AIQ_WORKING_MODE_NORMAL;
+		}
+		s32Ret = SAMPLE_COMM_ISP_SetWDRModeDyn(gModeTest->s32CamId, gModeTest->eHdrMode);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("SAMPLE_COMM_ISP_SetWDRModeDyn failure:%#X cam:%d hdrmodr:%d", s32Ret,
+			        gModeTest->s32CamId, gModeTest->eHdrMode);
+			program_handle_error(__func__, __LINE__);
+			break;
+		}
 
+#endif
 		wait_module_test_switch_success();
 
 		s32TestCount++;
@@ -385,6 +405,103 @@ static void ldch_mode_test(RK_S32 test_loop) {
 	RK_LOGE("ldch_mode_test exit");
 	return;
 }
+#if (CHIP_RV1126 == 1)
+static void iqfile_switch_test(RK_S32 test_loop) {
+	RK_S32 s32Ret = RK_FAILURE;
+	RK_S32 test_count = 0;
+
+	while (!gModeTest->bModuleTestThreadQuit) {
+
+		s32Ret = SAMPLE_COMM_ISP_UpdateIq(gModeTest->s32CamId, gModeTest->pIqFilePath);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("SAMPLE_COMM_ISP_UpdateIq failure:%#X cam:%d iqpath:%s", s32Ret,
+			        gModeTest->s32CamId, gModeTest->pIqFilePath);
+			program_normal_exit(__func__, __LINE__);
+			break;
+		}
+
+		wait_module_test_switch_success();
+		test_count++;
+
+		RK_LOGE("-----------------iqfilePath: %s", gModeTest->pIqFilePath);
+		RK_LOGE(
+		    "-----------------------------iqfile switch success total:%d now count:%d",
+		    test_loop, test_count);
+		if (test_loop > 0 && test_count >= test_loop) {
+			RK_LOGE("--------------iqfile switch success test end total:%d", test_loop);
+			gModeTest->bModuleTestIfopen = RK_FALSE;
+			program_normal_exit(__func__, __LINE__);
+			break;
+		}
+	}
+	RK_LOGE("iqfile_switch_test exit");
+	return;
+}
+#endif
+static void isp_deinit_init(RK_S32 test_loop) {
+	RK_S32 s32Ret = RK_FAILURE;
+	RK_S32 test_count = 0;
+	RK_S32 s32DstWidth = 704;
+	RK_S32 s32DstHeight = 576;
+	RK_S32 s32SrcWidth = ctx->vi.u32Width;
+	RK_S32 s32SrcHeight = ctx->vi.u32Height;
+
+	while (!gModeTest->bModuleTestThreadQuit) {
+
+		/* VI deinit */
+		gModeTest->bIfViTHreadQuit = RK_TRUE;
+		pthread_join(gModeTest->vi_thread_id, RK_NULL);
+		/* Destroy VI */
+		SAMPLE_COMM_VI_DestroyChn(&ctx->vi);
+
+		RK_MPI_SYS_Exit();
+		/* isp deinit */
+		SAMPLE_COMM_ISP_Stop(gModeTest->s32CamId);
+
+		gModeTest->bIfViTHreadQuit = RK_FALSE;
+		if (ctx->vi.u32Width == s32SrcWidth) {
+			ctx->vi.u32Width = s32DstWidth;
+			ctx->vi.u32Height = s32DstHeight;
+		} else if (ctx->vi.u32Width == s32DstWidth) {
+			ctx->vi.u32Width = s32SrcWidth;
+			ctx->vi.u32Height = s32SrcHeight;
+		} else {
+			ctx->vi.u32Width = s32DstWidth;
+			ctx->vi.u32Height = s32DstHeight;
+		}
+
+		s32Ret = SAMPLE_COMM_ISP_Init(gModeTest->s32CamId, gModeTest->eHdrMode,
+		                              gModeTest->bMultictx, gModeTest->pIqFileDir);
+		s32Ret |= SAMPLE_COMM_ISP_Run(gModeTest->s32CamId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init failure\n");
+			program_handle_error(__func__, __LINE__);
+			break;
+		}
+
+		RK_MPI_SYS_Init();
+
+		SAMPLE_COMM_VI_CreateChn(&ctx->vi);
+
+		pthread_create(&gModeTest->vi_thread_id, 0, vi_get_stream, (void *)(&ctx->vi));
+
+		wait_module_test_switch_success();
+		test_count++;
+
+		RK_LOGE("-----------------------------isp_deinit_init switch success total:%d "
+		        "now count:%d",
+		        test_loop, test_count);
+		if (test_loop > 0 && test_count >= test_loop) {
+			RK_LOGE("--------------isp_deinit_init switch success test end total:%d",
+			        test_loop);
+			gModeTest->bModuleTestIfopen = RK_FALSE;
+			program_normal_exit(__func__, __LINE__);
+			break;
+		}
+	}
+	RK_LOGE("isp_deinit_init exit");
+	return;
+}
 
 static void *sample_isp_stress_test(void *pArgs) {
 
@@ -404,6 +521,14 @@ static void *sample_isp_stress_test(void *pArgs) {
 		break;
 	case 4:
 		ldch_mode_test(gModeTest->s32ModuleTestLoop);
+		break;
+	case 5:
+#if (CHIP_RV1126 == 1)
+		iqfile_switch_test(gModeTest->s32ModuleTestLoop);
+		break;
+#endif
+	case 6:
+		isp_deinit_init(gModeTest->s32ModuleTestLoop);
 		break;
 	default:
 		RK_LOGE("mode test type:%d is unsupported", gModeTest->s32ModuleTestType);
@@ -431,6 +556,7 @@ static RK_S32 global_param_init(void) {
 
 	gModeTest->s32ModuleTestLoop = -1;
 	gModeTest->u32TestFrameCount = 500;
+	gModeTest->pIqFilePath = "/etc/iqfiles/os04a10_CMK-OT1607-FV1_M12-40IRC-4MP-F16.bin";
 
 	sem_init(&g_sem_module_test, 0, 0);
 
@@ -516,13 +642,17 @@ int main(int argc, char *argv[]) {
 				ePixelFormat = RK_FMT_YUV422SP;
 			} else if (!strcmp(optarg, "uyvy")) {
 				ePixelFormat = RK_FMT_YUV422_UYVY;
-			} else if (!strcmp(optarg, "rgb565")) {
+			}
+#if (CHIP_RV1106 == 1)
+			else if (!strcmp(optarg, "rgb565")) {
 				ePixelFormat = RK_FMT_RGB565;
 				s32ChnId = 1;
 			} else if (!strcmp(optarg, "xbgr8888")) {
 				ePixelFormat = RK_FMT_XBGR8888;
 				s32ChnId = 1;
-			} else {
+			}
+#endif
+			else {
 				RK_LOGE("this pixel_format is not supported in the sample");
 				print_usage(argv[0]);
 				goto __FAILED2;
@@ -569,6 +699,9 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'c' + 'i':
 			s32ChnId = atoi(optarg);
+			break;
+		case 'i' + 'n':
+			gModeTest->pIqFilePath = optarg;
 			break;
 		case '?':
 		default:

@@ -41,6 +41,7 @@ extern "C" {
 #define BUFFER_SIZE 255
 #define MODULE_TEST_DELAY_SECOND_TIME 3 /* (unit: second) */
 #define RGN_CHN_MAX 7
+#define RGN_COVER_NUM_FOR_1126 4
 
 typedef struct _rkModeTest {
 	RK_BOOL bIfMainThreadQuit;
@@ -255,7 +256,7 @@ static RK_S32 rgn_init(void) {
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_U32 u32Width = 0;
 	RK_U32 u32Height = 0;
-
+#if (CHIP_RV1106 == 1)
 	/* cover for vi*/
 	ctx->rgn[0].rgnHandle = 0;
 	ctx->rgn[0].stRgnAttr.enType = COVER_RGN;
@@ -339,22 +340,49 @@ static RK_S32 rgn_init(void) {
 		        ctx->rgn[3].rgnHandle);
 		return s32Ret;
 	}
-
+#elif (CHIP_RV1126 == 1)
+	RK_U32 u32Color = 0xFFFFFF;
+	for (RK_S32 i = 0; i < RGN_COVER_NUM_FOR_1126; i++) {
+		// cover for venc
+		ctx->rgn[i].rgnHandle = i;
+		ctx->rgn[i].stRgnAttr.enType = COVER_RGN;
+		ctx->rgn[i].stMppChn.enModId = RK_ID_VENC;
+		ctx->rgn[i].stMppChn.s32ChnId = ctx->venc.s32ChnId;
+		ctx->rgn[i].stMppChn.s32DevId = 0;
+		ctx->rgn[i].stRegion.s32X = i * 128;  // must be 16 aligned
+		ctx->rgn[i].stRegion.s32Y = i * 128;  // must be 16 aligned
+		ctx->rgn[i].stRegion.u32Width = 640;  // must be 16 aligned
+		ctx->rgn[i].stRegion.u32Height = 640; // must be 16 aligned
+		ctx->rgn[i].u32Color = u32Color;
+		RK_LOGE("--------------u32Color: %#X", ctx->rgn[i].u32Color);
+		u32Color >>= 4;
+		ctx->rgn[i].u32BgAlpha = 128;
+		ctx->rgn[i].u32FgAlpha = 128;
+		ctx->rgn[i].u32Layer = i;
+		s32Ret = SAMPLE_COMM_RGN_CreateChn(&ctx->rgn[i]);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("SAMPLE_COMM_RGN_CreateChn Failure s32Ret:%#X rgn handle:%d", s32Ret,
+			        ctx->rgn[i].rgnHandle);
+			return s32Ret;
+		}
+	}
+#endif
 	// overlay for venc
 	s32Ret = get_bmp_resolution(gModeTest->inputBmp1Path, &u32Width, &u32Height);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("get_bmp_resolution failure");
-		return RK_FAILURE;
+		u32Width = 128;
+		u32Height = 128;
 	}
 	ctx->rgn[4].rgnHandle = 4;
 	ctx->rgn[4].stRgnAttr.enType = OVERLAY_RGN;
 	ctx->rgn[4].stMppChn.enModId = RK_ID_VENC;
 	ctx->rgn[4].stMppChn.s32ChnId = ctx->venc.s32ChnId;
 	ctx->rgn[4].stMppChn.s32DevId = 0;
-	ctx->rgn[4].stRegion.s32X = RK_ALIGN_2(ctx->venc.u32Width / 2); // must be 2 aligned
-	ctx->rgn[4].stRegion.s32Y = 0;                                  // must be 2 aligned
-	ctx->rgn[4].stRegion.u32Width = u32Width;                       // must be 8 aligned
-	ctx->rgn[4].stRegion.u32Height = u32Height;                     // must be 8 aligned
+	ctx->rgn[4].stRegion.s32X = RK_ALIGN_16(ctx->venc.u32Width / 2); // must be 2 aligned
+	ctx->rgn[4].stRegion.s32Y = 0;                                   // must be 2 aligned
+	ctx->rgn[4].stRegion.u32Width = u32Width;                        // must be 8 aligned
+	ctx->rgn[4].stRegion.u32Height = u32Height;                      // must be 8 aligned
 	ctx->rgn[4].u32BmpFormat = RK_FMT_BGRA5551;
 	ctx->rgn[4].u32BgAlpha = 128;
 	ctx->rgn[4].u32FgAlpha = 128;
@@ -371,17 +399,18 @@ static RK_S32 rgn_init(void) {
 	s32Ret = get_bmp_resolution(gModeTest->inputBmp2Path, &u32Width, &u32Height);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("get_bmp_resolution failure");
-		return RK_FAILURE;
+		u32Width = 128;
+		u32Height = 128;
 	}
 	ctx->rgn[5].rgnHandle = 5;
 	ctx->rgn[5].stRgnAttr.enType = OVERLAY_RGN;
 	ctx->rgn[5].stMppChn.enModId = RK_ID_VENC;
 	ctx->rgn[5].stMppChn.s32ChnId = ctx->venc.s32ChnId;
 	ctx->rgn[5].stMppChn.s32DevId = 0;
-	ctx->rgn[5].stRegion.s32X = RK_ALIGN_2(ctx->venc.u32Width / 2);  // must be 2 aligned
-	ctx->rgn[5].stRegion.s32Y = RK_ALIGN_2(ctx->venc.u32Height / 2); // must be 2 aligned
-	ctx->rgn[5].stRegion.u32Width = u32Width;                        // must be 8 aligned
-	ctx->rgn[5].stRegion.u32Height = u32Height;                      // must be 8 aligned
+	ctx->rgn[5].stRegion.s32X = RK_ALIGN_16(ctx->venc.u32Width / 2);  // must be 2 aligned
+	ctx->rgn[5].stRegion.s32Y = RK_ALIGN_16(ctx->venc.u32Height / 2); // must be 2 aligned
+	ctx->rgn[5].stRegion.u32Width = u32Width;                         // must be 8 aligned
+	ctx->rgn[5].stRegion.u32Height = u32Height;                       // must be 8 aligned
 	ctx->rgn[5].u32BmpFormat = RK_FMT_BGRA5551;
 	ctx->rgn[5].u32BgAlpha = 128;
 	ctx->rgn[5].u32FgAlpha = 128;
@@ -398,18 +427,19 @@ static RK_S32 rgn_init(void) {
 	s32Ret = get_bmp_resolution(gModeTest->inputBmp2Path, &u32Width, &u32Height);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("get_bmp_resolution failure");
-		return RK_FAILURE;
+		u32Width = 128;
+		u32Height = 128;
 	}
 	ctx->rgn[6].rgnHandle = 6;
 	ctx->rgn[6].stRgnAttr.enType = OVERLAY_RGN;
 	ctx->rgn[6].stMppChn.enModId = RK_ID_VENC;
 	ctx->rgn[6].stMppChn.s32ChnId = ctx->venc.s32ChnId;
 	ctx->rgn[6].stMppChn.s32DevId = 0;
-	ctx->rgn[6].stRegion.s32X = RK_ALIGN_2(ctx->venc.u32Width / 2); // must be 2 aligned
+	ctx->rgn[6].stRegion.s32X = RK_ALIGN_16(ctx->venc.u32Width / 2); // must be 2 aligned
 	ctx->rgn[6].stRegion.s32Y =
-	    RK_ALIGN_2(ctx->venc.u32Height - u32Height); // must be 2 aligned
-	ctx->rgn[6].stRegion.u32Width = u32Width;        // must be 8 aligned
-	ctx->rgn[6].stRegion.u32Height = u32Height;      // must be 8 aligned
+	    RK_ALIGN_16(ctx->venc.u32Height - u32Height); // must be 2 aligned
+	ctx->rgn[6].stRegion.u32Width = u32Width;         // must be 8 aligned
+	ctx->rgn[6].stRegion.u32Height = u32Height;       // must be 8 aligned
 	ctx->rgn[6].u32BmpFormat = RK_FMT_BGRA5551;
 	ctx->rgn[6].u32BgAlpha = 128;
 	ctx->rgn[6].u32FgAlpha = 128;
@@ -720,7 +750,7 @@ int main(int argc, char *argv[]) {
 	ctx->vi.u32Height = s32VideoHeight;
 	ctx->vi.s32DevId = s32CamId;
 	ctx->vi.u32PipeId = ctx->vi.s32DevId;
-	ctx->vi.s32ChnId = 0;
+	ctx->vi.s32ChnId = 1;
 	ctx->vi.stChnAttr.stIspOpt.stMaxSize.u32Width = s32VideoWidth;
 	ctx->vi.stChnAttr.stIspOpt.stMaxSize.u32Height = s32VideoHeight;
 	ctx->vi.stChnAttr.stIspOpt.u32BufCount = 3;

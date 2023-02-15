@@ -148,6 +148,7 @@ typedef struct _rkMpiVENCCtx {
 	RK_U32 u32StreamBufCnt;
 	RK_U32 u32BuffSize;
 	RK_S32 s32loopCount;
+	PIXEL_FORMAT_E enPixelFormat;
 	CODEC_TYPE_E enCodecType;
 	VENC_RC_MODE_E enRcMode;
 	VENC_CHN s32ChnId;

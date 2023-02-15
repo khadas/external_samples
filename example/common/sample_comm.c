@@ -34,7 +34,6 @@ extern "C" {
 #define RUN_FRAME_NUM (100)
 void PrintStreamDetails(int chnId, int framesize) {
 	static int strmfrmCnt = 0;
-	static int strmfrmSkip = 0;
 	static int sumframesize = 0;
 	static struct timeval startTime, endTime, passTime;
 	double calcTime;
@@ -64,7 +63,6 @@ void PrintStreamDetails(int chnId, int framesize) {
 		//}
 		printf("===========================================================\n");
 		strmfrmCnt = 0;
-		strmfrmSkip = 0;
 		sumframesize = 0;
 	} else {
 		strmfrmCnt++;
@@ -141,6 +139,7 @@ RK_S32 SAMPLE_COMM_DumpMeminfo(RK_CHAR *callFunc, RK_S32 moduleTestType) {
 	sprintf(systemCmd, "echo %s %d >> /tmp/testLog.txt", callFunc, moduleTestType);
 	system(systemCmd);
 	system("cat /proc/meminfo | grep MemAvailable >> /tmp/testLog.txt");
+	return RK_SUCCESS;
 }
 
 RK_S32 SAMPLE_COMM_GetLdchMesh(RK_CHAR *cam0LdchPath, RK_CHAR *cam1LdchPath,

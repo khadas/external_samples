@@ -94,7 +94,7 @@ RK_S32 get_bmp_info(const char *filename, OSD_BITMAPFILEHEADER *pBmpFileHeader,
 	(void)fread(&bfType, 1, sizeof(bfType), pFile);
 	if (bfType != 0x4d42) {
 		printf("not bitmap file\n");
-		close(pFile);
+		fclose(pFile);
 		return -1;
 	}
 

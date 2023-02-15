@@ -1,6 +1,9 @@
 # Rockchip sample Makefile
 
 .PHONY : clean
+ifeq ($(CONFIG_RK_IVA),y)
+    LD_FLAGS += -DROCKIVA
+endif
 
 all:$(COMM_OBJ)
 	@mkdir -p $(SAMPLE_OUT_DIR)/lib

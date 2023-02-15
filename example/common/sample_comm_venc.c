@@ -113,7 +113,7 @@ RK_S32 SAMPLE_COMM_VENC_CreateChn(SAMPLE_VENC_CTX_S *ctx) {
 		break;
 	}
 
-	ctx->stChnAttr.stVencAttr.enPixelFormat = RK_FMT_YUV420SP;
+	ctx->stChnAttr.stVencAttr.enPixelFormat = ctx->enPixelFormat;
 	ctx->stChnAttr.stVencAttr.u32MaxPicWidth = ctx->u32Width;
 	ctx->stChnAttr.stVencAttr.u32MaxPicHeight = ctx->u32Height;
 	ctx->stChnAttr.stVencAttr.u32PicWidth = ctx->u32Width;
@@ -187,16 +187,21 @@ RK_S32 SAMPLE_COMM_VENC_CreateChn(SAMPLE_VENC_CTX_S *ctx) {
 	}
 
 	/* ifenable Svc */
-	s32Ret = RK_MPI_VENC_EnableSvc(ctx->s32ChnId, ctx->bSvcIfEnable);
-	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("RK_MPI_VENC_EnableSvc failed %X", s32Ret);
-		return s32Ret;
+	if (ctx->bSvcIfEnable) {
+		s32Ret = RK_MPI_VENC_EnableSvc(ctx->s32ChnId, ctx->bSvcIfEnable);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VENC_EnableSvc failed %X", s32Ret);
+			return s32Ret;
+		}
 	}
 	/* ifenable Motion Deblur */
-	s32Ret = RK_MPI_VENC_EnableMotionDeblur(ctx->s32ChnId, ctx->bMotionDeblurIfEnable);
-	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("RK_MPI_VENC_EnableSvc failed %X", s32Ret);
-		return s32Ret;
+	if (ctx->bMotionDeblurIfEnable) {
+		s32Ret =
+		    RK_MPI_VENC_EnableMotionDeblur(ctx->s32ChnId, ctx->bMotionDeblurIfEnable);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VENC_EnableSvc failed %X", s32Ret);
+			return s32Ret;
+		}
 	}
 
 	stRecvParam.s32RecvPicNum = -1;
@@ -295,7 +300,7 @@ RK_S32 SAMPLE_COMM_VENC_GetStream(SAMPLE_VENC_CTX_S *ctx, void **pdata) {
 			*pdata = RK_MPI_MB_Handle2VirAddr(ctx->stFrame.pstPack->pMbBlk);
 			break;
 		} else {
-			RK_LOGE("RK_MPI_VENC_GetStream fail %x", s32Ret);
+			RK_LOGE("RK_MPI_VENC_GetStream chnid:%d fail %#X", ctx->s32ChnId, s32Ret);
 		}
 	}
 	return s32Ret;

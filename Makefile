@@ -41,7 +41,7 @@ example-build:
 	@make -C $(CURRENT_DIR)/example/ -j$(RK_MEDIA_JOBS)
 
 simple_test-build:
-	@make -C $(CURRENT_DIR)/simple_test/ -j$(RK_MEDIA_JOBS)
+	#@make -C $(CURRENT_DIR)/simple_test/ -j$(RK_MEDIA_JOBS)
 
 clean:
 	@make -C $(CURRENT_DIR)/example/ clean

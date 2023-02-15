@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Rockchip Electronics Co. LTD
+ * Copyright 2023 Rockchip Electronics Co. LTD
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,9 +75,9 @@ static void print_usage(const RK_CHAR *name) {
 #endif
 	printf("\t-d | --device_name: set pcDeviceName, eg: /dev/video0 Default "
 	       "NULL\n");
-	printf("\t-c | --chn_id: channel id, default: 0\n");
+	printf("\t-c | --chn_id: channel id, default: 1\n");
 	printf("\t-f | --pixel_format: camera Format, Default nv12, "
-	       "Value:nv12,nv16,uyvy,rgb565,xbgr8888\n");
+	       "Value:nv12,nv16,uyvy,yuyv.\n");
 	printf("\t-w | --width: camera with, Default 1920\n");
 	printf("\t-h | --height: camera height, Default 1080\n");
 	printf("\t-o | --output_path: vi output file path, Default NULL\n");
@@ -96,6 +96,7 @@ static void *vi_get_stream(void *pArgs) {
 	FILE *fp = RK_NULL;
 	void *pData = RK_NULL;
 	RK_S32 loopCount = 0;
+	RK_U32 u32DataLen = 0;
 
 	if (ctx->dstFilePath) {
 		snprintf(name, sizeof(name), "/%s/vi_%d.bin", ctx->dstFilePath, ctx->s32DevId);
@@ -124,7 +125,7 @@ static void *vi_get_stream(void *pArgs) {
 			}
 
 			if (fp) {
-				fwrite(pData, 1, ctx->stViFrame.stVFrame.u64PrivateData, fp);
+				fwrite(pData, 1, u32DataLen, fp);
 				fflush(fp);
 			}
 
@@ -152,20 +153,17 @@ static void *vi_get_stream(void *pArgs) {
  * Description : main
  ******************************************************************************/
 int main(int argc, char *argv[]) {
-	RK_S32 s32Ret = RK_FAILURE;
 	SAMPLE_MPI_CTX_S *ctx;
-	int video_width = 1920;
-	int video_height = 1080;
+	RK_U32 u32ViWidth = 1920;
+	RK_U32 u32ViHeight = 1080;
 	RK_CHAR *pOutPath = NULL;
 	RK_CHAR *pDeviceName = NULL;
-	RK_S32 i;
 	RK_S32 s32CamId = 0;
-	RK_S32 s32ChnId = 0;
+	RK_S32 s32ChnId = 1;
 	RK_S32 s32loopCnt = -1;
 	PIXEL_FORMAT_E PixelFormat = RK_FMT_YUV420SP;
 	COMPRESS_MODE_E CompressMode = COMPRESS_MODE_NONE;
 	rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
-	MPP_CHN_S stSrcChn, stDestChn;
 	pthread_t vi_thread_id;
 
 	if (argc < 2) {
@@ -209,23 +207,29 @@ int main(int argc, char *argv[]) {
 				PixelFormat = RK_FMT_YUV422SP;
 			} else if (!strcmp(optarg, "uyvy")) {
 				PixelFormat = RK_FMT_YUV422_UYVY;
-			} else if (!strcmp(optarg, "rgb565")) {
+			} else if (!strcmp(optarg, "yuyv")) {
+				PixelFormat = RK_FMT_YUV422_YUYV;
+			}
+#if (CHIP_RV1106 == 1)
+			else if (!strcmp(optarg, "rgb565")) {
 				PixelFormat = RK_FMT_RGB565;
 				s32ChnId = 1;
 			} else if (!strcmp(optarg, "xbgr8888")) {
 				PixelFormat = RK_FMT_XBGR8888;
 				s32ChnId = 1;
-			} else {
+			}
+#endif
+			else {
 				RK_LOGE("this pixel_format is not supported in the sample");
 				print_usage(argv[0]);
 				goto __FAILED2;
 			}
 			break;
 		case 'w':
-			video_width = atoi(optarg);
+			u32ViWidth = atoi(optarg);
 			break;
 		case 'h':
-			video_height = atoi(optarg);
+			u32ViHeight = atoi(optarg);
 			break;
 		case 'I':
 			s32CamId = atoi(optarg);
@@ -275,8 +279,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Init VI
-	ctx->vi.u32Width = video_width;
-	ctx->vi.u32Height = video_height;
+	ctx->vi.u32Width = u32ViWidth;
+	ctx->vi.u32Height = u32ViHeight;
 	ctx->vi.s32DevId = s32CamId;
 	ctx->vi.u32PipeId = ctx->vi.s32DevId;
 	ctx->vi.s32ChnId = s32ChnId;

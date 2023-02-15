@@ -65,6 +65,7 @@ static const struct option long_options[] = {
     {"loop_count", required_argument, NULL, 'l'},
     {"output_path", required_argument, NULL, 'o'},
     {"encode", required_argument, NULL, 'e'},
+    {"disp_devid", required_argument, NULL, 'D'},
     {"camid", required_argument, NULL, 'I'},
     {"multictx", required_argument, NULL, 'M'},
     {"fps", required_argument, NULL, 'f'},
@@ -102,8 +103,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-i | --input_bmp_name: input file path of logo.bmp, Default NULL\n");
 	printf("\t-l | --loop_count: loop count, Default -1\n");
 	printf("\t-o | --output_path: encode save file path, Default /data/\n");
-	printf("\t-D | --disp devid: display DevId, Default -1\n");
-	printf("\t-L | --disp layerid: display LayerId, Default 0\n");
+	printf("\t-D | --disp_devid: display DevId, Default -1\n");
 }
 
 /******************************************************************************
@@ -169,7 +169,6 @@ static void *venc_get_stream(void *pArgs) {
  * Description : main
  ******************************************************************************/
 int main(int argc, char *argv[]) {
-	RK_S32 s32Ret = RK_FAILURE;
 	SAMPLE_MPI_CTX_S *ctx;
 	int video_width = 1920;
 	int video_height = 1080;
@@ -447,10 +446,10 @@ int main(int argc, char *argv[]) {
 	ctx->rgn[1].stMppChn.enModId = RK_ID_VENC;
 	ctx->rgn[1].stMppChn.s32ChnId = 0;
 	ctx->rgn[1].stMppChn.s32DevId = ctx->venc.s32ChnId;
-	ctx->rgn[1].stRegion.s32X = 0;        // must be 16 aligned
-	ctx->rgn[1].stRegion.s32Y = 0;        // must be 16 aligned
-	ctx->rgn[1].stRegion.u32Width = 576;  // must be 16 aligned
-	ctx->rgn[1].stRegion.u32Height = 288; // must be 16 aligned
+	ctx->rgn[1].stRegion.s32X = 0;       // must be 16 aligned
+	ctx->rgn[1].stRegion.s32Y = 0;       // must be 16 aligned
+	ctx->rgn[1].stRegion.u32Width = 160; // must be 16 aligned
+	ctx->rgn[1].stRegion.u32Height = 96; // must be 16 aligned
 	ctx->rgn[1].u32BmpFormat = RK_FMT_BGRA5551;
 	ctx->rgn[1].u32BgAlpha = 128;
 	ctx->rgn[1].u32FgAlpha = 128;
@@ -585,7 +584,6 @@ __FAILED:
 		SAMPLE_COMM_ISP_Stop(s32CamId);
 #endif
 	}
-__FAILED2:
 	if (ctx) {
 		free(ctx);
 		ctx = RK_NULL;

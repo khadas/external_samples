@@ -149,7 +149,6 @@ static void *vi_get_stream(void *pArgs) {
  * Description : main
  ******************************************************************************/
 int main(int argc, char *argv[]) {
-	RK_S32 s32Ret = RK_FAILURE;
 	SAMPLE_MPI_CTX_S *ctx;
 	int video_width = 1920;
 	int video_height = 1080;
@@ -161,7 +160,6 @@ int main(int argc, char *argv[]) {
 	PIXEL_FORMAT_E PixelFormat = RK_FMT_YUV420SP;
 	COMPRESS_MODE_E CompressMode = COMPRESS_MODE_NONE;
 	rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
-	MPP_CHN_S stSrcChn, stDestChn;
 	pthread_t vi_thread_id[6];
 
 	if (argc < 2) {
@@ -199,13 +197,17 @@ int main(int argc, char *argv[]) {
 				PixelFormat = RK_FMT_YUV422SP;
 			} else if (!strcmp(optarg, "uyvy")) {
 				PixelFormat = RK_FMT_YUV422_UYVY;
-			} else if (!strcmp(optarg, "rgb565")) {
+			}
+#if (CHIP_RV1106 == 1)
+			else if (!strcmp(optarg, "rgb565")) {
 				PixelFormat = RK_FMT_RGB565;
 				s32ChnId = 1;
 			} else if (!strcmp(optarg, "xbgr8888")) {
 				PixelFormat = RK_FMT_XBGR8888;
 				s32ChnId = 1;
-			} else {
+			}
+#endif
+			else {
 				RK_LOGE("this pixel_format is not supported in the sample");
 				print_usage(argv[0]);
 				goto __FAILED2;
