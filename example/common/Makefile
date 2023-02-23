@@ -1,8 +1,12 @@
 # Rockchip sample Makefile
 
 .PHONY : clean
-ifeq ($(CONFIG_RK_IVA),y)
+ifeq ($(CONFIG_RK_IVA), y)
     LD_FLAGS += -DROCKIVA
+endif
+
+ifeq ($(HAVE_AVS), y)
+    LD_FLAGS += -DAVS_ENABLE
 endif
 
 all:$(COMM_OBJ)

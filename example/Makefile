@@ -6,6 +6,7 @@ endif
 
 export CONFIG_RK_SAMPLE=y
 export LC_ALL=C
+export HAVE_AVS=n
 SHELL:=/bin/bash
 
 CURRENT_DIR := $(shell pwd)
@@ -119,8 +120,10 @@ ifneq ($(RK_MEDIA_CHIP), rv1106)
 endif
 	@make -C $(CURRENT_DIR)/venc;
 	@make -C $(CURRENT_DIR)/venc install;
+ifeq ($(HAVE_AVS), y)
 	@make -C $(CURRENT_DIR)/avs;
 	@make -C $(CURRENT_DIR)/avs  install;
+endif
 	@make -C $(CURRENT_DIR)/test;
 	@make -C $(CURRENT_DIR)/test install;
 	@make -C $(CURRENT_DIR)/demo;

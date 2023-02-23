@@ -14,8 +14,6 @@
  * limitations under the License.
  *
  */
-#define AVS_ENABLE
-
 #ifdef AVS_ENABLE
 #ifdef __cplusplus
 #if __cplusplus
@@ -50,53 +48,51 @@ RK_S32 SAMPLE_COMM_AVS_CreateChn(SAMPLE_AVS_CTX_S *ctx) {
 		RK_LOGE("RK_MPI_AVS_SetModParam failed with %#x!\n", s32Ret);
 		return s32Ret;
 	}
-
-	if (ctx->bIfSetStitchDistance) {
-		ctx->stAvsGrpAttr.stInAttr.stSize.u32Width = ctx->u32SrcWidth;
-		ctx->stAvsGrpAttr.stInAttr.stSize.u32Height = ctx->u32SrcHeight;
-		ctx->stAvsGrpAttr.stOutAttr.fDistance = ctx->fDistance;
-		s32Ret = RK_MPI_AVS_GetOptimalOutParam(ctx->s32GrpId, &ctx->stAvsGrpAttr);
-		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("RK_MPI_AVS_GetOptimalOutParam failure s32Ret:%#X", s32Ret);
-			return s32Ret;
-		}
-	}
-
+	/*
+	    if (ctx->bIfSetStitchDistance) {
+	        ctx->stAvsGrpAttr.stInAttr.stSize.u32Width = ctx->u32SrcWidth;
+	        ctx->stAvsGrpAttr.stInAttr.stSize.u32Height = ctx->u32SrcHeight;
+	        ctx->stAvsGrpAttr.stOutAttr.fDistance = ctx->fDistance;
+	        s32Ret = RK_MPI_AVS_GetOptimalOutParam(ctx->s32GrpId, &ctx->stAvsGrpAttr);
+	        if (s32Ret != RK_SUCCESS) {
+	            RK_LOGE("RK_MPI_AVS_GetOptimalOutParam failure s32Ret:%#X", s32Ret);
+	            return s32Ret;
+	        }
+	    }
+	*/
 	s32Ret = RK_MPI_AVS_CreateGrp(ctx->s32GrpId, &ctx->stAvsGrpAttr);
 	if (RK_SUCCESS != s32Ret) {
 		RK_LOGE("RK_MPI_AVS_CreateGrp failed with %#x!\n", s32Ret);
 		return s32Ret;
 	}
+	/*
+	    if (ctx->bIfSetStitchDistance) {
+	        AVS_MESH_S pstMesh;
+	        MB_EXT_CONFIG_S stMbExtConfig;
+	        memset(&pstMesh, 0, sizeof(AVS_MESH_S));
+	        for (RK_S32 i = 0; i < ctx->stAvsGrpAttr.u32PipeNum; i++) {
+	            memset(&stMbExtConfig, 0, sizeof(MB_EXT_CONFIG_S));
+	            stMbExtConfig.pOpaque = ctx->pLdchMeshData[i];
+	            stMbExtConfig.pu8VirAddr = (RK_U8 *)ctx->pLdchMeshData[i];
+	            stMbExtConfig.u64Size = ctx->u32LdchMeshSize;
+	            RK_LOGD("pLdchMeshData:%p, ctx->pLdchMeshData[%d]:%p", ctx->pLdchMeshData,
+	   i, ctx->pLdchMeshData[i]); s32Ret = RK_MPI_SYS_CreateMB(&(pstMesh.pLdchBlk[i]),
+	   &stMbExtConfig); if (s32Ret != RK_SUCCESS) { RK_LOGE("RK_MPI_SYS_CreateMB for
+	   pstMesh.pLdchBlk failure, s32Ret:%#X", s32Ret); return s32Ret;
+	            }
+	        }
 
-	if (ctx->bIfSetStitchDistance) {
-		AVS_MESH_S pstMesh;
-		MB_EXT_CONFIG_S stMbExtConfig;
-		memset(&pstMesh, 0, sizeof(AVS_MESH_S));
-		for (RK_S32 i = 0; i < ctx->stAvsGrpAttr.u32PipeNum; i++) {
-			memset(&stMbExtConfig, 0, sizeof(MB_EXT_CONFIG_S));
-			stMbExtConfig.pOpaque = ctx->pLdchMeshData[i];
-			stMbExtConfig.pu8VirAddr = (RK_U8 *)ctx->pLdchMeshData[i];
-			stMbExtConfig.u64Size = ctx->u32LdchMeshSize;
-			RK_LOGD("pLdchMeshData:%p, ctx->pLdchMeshData[%d]:%p", ctx->pLdchMeshData, i,
-			        ctx->pLdchMeshData[i]);
-			s32Ret = RK_MPI_SYS_CreateMB(&(pstMesh.pLdchBlk[i]), &stMbExtConfig);
-			if (s32Ret != RK_SUCCESS) {
-				RK_LOGE("RK_MPI_SYS_CreateMB for pstMesh.pLdchBlk failure, s32Ret:%#X",
-				        s32Ret);
-				return s32Ret;
-			}
-		}
+	        s32Ret = RK_MPI_AVS_GetMesh(ctx->s32GrpId, &pstMesh);
+	        if (s32Ret != RK_SUCCESS) {
+	            RK_LOGE("RK_MPI_AVS_GetMesh failure s32Ret:%#X", s32Ret);
+	            return s32Ret;
+	        }
 
-		s32Ret = RK_MPI_AVS_GetMesh(ctx->s32GrpId, &pstMesh);
-		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("RK_MPI_AVS_GetMesh failure s32Ret:%#X", s32Ret);
-			return s32Ret;
-		}
-		for (RK_S32 i = 0; i < ctx->stAvsGrpAttr.u32PipeNum; i++) {
-			RK_MPI_SYS_Free(pstMesh.pLdchBlk[i]);
-		}
-	}
-
+	        for (RK_S32 i = 0; i < ctx->stAvsGrpAttr.u32PipeNum; i++) {
+	            RK_MPI_SYS_Free(pstMesh.pLdchBlk[i]);
+	        }
+	    }
+	*/
 	for (chnIndex = 0; chnIndex < AVS_MAX_CHN_NUM; chnIndex++) {
 		if (ctx->stAvsChnAttr[chnIndex].u32Width &&
 		    ctx->stAvsChnAttr[chnIndex].u32Height) {
