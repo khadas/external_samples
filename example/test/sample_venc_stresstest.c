@@ -1042,7 +1042,10 @@ int main(int argc, char *argv[]) {
 	ctx->vi.u32Height = s32VideoHeight;
 	ctx->vi.s32DevId = s32CamId;
 	ctx->vi.u32PipeId = ctx->vi.s32DevId;
+	ctx->vi.s32ChnId = 0;
+#ifdef RV1126
 	ctx->vi.s32ChnId = 1;
+#endif
 	ctx->vi.stChnAttr.stIspOpt.stMaxSize.u32Width = s32VideoWidth;
 	ctx->vi.stChnAttr.stIspOpt.stMaxSize.u32Height = s32VideoHeight;
 	ctx->vi.stChnAttr.stIspOpt.u32BufCount = 3;

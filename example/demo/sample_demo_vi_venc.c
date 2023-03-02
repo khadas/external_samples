@@ -2061,7 +2061,10 @@ int main(int argc, char *argv[]) {
 	ctx->vi[0].u32Height = u32VideoHeight;
 	ctx->vi[0].s32DevId = 0;
 	ctx->vi[0].u32PipeId = ctx->vi[0].s32DevId;
+	ctx->vi[0].s32ChnId = 0;
+#ifdef RV1126
 	ctx->vi[0].s32ChnId = 1;
+#endif
 	ctx->vi[0].stChnAttr.stIspOpt.stMaxSize.u32Width = u32VideoWidth;
 	ctx->vi[0].stChnAttr.stIspOpt.stMaxSize.u32Height = u32VideoHeight;
 	ctx->vi[0].stChnAttr.stIspOpt.u32BufCount = u32ViBuffCnt;
@@ -2085,7 +2088,10 @@ int main(int argc, char *argv[]) {
 	ctx->vi[1].u32Height = u32SubVideoHeight;
 	ctx->vi[1].s32DevId = 0;
 	ctx->vi[1].u32PipeId = ctx->vi[1].s32DevId;
+	ctx->vi[1].s32ChnId = 1;
+#ifdef RV1126
 	ctx->vi[1].s32ChnId = 2;
+#endif
 	ctx->vi[1].stChnAttr.stIspOpt.stMaxSize.u32Width = u32SubVideoWidth;
 	ctx->vi[1].stChnAttr.stIspOpt.stMaxSize.u32Height = u32SubVideoHeight;
 	ctx->vi[1].stChnAttr.stIspOpt.u32BufCount = 2;
@@ -2108,7 +2114,10 @@ int main(int argc, char *argv[]) {
 	ctx->vi[2].u32Height = u32IvsHeight;
 	ctx->vi[2].s32DevId = 0;
 	ctx->vi[2].u32PipeId = ctx->vi[2].s32DevId;
-	ctx->vi[2].s32ChnId = 0;
+	ctx->vi[2].s32ChnId = 2;
+#ifdef RV1126
+	ctx->vi[2].s32ChnId = 3;
+#endif
 	ctx->vi[2].stChnAttr.stIspOpt.stMaxSize.u32Width = u32IvsWidth;
 	ctx->vi[2].stChnAttr.stIspOpt.stMaxSize.u32Height = u32IvsHeight;
 	ctx->vi[2].stChnAttr.stIspOpt.u32BufCount = 2;
