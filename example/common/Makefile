@@ -19,4 +19,5 @@ $(COMM_OBJ): $(COMM_SRC)
 clean:
 	@make -C isp2.x clean
 	@make -C isp3.x clean
+	@rm  -f *.o
 

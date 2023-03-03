@@ -300,9 +300,46 @@ int main(int argc, char *argv[]) {
 			        pLdchMeshData[i]);
 		}
 	}
+	/* SYS Init */
+	if (RK_MPI_SYS_Init() != RK_SUCCESS) {
+		goto __FAILED;
+	}
 
-	SAMPLE_COMM_GetLdchMesh(pCam0LdchMeshPath, pCam1LdchMeshPath, LDCH_MESH_SIZE,
-	                        pLdchMeshData);
+	/* Avs grp create */
+	ctx->avs.s32GrpId = 0;
+	ctx->avs.s32ChnId = 0;
+	if (s32SetLDCH) {
+		ctx->avs.bIfSetStitchDistance = RK_TRUE;
+	}
+	ctx->avs.u32SrcWidth = u32ViWidth;
+	ctx->avs.u32SrcHeight = u32ViHeight;
+	ctx->avs.fDistance = fStitchDistance;
+	ctx->avs.pLdchMeshData = (RK_U16 **)pLdchMeshData;
+	ctx->avs.u32LdchMeshSize = LDCH_MESH_SIZE;
+	ctx->avs.stAvsGrpAttr.enMode = 0; // 0: blend 1: no blend
+	ctx->avs.stAvsGrpAttr.u32PipeNum = s32CamNum;
+	ctx->avs.stAvsGrpAttr.stGainAttr.enMode = AVS_GAIN_MODE_AUTO;
+	ctx->avs.stAvsGrpAttr.stOutAttr.enPrjMode = AVS_PROJECTION_EQUIRECTANGULAR;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stSize.u32Width = u32AvsWidth;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stSize.u32Height = u32AvsHeight;
+	ctx->avs.stAvsGrpAttr.bSyncPipe = RK_TRUE;
+	ctx->avs.stAvsGrpAttr.stFrameRate.s32SrcFrameRate = -1;
+	ctx->avs.stAvsGrpAttr.stFrameRate.s32DstFrameRate = -1;
+	ctx->avs.stAvsGrpAttr.stInAttr.enParamSource = AVS_PARAM_SOURCE_CALIB;
+	ctx->avs.stAvsGrpAttr.stInAttr.stCalib.pCalibFilePath = pAvsCalibFilePath;
+	ctx->avs.stAvsGrpAttr.stInAttr.stSize.u32Width = u32ViWidth;
+	ctx->avs.stAvsGrpAttr.stInAttr.stSize.u32Height = u32ViHeight;
+	ctx->avs.stAvsGrpAttr.stOutAttr.fDistance = fStitchDistance;
+	// ctx->avs.stAvsGrpAttr.stInAttr.stCalib.pMeshAlphaPath = pAvsMeshAlphaPath;
+	ctx->avs.stAvsChnAttr[0].enCompressMode = COMPRESS_MODE_NONE;
+	ctx->avs.stAvsChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
+	ctx->avs.stAvsChnAttr[0].stFrameRate.s32DstFrameRate = -1;
+	ctx->avs.stAvsChnAttr[0].u32Depth = 1;
+	ctx->avs.stAvsChnAttr[0].u32FrameBufCnt = 2;
+	ctx->avs.stAvsChnAttr[0].u32Width = u32AvsWidth;
+	ctx->avs.stAvsChnAttr[0].u32Height = u32AvsHeight;
+	ctx->avs.stAvsChnAttr[0].enDynamicRange = DYNAMIC_RANGE_SDR8;
+	SAMPLE_COMM_AVS_CreateGrp(&ctx->avs);
 
 	if (iq_file_dir) {
 #ifdef RKAIQ
@@ -333,10 +370,6 @@ int main(int argc, char *argv[]) {
 #endif
 	}
 
-	if (RK_MPI_SYS_Init() != RK_SUCCESS) {
-		goto __FAILED;
-	}
-
 	// Init VI
 	for (i = 0; i < s32CamNum; i++) {
 		ctx->vi[i].u32Width = u32ViWidth;
@@ -355,47 +388,12 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Init avs[0]
-	ctx->avs.s32GrpId = 0;
-	ctx->avs.s32ChnId = 0;
-	if (s32SetLDCH) {
-		ctx->avs.bIfSetStitchDistance = RK_TRUE;
-	}
-	ctx->avs.u32SrcWidth = u32ViWidth;
-	ctx->avs.u32SrcHeight = u32ViHeight;
-	ctx->avs.fDistance = fStitchDistance;
-	ctx->avs.pLdchMeshData = (RK_U16 **)pLdchMeshData;
-	ctx->avs.u32LdchMeshSize = LDCH_MESH_SIZE;
-
 	ctx->avs.dstFilePath = pOutPath;
 	ctx->avs.s32loopCount = s32loopCnt;
-	ctx->avs.stAvsModParam.enMBSource = MB_SOURCE_PRIVATE;
-	ctx->avs.stAvsModParam.u32WorkingSetSize = 67 * 1024;
-
-	ctx->avs.stAvsGrpAttr.enMode = 0; // 0: blend 1: no blend
-	ctx->avs.stAvsGrpAttr.u32PipeNum = s32CamNum;
-	ctx->avs.stAvsGrpAttr.stGainAttr.enMode = AVS_GAIN_MODE_AUTO;
-	ctx->avs.stAvsGrpAttr.stOutAttr.enPrjMode = AVS_PROJECTION_EQUIRECTANGULAR;
-	ctx->avs.stAvsGrpAttr.stOutAttr.stSize.u32Width = u32AvsWidth;
-	ctx->avs.stAvsGrpAttr.stOutAttr.stSize.u32Height = u32AvsHeight;
-
-	ctx->avs.stAvsGrpAttr.bSyncPipe = RK_TRUE;
-	ctx->avs.stAvsGrpAttr.stFrameRate.s32SrcFrameRate = -1;
-	ctx->avs.stAvsGrpAttr.stFrameRate.s32DstFrameRate = -1;
-
-	ctx->avs.stAvsGrpAttr.stInAttr.enParamSource = AVS_PARAM_SOURCE_CALIB;
-	ctx->avs.stAvsGrpAttr.stInAttr.stCalib.pCalibFilePath = pAvsCalibFilePath;
-	// ctx->avs.stAvsGrpAttr.stInAttr.stCalib.pMeshAlphaPath = pAvsMeshAlphaPath;
-
-	ctx->avs.stAvsChnAttr[0].enCompressMode = COMPRESS_MODE_NONE;
-	ctx->avs.stAvsChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
-	ctx->avs.stAvsChnAttr[0].stFrameRate.s32DstFrameRate = -1;
-	ctx->avs.stAvsChnAttr[0].u32Depth = 1;
-	ctx->avs.stAvsChnAttr[0].u32FrameBufCnt = 2;
-	ctx->avs.stAvsChnAttr[0].u32Width = u32AvsWidth;
-	ctx->avs.stAvsChnAttr[0].u32Height = u32AvsHeight;
-	ctx->avs.stAvsChnAttr[0].enDynamicRange = DYNAMIC_RANGE_SDR8;
-
-	SAMPLE_COMM_AVS_CreateChn(&ctx->avs);
+	s32Ret = SAMPLE_COMM_AVS_StartGrp(&ctx->avs);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("avs create failure");
+	}
 
 	// Bind VI[0]~VI[5] and avs[0]
 	for (i = 0; i < s32CamNum; i++) {
@@ -451,7 +449,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Destroy AVS[0]
-	SAMPLE_COMM_AVS_DestroyChn(&ctx->avs);
+	SAMPLE_COMM_AVS_StopGrp(&ctx->avs);
+	SAMPLE_COMM_AVS_DestroyGrp(&ctx->avs);
 	// Destroy VI[0]
 	for (i = 0; i < s32CamNum; i++) {
 		SAMPLE_COMM_VI_DestroyChn(&ctx->vi[i]);

@@ -29,7 +29,49 @@ extern "C" {
 
 #include "sample_comm.h"
 
-RK_S32 SAMPLE_COMM_AVS_CreateChn(SAMPLE_AVS_CTX_S *ctx) {
+RK_S32 SAMPLE_COMM_AVS_CreateGrp(SAMPLE_AVS_CTX_S *ctx) {
+	RK_S32 s32Ret = RK_FAILURE;
+
+	s32Ret = RK_MPI_AVS_CreateGrp(ctx->s32GrpId, &ctx->stAvsGrpAttr);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("RK_MPI_AVS_CreateGrp failed with %#x!\n", s32Ret);
+		return s32Ret;
+	}
+
+	if (ctx->bIfSetStitchDistance) {
+		AVS_FINAL_LUT_S pstFinalLut;
+		MB_EXT_CONFIG_S stMbExtConfig;
+		memset(&pstFinalLut, 0, sizeof(AVS_FINAL_LUT_S));
+		for (RK_S32 i = 0; i < ctx->stAvsGrpAttr.u32PipeNum; i++) {
+			memset(&stMbExtConfig, 0, sizeof(MB_EXT_CONFIG_S));
+			stMbExtConfig.pOpaque = ctx->pLdchMeshData[i];
+			stMbExtConfig.pu8VirAddr = (RK_U8 *)ctx->pLdchMeshData[i];
+			stMbExtConfig.u64Size = ctx->u32LdchMeshSize;
+			RK_LOGD("pLdchMeshData:%p, ctx->pLdchMeshData[%d]:%p", ctx->pLdchMeshData, i,
+			        ctx->pLdchMeshData[i]);
+			s32Ret = RK_MPI_SYS_CreateMB(&(pstFinalLut.pLdchBlk[i]), &stMbExtConfig);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("RK_MPI_SYS_CreateMB for pstMesh.pLdchBlk failure, s32Ret:%#X",
+				        s32Ret);
+				return s32Ret;
+			}
+		}
+		RK_LOGE("-----------------RK_MPI_AVS_GetFinalLut---------");
+		s32Ret = RK_MPI_AVS_GetFinalLut(ctx->s32GrpId, &pstFinalLut);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_AVS_GetFinalLut failure s32Ret:%#X", s32Ret);
+			return s32Ret;
+		}
+
+		for (RK_S32 i = 0; i < ctx->stAvsGrpAttr.u32PipeNum; i++) {
+			RK_MPI_SYS_Free(pstFinalLut.pLdchBlk[i]);
+		}
+	}
+	RK_LOGE("-----------------RK_MPI_AVS_GetFinalLut");
+	return s32Ret;
+}
+
+RK_S32 SAMPLE_COMM_AVS_StartGrp(SAMPLE_AVS_CTX_S *ctx) {
 	RK_S32 chnIndex;
 	RK_S32 s32Ret = RK_SUCCESS;
 
@@ -43,56 +85,6 @@ RK_S32 SAMPLE_COMM_AVS_CreateChn(SAMPLE_AVS_CTX_S *ctx) {
 		return RK_FAILURE;
 	}
 
-	s32Ret = RK_MPI_AVS_SetModParam(&ctx->stAvsModParam);
-	if (RK_SUCCESS != s32Ret) {
-		RK_LOGE("RK_MPI_AVS_SetModParam failed with %#x!\n", s32Ret);
-		return s32Ret;
-	}
-	/*
-	    if (ctx->bIfSetStitchDistance) {
-	        ctx->stAvsGrpAttr.stInAttr.stSize.u32Width = ctx->u32SrcWidth;
-	        ctx->stAvsGrpAttr.stInAttr.stSize.u32Height = ctx->u32SrcHeight;
-	        ctx->stAvsGrpAttr.stOutAttr.fDistance = ctx->fDistance;
-	        s32Ret = RK_MPI_AVS_GetOptimalOutParam(ctx->s32GrpId, &ctx->stAvsGrpAttr);
-	        if (s32Ret != RK_SUCCESS) {
-	            RK_LOGE("RK_MPI_AVS_GetOptimalOutParam failure s32Ret:%#X", s32Ret);
-	            return s32Ret;
-	        }
-	    }
-	*/
-	s32Ret = RK_MPI_AVS_CreateGrp(ctx->s32GrpId, &ctx->stAvsGrpAttr);
-	if (RK_SUCCESS != s32Ret) {
-		RK_LOGE("RK_MPI_AVS_CreateGrp failed with %#x!\n", s32Ret);
-		return s32Ret;
-	}
-	/*
-	    if (ctx->bIfSetStitchDistance) {
-	        AVS_MESH_S pstMesh;
-	        MB_EXT_CONFIG_S stMbExtConfig;
-	        memset(&pstMesh, 0, sizeof(AVS_MESH_S));
-	        for (RK_S32 i = 0; i < ctx->stAvsGrpAttr.u32PipeNum; i++) {
-	            memset(&stMbExtConfig, 0, sizeof(MB_EXT_CONFIG_S));
-	            stMbExtConfig.pOpaque = ctx->pLdchMeshData[i];
-	            stMbExtConfig.pu8VirAddr = (RK_U8 *)ctx->pLdchMeshData[i];
-	            stMbExtConfig.u64Size = ctx->u32LdchMeshSize;
-	            RK_LOGD("pLdchMeshData:%p, ctx->pLdchMeshData[%d]:%p", ctx->pLdchMeshData,
-	   i, ctx->pLdchMeshData[i]); s32Ret = RK_MPI_SYS_CreateMB(&(pstMesh.pLdchBlk[i]),
-	   &stMbExtConfig); if (s32Ret != RK_SUCCESS) { RK_LOGE("RK_MPI_SYS_CreateMB for
-	   pstMesh.pLdchBlk failure, s32Ret:%#X", s32Ret); return s32Ret;
-	            }
-	        }
-
-	        s32Ret = RK_MPI_AVS_GetMesh(ctx->s32GrpId, &pstMesh);
-	        if (s32Ret != RK_SUCCESS) {
-	            RK_LOGE("RK_MPI_AVS_GetMesh failure s32Ret:%#X", s32Ret);
-	            return s32Ret;
-	        }
-
-	        for (RK_S32 i = 0; i < ctx->stAvsGrpAttr.u32PipeNum; i++) {
-	            RK_MPI_SYS_Free(pstMesh.pLdchBlk[i]);
-	        }
-	    }
-	*/
 	for (chnIndex = 0; chnIndex < AVS_MAX_CHN_NUM; chnIndex++) {
 		if (ctx->stAvsChnAttr[chnIndex].u32Width &&
 		    ctx->stAvsChnAttr[chnIndex].u32Height) {
@@ -145,12 +137,11 @@ RK_S32 SAMPLE_COMM_AVS_ReleaseChnFrame(SAMPLE_AVS_CTX_S *ctx) {
 	return RK_SUCCESS;
 }
 
-RK_S32 SAMPLE_COMM_AVS_DestroyChn(SAMPLE_AVS_CTX_S *ctx) {
+RK_S32 SAMPLE_COMM_AVS_StopGrp(SAMPLE_AVS_CTX_S *ctx) {
 	RK_S32 chnIndex;
 	RK_S32 s32Ret = RK_FAILURE;
-
 	s32Ret = RK_MPI_AVS_StopGrp(ctx->s32GrpId);
-	if (RK_SUCCESS != s32Ret) {
+	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_AVS_StopGrp failed with %#x!\n", s32Ret);
 		return s32Ret;
 	}
@@ -159,15 +150,21 @@ RK_S32 SAMPLE_COMM_AVS_DestroyChn(SAMPLE_AVS_CTX_S *ctx) {
 		if (ctx->stAvsChnAttr[chnIndex].u32Width &&
 		    ctx->stAvsChnAttr[chnIndex].u32Height) {
 			s32Ret = RK_MPI_AVS_DisableChn(ctx->s32GrpId, chnIndex);
-			if (RK_SUCCESS != s32Ret) {
+			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("RK_MPI_AVS_DisableChn failed with %#x!\n", s32Ret);
 				return s32Ret;
 			}
 		}
 	}
 
+	return s32Ret;
+}
+
+RK_S32 SAMPLE_COMM_AVS_DestroyGrp(SAMPLE_AVS_CTX_S *ctx) {
+	RK_S32 s32Ret = RK_FAILURE;
+
 	s32Ret = RK_MPI_AVS_DestroyGrp(ctx->s32GrpId);
-	if (RK_SUCCESS != s32Ret) {
+	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_AVS_DestroyGrp failed with %#x!\n", s32Ret);
 		return s32Ret;
 	}

@@ -388,6 +388,10 @@ int main(int argc, char *argv[]) {
 	printf("#pCam0LdchMeshPath: %s\n", pCam0LdchMeshPath);
 	printf("#pCam1LdchMeshPath: %s\n", pCam1LdchMeshPath);
 
+	if (RK_MPI_SYS_Init() != RK_SUCCESS) {
+		goto __FAILED;
+	}
+
 	if (s32SetLDCH) {
 		for (RK_S32 i = 0; i < s32CamNum; i++) {
 			pLdchMeshData[i] = malloc(LDCH_MESH_SIZE);
@@ -398,10 +402,48 @@ int main(int argc, char *argv[]) {
 			RK_LOGD("pLdchMeshData:%p pLdchMeshData[%d]:%p", pLdchMeshData, i,
 			        pLdchMeshData[i]);
 		}
-
-		SAMPLE_COMM_GetLdchMesh(pCam0LdchMeshPath, pCam1LdchMeshPath, LDCH_MESH_SIZE,
-		                        (RK_U16 **)pLdchMeshData);
 	}
+
+	/* Init avs[0] */
+	ctx->avs.s32GrpId = 0;
+	ctx->avs.s32ChnId = 0;
+	if (s32SetLDCH) {
+		ctx->avs.bIfSetStitchDistance = RK_TRUE;
+	}
+	ctx->avs.u32SrcWidth = u32ViWidth;
+	ctx->avs.u32SrcHeight = u32ViHeight;
+	ctx->avs.fDistance = fStitchDistance;
+	ctx->avs.pLdchMeshData = (RK_U16 **)pLdchMeshData;
+	ctx->avs.u32LdchMeshSize = LDCH_MESH_SIZE;
+	/* GrpAttr setting */
+	ctx->avs.stAvsGrpAttr.enMode = 0; /* 0: blend 1: no blend */
+	ctx->avs.stAvsGrpAttr.u32PipeNum = s32CamNum;
+	ctx->avs.stAvsGrpAttr.stGainAttr.enMode = AVS_GAIN_MODE_AUTO;
+	ctx->avs.stAvsGrpAttr.stOutAttr.enPrjMode = AVS_PROJECTION_EQUIRECTANGULAR;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stSize.u32Width = u32AvsWidth;
+	ctx->avs.stAvsGrpAttr.stOutAttr.stSize.u32Height = u32AvsHeight;
+	ctx->avs.stAvsGrpAttr.bSyncPipe = RK_TRUE;
+	ctx->avs.stAvsGrpAttr.stFrameRate.s32SrcFrameRate = -1;
+	ctx->avs.stAvsGrpAttr.stFrameRate.s32DstFrameRate = -1;
+	ctx->avs.stAvsGrpAttr.stInAttr.stSize.u32Width = u32ViWidth;
+	ctx->avs.stAvsGrpAttr.stInAttr.stSize.u32Height = u32ViHeight;
+	ctx->avs.stAvsGrpAttr.stOutAttr.fDistance = fStitchDistance;
+	ctx->avs.stAvsGrpAttr.stInAttr.enParamSource = AVS_PARAM_SOURCE_CALIB;
+	ctx->avs.stAvsGrpAttr.stInAttr.stCalib.pCalibFilePath = pAvsCalibFilePath;
+	ctx->avs.stAvsChnAttr[0].enCompressMode = COMPRESS_MODE_NONE;
+	ctx->avs.stAvsChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
+	ctx->avs.stAvsChnAttr[0].stFrameRate.s32DstFrameRate = -1;
+	ctx->avs.stAvsChnAttr[0].u32Depth = 1;
+	ctx->avs.stAvsChnAttr[0].u32FrameBufCnt = 2;
+	ctx->avs.stAvsChnAttr[0].u32Width = u32AvsWidth;
+	ctx->avs.stAvsChnAttr[0].u32Height = u32AvsHeight;
+	ctx->avs.stAvsChnAttr[0].enDynamicRange = DYNAMIC_RANGE_SDR8;
+
+	s32Ret = SAMPLE_COMM_AVS_CreateGrp(&ctx->avs);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("");
+	}
+
 	if (iq_file_dir) {
 #ifdef RKAIQ
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
@@ -443,10 +485,6 @@ int main(int argc, char *argv[]) {
 	}
 	rtsp_sync_video_ts(g_rtsp_session, rtsp_get_reltime(), rtsp_get_ntptime());
 
-	if (RK_MPI_SYS_Init() != RK_SUCCESS) {
-		goto __FAILED;
-	}
-
 	// Init VI[0] ~ VI[5]
 	for (i = 0; i < s32CamNum; i++) {
 		ctx->vi[i].u32Width = u32ViWidth;
@@ -466,44 +504,8 @@ int main(int argc, char *argv[]) {
 		SAMPLE_COMM_VI_CreateChn(&ctx->vi[i]);
 	}
 
-	/* Init avs[0] */
-	ctx->avs.s32GrpId = 0;
-	ctx->avs.s32ChnId = 0;
-	if (s32SetLDCH) {
-		ctx->avs.bIfSetStitchDistance = RK_TRUE;
-	}
-	ctx->avs.u32SrcWidth = u32ViWidth;
-	ctx->avs.u32SrcHeight = u32ViHeight;
-	ctx->avs.fDistance = fStitchDistance;
-	ctx->avs.pLdchMeshData = (RK_U16 **)pLdchMeshData;
-	ctx->avs.u32LdchMeshSize = LDCH_MESH_SIZE;
-	/* Mod param setting */
-	ctx->avs.stAvsModParam.enMBSource = MB_SOURCE_PRIVATE;
-	ctx->avs.stAvsModParam.u32WorkingSetSize = 67 * 1024;
-	/* GrpAttr setting */
-	ctx->avs.stAvsGrpAttr.enMode = 0; /* 0: blend 1: no blend */
-	ctx->avs.stAvsGrpAttr.u32PipeNum = s32CamNum;
-	ctx->avs.stAvsGrpAttr.stGainAttr.enMode = AVS_GAIN_MODE_AUTO;
-	ctx->avs.stAvsGrpAttr.stOutAttr.enPrjMode = AVS_PROJECTION_EQUIRECTANGULAR;
-	ctx->avs.stAvsGrpAttr.stOutAttr.stSize.u32Width = u32AvsWidth;
-	ctx->avs.stAvsGrpAttr.stOutAttr.stSize.u32Height = u32AvsHeight;
-	ctx->avs.stAvsGrpAttr.bSyncPipe = RK_TRUE;
-	ctx->avs.stAvsGrpAttr.stFrameRate.s32SrcFrameRate = -1;
-	ctx->avs.stAvsGrpAttr.stFrameRate.s32DstFrameRate = -1;
-
-	ctx->avs.stAvsChnAttr[0].enCompressMode = COMPRESS_MODE_NONE;
-	ctx->avs.stAvsChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
-	ctx->avs.stAvsChnAttr[0].stFrameRate.s32DstFrameRate = -1;
-	ctx->avs.stAvsChnAttr[0].u32Depth = 1;
-	ctx->avs.stAvsChnAttr[0].u32FrameBufCnt = 2;
-	ctx->avs.stAvsChnAttr[0].u32Width = u32AvsWidth;
-	ctx->avs.stAvsChnAttr[0].u32Height = u32AvsHeight;
-	ctx->avs.stAvsChnAttr[0].enDynamicRange = DYNAMIC_RANGE_SDR8;
-
-	ctx->avs.stAvsGrpAttr.stInAttr.enParamSource = AVS_PARAM_SOURCE_CALIB;
-	ctx->avs.stAvsGrpAttr.stInAttr.stCalib.pCalibFilePath = pAvsCalibFilePath;
-	// ctx->avs.stAvsGrpAttr.stInAttr.stCalib.pMeshAlphaPath = pAvsMeshAlphaPath;
-	s32Ret = SAMPLE_COMM_AVS_CreateChn(&ctx->avs);
+	/* avs startgrp*/
+	s32Ret = SAMPLE_COMM_AVS_StartGrp(&ctx->avs);
 	if (s32Ret != RK_SUCCESS) {
 		printf("func: %s  line: %d avs create failure!/n", __func__, __LINE__);
 		goto __AVS_FAILED;
@@ -521,6 +523,8 @@ int main(int argc, char *argv[]) {
 	ctx->venc.getStreamCbFunc = venc_get_stream;
 	ctx->venc.s32loopCount = s32loopCnt;
 	ctx->venc.dstFilePath = pOutPathVenc;
+	ctx->venc.u32BuffSize = u32VencWidth * u32VencHeight / 2;
+	ctx->venc.u32StreamBufCnt = 2;
 	// H264  66：Baseline  77：Main Profile 100：High Profile
 	// H265  0：Main Profile  1：Main 10 Profile
 	// MJPEG 0：Baseline
@@ -758,7 +762,8 @@ int main(int argc, char *argv[]) {
 	// Destroy VENC[0]
 	SAMPLE_COMM_VENC_DestroyChn(&ctx->venc);
 	// Destroy AVS[0]
-	SAMPLE_COMM_AVS_DestroyChn(&ctx->avs);
+	SAMPLE_COMM_AVS_StopGrp(&ctx->avs);
+	SAMPLE_COMM_AVS_DestroyGrp(&ctx->avs);
 
 __AVS_FAILED:
 	// Destroy VI[0]
