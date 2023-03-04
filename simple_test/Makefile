@@ -20,12 +20,6 @@ ifeq ($(RK_MEDIA_CHIP), rv1106)
 SIMPLE_PKG_CONF_OPTS += -DARCH64=OFF
 endif
 
-ifeq ($(CONFIG_RK_IVA),y)
-	SIMPLE_LD_FLAGS += -DROCKIVA
-	SIMPLE_LD_FLAGS += -DROCKIVA -lrockiva
-endif
-
-
 SIMPLE_OPTS += -Wl,-rpath-link,${RK_MEDIA_OUTPUT}/lib
 
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include
