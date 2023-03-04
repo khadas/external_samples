@@ -87,7 +87,7 @@ static void print_usage(const RK_CHAR *name) {
 	       "1 to enable. Default: 0\n");
 #endif
 	printf("\t-A | --calib_file_path: input file path of xxx.xml. "
-	       "Default /oem/usr/share/rk_2_camera_result.xml\n");
+	       "Default /oem/usr/share/avs_calib/calib_file.xml\n");
 	printf("\t-n | --camera_num: camera number. Default 2\n");
 	printf("\t-l | --loop_count: loop count. Default -1\n");
 	printf("\t-o | --output_path: avs output file path. Default NULL\n");
@@ -182,7 +182,7 @@ int main(int argc, char *argv[]) {
 	RK_U32 u32AvsWidth = 3840;
 	RK_U32 u32AvsHeight = 1080;
 	RK_U32 u32ViFps = 15;
-	RK_CHAR *pAvsCalibFilePath = "/oem/usr/share/rk_2_camera_result.xml";
+	RK_CHAR *pAvsCalibFilePath = "/oem/usr/share/avs_calib/calib_file.xml";
 	RK_CHAR *pAvsMeshAlphaPath = "/tmp/";
 	RK_CHAR *pAvsLutFilePath = NULL;
 	RK_CHAR *pOutPath = NULL;

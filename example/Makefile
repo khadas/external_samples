@@ -6,7 +6,7 @@ endif
 
 export CONFIG_RK_SAMPLE=y
 export LC_ALL=C
-export HAVE_AVS=n
+export HAVE_AVS=y
 SHELL:=/bin/bash
 
 CURRENT_DIR := $(shell pwd)
