@@ -38,7 +38,7 @@ INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/iq_parser
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/iq_parser_v2
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/smartIr
 
-SIMPLE_CFLAGS += -g -Wall $(INC_FLAGS) $(SIMPLE_PKG_CONF_OPTS)
+SIMPLE_CFLAGS += -g -Wall $(INC_FLAGS) $(SIMPLE_PKG_CONF_OPTS) $(RK_MEDIA_CROSS_CFLAGS)
 
 SIMPLE_LD_FLAGS += $(SIMPLE_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -lpthread -lrockit \
 					-lrockchip_mpp  -lrkaudio_detect -laec_bf_process \
