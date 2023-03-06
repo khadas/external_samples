@@ -80,6 +80,22 @@ test_case()
     sleep 3
     echo 3 > /proc/sys/vm/drop_caches
     cat /proc/meminfo | grep MemAvailable >> /tmp/rv1106_stresstest_result.log
+
+    #isp restart mode test
+    echo -e "--------------------------------------- <sample_isp_stresstest> isp_restart mode test start -------------------------------------------\n"
+    echo -e "<sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --mode_test_type 6 --test_frame_count $frame_count --mode_test_loop $test_loop>\n"
+    sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --mode_test_type 6 --test_frame_count $frame_count --mode_test_loop $test_loop
+    if [ $? -eq 0 ]; then
+        echo "-------------------------6 <sample_isp_stresstest> isp_restart mode switch test success" >> /tmp/rv1106_stresstest_result.log
+        echo -e "--------------------------------------- <sample_isp_stresstest> isp_restart mode test success -------------------------------------------\n\n\n"
+    else
+        echo "-------------------------6 <sample_isp_stresstest> isp_restart mode switch test failure" >> /tmp/rv1106_stresstest_result.log
+        echo -e "--------------------------------------- <sample_isp_stresstest> isp_restart mode test failure -------------------------------------------\n\n\n"
+        exit 0
+    fi
+    sleep 3
+    echo 3 > /proc/sys/vm/drop_caches
+    cat /proc/meminfo | grep MemAvailable >> /tmp/rv1106_stresstest_result.log
     
      #venc resolution switch test
     echo -e "--------------------------------------- <sample_venc_stresstest> venc resolution switch test start -------------------------------------------\n"
