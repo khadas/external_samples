@@ -29,6 +29,7 @@ install:
 	@cp -f source/rv1103_stresstest.sh ../../../../output/out/userdata/
 	@cp -f source/rv1106_stresstest.sh ../../../../output/out/userdata/
 	@cp -f source/avs_stresstest.sh ../../../../output/out/userdata/
+	@cp -f source/vpss_stresstest.sh ../../../../output/out/userdata/
 
 clean:
 	@echo "clean test"
