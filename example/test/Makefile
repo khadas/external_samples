@@ -14,6 +14,7 @@ all:
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_rgn_stresstest.c -o sample_rgn_stresstest $(LD_FLAGS)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_mulit_isp_stresstest.c -o sample_mulit_isp_stresstest $(LD_FLAGS)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_avs_stresstest.c -o sample_avs_stresstest $(LD_FLAGS)
+	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_vpss_stresstest.c -o sample_vpss_stresstest $(LD_FLAGS)
 
 install:
 	@mv -f sample_isp_stresstest $(SAMPLE_OUT_DIR)/bin
@@ -21,6 +22,7 @@ install:
 	@mv -f sample_rgn_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_mulit_isp_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_avs_stresstest $(SAMPLE_OUT_DIR)/bin
+	@mv -f sample_vpss_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mkdir -p ../../../../output/out/userdata/
 	@cp -f source/160x96.bmp ../../../../output/out/userdata/
 	@cp -f source/192x96.bmp ../../../../output/out/userdata/
