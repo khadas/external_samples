@@ -4,11 +4,17 @@ ifeq ($(CONFIG_RK_IVA),y)
 	LD_FLAGS += -DROCKIVA -lrockiva
 endif
 LD_FLAGS += -L$(SAMPLE_OUT_DIR)/lib -lsample_comm
-LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -lrockit -lrockchip_mpp -lpthread -lrkaiq -lrtsp
+LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -lrockchip_mpp -lpthread -lrkaiq -lrtsp
 # LD_FLAGS += -ldrm
+ifeq ($(RK_MEDIA_CHIP), rv1106)
+LD_FLAGS += -lrockit_full
+else
+LD_FLAGS += -lrockit
+endif
 all:
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_vi_venc.c -o sample_demo_vi_venc $(LD_FLAGS)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_multi_camera_eptz.c -o sample_demo_multi_camera_eptz $(LD_FLAGS)
+	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_vi_avs_venc.c -o sample_demo_vi_avs_venc $(LD_FLAGS)
 ifeq ($(CONFIG_RK_IVA),y)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_dual_camera.c -o sample_demo_dual_camera $(LD_FLAGS)
 endif
@@ -16,6 +22,7 @@ endif
 install:
 	@mv -f sample_demo_vi_venc $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_demo_multi_camera_eptz $(SAMPLE_OUT_DIR)/bin
+	@mv -f sample_demo_vi_avs_venc $(SAMPLE_OUT_DIR)/bin
 ifeq ($(CONFIG_RK_IVA),y)
 	@mv -f sample_demo_dual_camera $(SAMPLE_OUT_DIR)/bin
 endif
