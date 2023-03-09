@@ -107,6 +107,9 @@ endif
 
 ifeq ($(RK_MEDIA_CHIP), rv1126)
 sample-build: librkaiq librockit
+ifeq ($(CONFIG_RK_IVA), y)
+sample-build: librockiva
+endif
 endif
 	@mkdir -p $(SAMPLE_OUT_DIR)/bin
 	@make COMM_LIB
