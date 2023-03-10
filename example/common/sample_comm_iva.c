@@ -37,8 +37,8 @@ RK_S32 SAMPLE_COMM_IVA_Create(SAMPLE_IVA_CTX_S *ctx) {
 	snprintf(ctx->commonParams.modelPath, ROCKIVA_PATH_LENGTH, MODEL_DATA_PATH);
 	ctx->commonParams.coreMask = 0x04;
 	ctx->commonParams.logLevel = ROCKIVA_LOG_ERROR;
-	ctx->eModeType |= ROCKIVA_OBJECT_TYPE_PET;        /* use small model */
-	ctx->commonParams.detObjectType = ctx->eModeType; /* Detect type */
+	ctx->eModeType |= ROCKIVA_DET_MODEL_PFP;     /* use small model */
+	ctx->commonParams.detModel = ctx->eModeType; /* Detect type */
 	ctx->commonParams.imageInfo.width = ctx->u32ImageWidth;
 	ctx->commonParams.imageInfo.height = ctx->u32ImageHeight;
 	ctx->commonParams.imageInfo.format = ctx->eImageFormat;
@@ -61,7 +61,8 @@ RK_S32 SAMPLE_COMM_IVA_Create(SAMPLE_IVA_CTX_S *ctx) {
 	    ctx->u32ImageHeight / 100;
 	ctx->baParams.baRules.areaInBreakRule[0].event = ROCKIVA_BA_TRIP_EVENT_STAY;
 	ctx->baParams.baRules.areaInBreakRule[0].ruleID = 0;
-	ctx->baParams.baRules.areaInBreakRule[0].objType = ROCKIVA_BA_RULE_OBJ_FULL;
+	ctx->baParams.baRules.areaInBreakRule[0].objType =
+	    ROCKIVA_OBJECT_TYPE_BITMASK(ROCKIVA_OBJECT_TYPE_PERSON);
 	ctx->baParams.baRules.areaInBreakRule[0].area.pointNum = 4;
 	ctx->baParams.baRules.areaInBreakRule[0].area.points[0].x =
 	    ROCKIVA_PIXEL_RATION_CONVERT(ctx->u32ImageWidth, ctx->u32DetectStartX);

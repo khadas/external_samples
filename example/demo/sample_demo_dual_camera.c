@@ -247,10 +247,10 @@ int rockiva_init() {
 	snprintf(globalParams.modelPath, ROCKIVA_PATH_LENGTH, "/usr/lib/");
 	globalParams.coreMask = 0x04;
 	globalParams.logLevel = ROCKIVA_LOG_ERROR;
-	globalParams.detObjectType |= ROCKIVA_OBJECT_TYPE_FACE;
-	globalParams.detObjectType |= ROCKIVA_OBJECT_TYPE_PERSON;
-	globalParams.detObjectType |= ROCKIVA_OBJECT_TYPE_NON_VEHICLE;
-	globalParams.detObjectType |= ROCKIVA_OBJECT_TYPE_VEHICLE;
+	globalParams.detModel |= ROCKIVA_OBJECT_TYPE_FACE;
+	globalParams.detModel |= ROCKIVA_OBJECT_TYPE_PERSON;
+	globalParams.detModel |= ROCKIVA_OBJECT_TYPE_NON_VEHICLE;
+	globalParams.detModel |= ROCKIVA_OBJECT_TYPE_VEHICLE;
 	globalParams.imageInfo.width = 720;
 	globalParams.imageInfo.height = 576;
 	globalParams.imageInfo.format = ROCKIVA_IMAGE_FORMAT_YUV420SP_NV12;
@@ -273,7 +273,8 @@ int rockiva_init() {
 	initParams.baRules.areaInBreakRule[0].minObjSize[2].width = 5;
 	initParams.baRules.areaInBreakRule[0].event = ROCKIVA_BA_TRIP_EVENT_STAY;
 	initParams.baRules.areaInBreakRule[0].ruleID = 0;
-	initParams.baRules.areaInBreakRule[0].objType = ROCKIVA_BA_RULE_OBJ_FULL;
+	initParams.baRules.areaInBreakRule[0].objType =
+	    ROCKIVA_OBJECT_TYPE_BITMASK(ROCKIVA_OBJECT_TYPE_PERSON);
 	initParams.baRules.areaInBreakRule[0].area.pointNum = 4;
 	initParams.baRules.areaInBreakRule[0].area.points[0].x =
 	    ROCKIVA_PIXEL_RATION_CONVERT(web_width, ri_x);
