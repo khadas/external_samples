@@ -102,7 +102,7 @@ static const struct option long_options[] = {
     {"mode_test_loop", required_argument, NULL, 't' + 'l'},
     {"test_frame_count", required_argument, NULL, 'c'},
     {"chn_id", required_argument, NULL, 'c' + 'i'},
-    {"iqfilePath", required_argument, NULL, 'i' + 'n'},
+    {"iqfilePath", required_argument, NULL, 'i' + 'f'},
     {"help", optional_argument, NULL, '?'},
     {NULL, 0, NULL, 0},
 };
@@ -138,7 +138,8 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t--test_frame_count : set the venc reveive frame count for every test "
 	       "loop, default: 500\n");
 	printf("\t--chn_id : channel id, default: 0\n");
-	printf("\t--iqfile_name : iq file name\n");
+	printf("\t--iqfilePath : iq file full path, \n\t\t\tdefault: "
+	       "/etc/iqfiles/os04a10_CMK-OT1607-FV1_M12-40IRC-4MP-F16.xml\n");
 }
 
 static void *vi_get_stream(void *pArgs) {
@@ -556,7 +557,7 @@ static RK_S32 global_param_init(void) {
 
 	gModeTest->s32ModuleTestLoop = -1;
 	gModeTest->u32TestFrameCount = 500;
-	gModeTest->pIqFilePath = "/etc/iqfiles/os04a10_CMK-OT1607-FV1_M12-40IRC-4MP-F16.bin";
+	gModeTest->pIqFilePath = "/etc/iqfiles/os04a10_CMK-OT1607-FV1_M12-40IRC-4MP-F16.xml";
 
 	sem_init(&g_sem_module_test, 0, 0);
 
@@ -700,7 +701,7 @@ int main(int argc, char *argv[]) {
 		case 'c' + 'i':
 			s32ChnId = atoi(optarg);
 			break;
-		case 'i' + 'n':
+		case 'i' + 'f':
 			gModeTest->pIqFilePath = optarg;
 			break;
 		case '?':
