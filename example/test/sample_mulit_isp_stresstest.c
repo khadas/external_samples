@@ -57,6 +57,7 @@ typedef struct _rkModeTest {
 	RK_U32 u32CamNum;
 	rk_aiq_working_mode_t eHdrMode;
 	RK_CHAR *pIqFileDir;
+	pthread_t vi_get_stream_thread_id[CAM_NUM_MAX];
 } g_mode_test;
 
 typedef struct _rkMpiCtx {
@@ -112,7 +113,8 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-o | --viOutputPath: save vi output yuv file. default: NULL\n");
 	printf("\t-l | --loopcount: vi get stream loopcount. default: -1\n");
 	printf("\t-m | --modeTestType : test type, 0:none, 1:P/N switch test, 2:HDR switch "
-	       "test, 3:frame rate switch test, 4: LDCH mode test. Default: 0\n");
+	       "test,\n\t\t\t3:frame rate switch test, 4: LDCH mode test, 5: isp_deinit_init "
+	       "test. Default: 0\n");
 	printf("\t--modeTestLoop : module test loop, default: -1\n");
 	printf("\t--testFrameCount : set the venc reveive frame count for every test "
 	       "loop, default: 500\n");
@@ -524,6 +526,104 @@ static void ldch_mode_test(RK_S32 test_loop) {
 	return;
 }
 
+static void isp_deinit_init(RK_S32 s32TestLoop) {
+	RK_S32 s32Ret = RK_FAILURE;
+	RK_S32 s32TestCount = 0;
+	RK_S32 i = 0;
+
+	while (!gModeTest->bModuleTestThreadQuit) {
+
+		/* vi thread exit */
+		for (i = 0; i < gModeTest->u32CamNum; i++) {
+			gModeTest->bIfViThreadQuit[i] = RK_TRUE;
+			pthread_join(gModeTest->vi_get_stream_thread_id[i], RK_NULL);
+		}
+
+		/* vi deinit */
+		if (gModeTest->bIfIspGroupInit == RK_TRUE) {
+			for (i = 0; i < gModeTest->u32CamNum; i++) {
+				s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
+				if (s32Ret != RK_SUCCESS) {
+					RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
+					        ctx->vi[i].u32PipeId);
+					program_handle_error(__func__, __LINE__);
+					break;
+				}
+			}
+		}
+
+		for (i = 0; i < gModeTest->u32CamNum; i++) {
+			s32Ret = SAMPLE_COMM_VI_DestroyChn(&ctx->vi[i]);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("SAMPLE_COMM_VI_DestroyChn failed with %#x!\n", s32Ret);
+				program_handle_error(__func__, __LINE__);
+				break;
+			}
+		}
+
+		s32Ret = isp_deinit();
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("isp_deinit failure");
+			program_handle_error(__func__, __LINE__);
+			break;
+		}
+
+		s32Ret = isp_init();
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("isp_init failure");
+			program_handle_error(__func__, __LINE__);
+			break;
+		}
+
+		for (i = 0; i < gModeTest->u32CamNum; i++) {
+			s32Ret = SAMPLE_COMM_VI_CreateChn(&ctx->vi[i]);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("SAMPLE_COMM_VI_CreateChn failure:%#X", s32Ret);
+				program_handle_error(__func__, __LINE__);
+				break;
+			}
+		}
+
+		/* Start pipe */
+		if (gModeTest->bIfIspGroupInit == RK_TRUE) { /* isp group init */
+			for (i = 0; i < gModeTest->u32CamNum; i++) {
+				s32Ret = RK_MPI_VI_StartPipe(ctx->vi[i].u32PipeId);
+				if (s32Ret != RK_SUCCESS) {
+					RK_LOGE("RK_MPI_VI_StartPipe failure:$#X pipe:%d", s32Ret,
+					        ctx->vi[i].u32PipeId);
+					program_handle_error(__func__, __LINE__);
+					break;
+				}
+			}
+		}
+
+		for (i = 0; i < gModeTest->u32CamNum; i++) {
+			gModeTest->bIfViThreadQuit[i] = RK_FALSE;
+			pthread_create(&gModeTest->vi_get_stream_thread_id[i], RK_NULL, vi_get_stream,
+			               &ctx->vi[i]);
+		}
+
+		wait_module_test_switch_success();
+
+		s32TestCount++;
+		RK_LOGE("--VI_DESTROY--ISP_STOP--ISP_INIT_RUN--VI_CREATE-----------isp_deinit_"
+		        "init Test "
+		        "success Total: %d Now Count: "
+		        "%d-------------------",
+		        s32TestLoop, s32TestCount);
+		if (s32TestLoop > 0 && s32TestCount >= s32TestLoop) {
+			RK_LOGE("------------------isp_deinit_init test end(pass/success) count: "
+			        "%d-----------------",
+			        s32TestCount);
+			gModeTest->bModuleTestIfopen = RK_FALSE;
+			program_normal_exit(__func__, __LINE__);
+			break;
+		}
+	}
+	RK_LOGE("isp_deinit_init exit");
+	return;
+}
+
 static void *sample_isp_stress_test(void *pArgs) {
 
 	prctl(PR_SET_NAME, "isp_stress_test");
@@ -543,6 +643,9 @@ static void *sample_isp_stress_test(void *pArgs) {
 		break;
 	case 4:
 		ldch_mode_test(gModeTest->s32ModuleTestLoop);
+		break;
+	case 5:
+		isp_deinit_init(gModeTest->s32ModuleTestLoop);
 		break;
 	default:
 		RK_LOGE("mode test type:%d is unsupported", gModeTest->s32ModuleTestType);
@@ -618,7 +721,7 @@ int main(int argc, char *argv[]) {
 	RK_S32 s32loopCnt = -1;
 	RK_S32 i;
 	char *iq_file_dir = "/oem/usr/share/iqfiles";
-	pthread_t vi_get_stream_thread_id[CAM_NUM_MAX], modeTest_thread_id;
+	pthread_t modeTest_thread_id;
 	if (argc < 2) {
 		print_usage(argv[0]);
 		return 0;
@@ -716,7 +819,7 @@ int main(int argc, char *argv[]) {
 		ctx->vi[i].u32Height = u32ViHeight;
 		ctx->vi[i].s32DevId = i;
 		ctx->vi[i].u32PipeId = i;
-		ctx->vi[i].s32ChnId = 0;
+		ctx->vi[i].s32ChnId = 1;
 		ctx->vi[i].bIfIspGroupInit = gModeTest->bIfIspGroupInit;
 		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 3;
 		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
@@ -742,7 +845,8 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	for (i = 0; i < u32CamNum; i++) {
-		pthread_create(&vi_get_stream_thread_id[i], RK_NULL, vi_get_stream, &ctx->vi[i]);
+		pthread_create(&gModeTest->vi_get_stream_thread_id[i], RK_NULL, vi_get_stream,
+		               &ctx->vi[i]);
 	}
 
 	if (gModeTest->s32ModuleTestType) {
@@ -766,12 +870,12 @@ int main(int argc, char *argv[]) {
 	// Vi thread exit
 	for (i = 0; i < u32CamNum; i++) {
 		gModeTest->bIfViThreadQuit[i] = RK_TRUE;
-		pthread_join(vi_get_stream_thread_id[i], RK_NULL);
+		pthread_join(gModeTest->vi_get_stream_thread_id[i], RK_NULL);
 	}
 
 __VI_INITFAIL:
 	/* vi deinit */
-	if (gModeTest->bIfIspGroupInit == RK_TRUE) { /* isp group init */
+	if (gModeTest->bIfIspGroupInit == RK_TRUE) {
 		for (i = 0; i < u32CamNum; i++) {
 			s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
 			if (s32Ret != RK_SUCCESS) {
@@ -796,6 +900,7 @@ __FAILED:
 		isp_deinit();
 #endif
 	}
+__FAILED2:
 	global_param_deinit();
 
 	return g_exit_result;
