@@ -13,6 +13,7 @@ LD_FLAGS += -lrockiva
 endif
 
 all:
+	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_ai_aenc_adec_ao_stresstest.c -o sample_ai_aenc_adec_ao_stresstest $(LD_FLAGS)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_isp_stresstest.c -o sample_isp_stresstest $(LD_FLAGS)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_venc_stresstest.c -o sample_venc_stresstest $(LD_FLAGS)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_rgn_stresstest.c -o sample_rgn_stresstest $(LD_FLAGS)
@@ -22,6 +23,7 @@ all:
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_vi_venc_stresstest.c -o sample_demo_vi_venc_stresstest $(LD_FLAGS)
 
 install:
+	@mv -f sample_ai_aenc_adec_ao_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_isp_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_venc_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_rgn_stresstest $(SAMPLE_OUT_DIR)/bin

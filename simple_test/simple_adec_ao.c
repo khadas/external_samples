@@ -219,10 +219,10 @@ int main(int argc, char *argv[]) {
 	stDestChn.s32DevId = 0;
 	stDestChn.s32ChnId = 0;
 
-	// 3. bind AI-AENC
+	// 3. bind ADEC-AO
 	ret = RK_MPI_SYS_Bind(&stSrcChn, &stDestChn);
 	if (ret) {
-		printf("Bind AI[0] to AENC[0] failed! ret=%d\n", ret);
+		printf("Bind ADEC[0] to AO[0] failed! ret=%d\n", ret);
 		return -1;
 	}
 
