@@ -34,6 +34,7 @@ install:
 	@cp -f source/venc_stresstest.sh ../../../../output/out/userdata/	
 	@cp -f source/demo_vi_venc_stresstest.sh ../../../../output/out/userdata/
 	@cp -f source/rgn_stresstest.sh ../../../../output/out/userdata/
+	@cp -f source/rv1126_stresstest.sh ../../../../output/out/userdata/
 
 clean:
 	@echo "clean test"
