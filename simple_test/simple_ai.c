@@ -3,6 +3,7 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/poll.h>
 #include <unistd.h>
 
@@ -24,6 +25,7 @@
 #include "rk_mpi_vi.h"
 #include "rk_mpi_vo.h"
 #include "rk_mpi_vpss.h"
+#include "rk_mpi_amix.h"
 
 static bool quit = false;
 static void sigterm_handler(int sig) {
@@ -166,32 +168,32 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate,
 
 	result = RK_MPI_AI_SetPubAttr(aiDevId, &aiAttr);
 	if (result != RK_SUCCESS) {
-			RK_LOGE("ai set attr fail, reason = %x", result);
-			goto __FAILED;
+		RK_LOGE("ai set attr fail, reason = %x", result);
+		goto __FAILED;
 	}
 
 	result = RK_MPI_AMIX_SetControl(aiDevId, "I2STDM Digital Loopback Mode", (char *)"Mode2");
 	if (result != RK_SUCCESS) {
-			RK_LOGE("ai set I2STDM Digital Loopback Mode fail, reason = %x", result);
-			goto __FAILED;
+		RK_LOGE("ai set I2STDM Digital Loopback Mode fail, reason = %x", result);
+		goto __FAILED;
 	}
 
 	result = RK_MPI_AMIX_SetControl(aiDevId, "ADC ALC Left Volume", (char *)"22");
 	if (result != RK_SUCCESS) {
-			RK_LOGE("ai set alc left voulme fail, reason = %x", result);
-			goto __FAILED;
+		RK_LOGE("ai set alc left voulme fail, reason = %x", result);
+		goto __FAILED;
 	}
 
 	result = RK_MPI_AMIX_SetControl(aiDevId, "ADC ALC Right Volume", (char *)"22");
 	if (result != RK_SUCCESS) {
-			RK_LOGE("ai set alc right voulme fail, reason = %x", result);
-			goto __FAILED;
+		RK_LOGE("ai set alc right voulme fail, reason = %x", result);
+		goto __FAILED;
 	}
 
 	result = RK_MPI_AI_Enable(aiDevId);
 	if (result != RK_SUCCESS) {
-			RK_LOGE("ai enable fail, reason = %x", result);
-			goto __FAILED;
+		RK_LOGE("ai enable fail, reason = %x", result);
+		goto __FAILED;
 	}
 
 	memset(&pstParams, 0, sizeof(AI_CHN_PARAM_S));

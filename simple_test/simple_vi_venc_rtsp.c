@@ -3,6 +3,7 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/poll.h>
 #include <time.h>
 #include <unistd.h>
@@ -211,6 +212,7 @@ static XCamReturn SIMPLE_COMM_ISP_SofCb(rk_aiq_metas_t *meta) {
 static XCamReturn SIMPLE_COMM_ISP_ErrCb(rk_aiq_err_msg_t *msg) {
 	if (msg->err_code == XCAM_RETURN_BYPASS)
 		g_should_quit = true;
+	return XCAM_RETURN_NO_ERROR;		
 }
 
 RK_S32 SIMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL MultiCam,
@@ -303,7 +305,7 @@ int main(int argc, char *argv[]) {
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_U32 u32Width = 1920;
 	RK_U32 u32Height = 1080;
-	RK_CHAR *pOutPath = NULL;
+	// RK_CHAR *pOutPath = NULL;
 	RK_CODEC_ID_E enCodecType = RK_VIDEO_ID_AVC;
 	RK_CHAR *pCodecName = "H264";
 	RK_S32 s32chnlId = 0;
@@ -412,7 +414,7 @@ int main(int argc, char *argv[]) {
 	while (!quit) {
 		usleep(500000);
 	}
-	pthread_join(&main_thread, NULL);
+	pthread_join(main_thread, NULL);
 
 	if (g_rtsplive)
 		rtsp_del_demo(g_rtsplive);

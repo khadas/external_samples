@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/poll.h>
 #include <time.h>
 #include <unistd.h>
@@ -236,7 +237,7 @@ int main(int argc, char *argv[]) {
 	while (!quit) {
 		usleep(50000);
 	}
-	pthread_join(&main_thread, NULL);
+	pthread_join(main_thread, NULL);
 	s32Ret = RK_MPI_VI_DisableChn(0, s32chnlId);
 	RK_LOGE("RK_MPI_VI_DisableChn %x", s32Ret);
 

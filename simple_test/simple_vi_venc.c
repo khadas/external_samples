@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/poll.h>
 #include <time.h>
 #include <unistd.h>
@@ -305,7 +306,7 @@ int main(int argc, char *argv[]) {
 	while (!quit) {
 		usleep(50000);
 	}
-	pthread_join(&main_thread, NULL);
+	pthread_join(main_thread, NULL);
 
 	s32Ret = RK_MPI_SYS_UnBind(&stSrcChn, &stDestChn);
 	if (s32Ret != RK_SUCCESS) {

@@ -3,6 +3,7 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/poll.h>
 #include <time.h>
 #include <unistd.h>
@@ -197,7 +198,7 @@ int main() {
 	while (!quit) {
 		usleep(5000);
 	}
-	pthread_join(&main_thread, NULL);
+	pthread_join(main_thread, NULL);
 	RK_MPI_SYS_UnBind(&stSrcChn, &stIvsChn);
 	RK_MPI_IVS_DestroyChn(0);
 	RK_MPI_VI_DisableChn(0, 0);

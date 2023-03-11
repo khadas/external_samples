@@ -167,7 +167,7 @@ static int vi_chn_init(int channelId, int width, int height, int maxWidth,
 }
 
 static void init_venc_cfg(RK_U32 u32Ch, RK_CODEC_ID_E enType) {
-	RK_BOOL bSvc = RK_FALSE;
+	// RK_BOOL bSvc = RK_FALSE;
 	RK_S32 vencChId = 0;
 	RK_U32 u32GopSize = 60;
 	RK_U32 u32BitRateKb = 10 * 1024;
@@ -261,6 +261,7 @@ static void *vi_venc_wrap(void *arg) {
 
 		usleep(1 * 1000);
 	}
+	return NULL;
 }
 
 static RK_CHAR optstr[] = "?::d:n:w:h:W:H:c:I:o:r:L:";

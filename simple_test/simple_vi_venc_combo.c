@@ -480,6 +480,7 @@ static XCamReturn SIMPLE_COMM_ISP_SofCb(rk_aiq_metas_t *meta) {
 static XCamReturn SIMPLE_COMM_ISP_ErrCb(rk_aiq_err_msg_t *msg) {
 	if (msg->err_code == XCAM_RETURN_BYPASS)
 		g_should_quit = true;
+	return XCAM_RETURN_NO_ERROR;
 }
 
 RK_S32 SIMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL MultiCam,
@@ -566,9 +567,10 @@ int main(int argc, char *argv[]) {
 	RK_S32 s32PipeId = 0;
 	RK_S32 s32MainVencChnId = 0;
 	RK_S32 s32ComboVencChnId = 1;
-	rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
 	MPP_CHN_S stSrcChn, stDestChn;
-
+#ifdef RKAIQ	
+	rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
+#endif
 	pthread_t main_venc_thread_id, combo_venc_thread_id;
 
 	if (argc < 2) {
@@ -740,8 +742,10 @@ __FAILED:
 #endif
 	}
 
+#ifdef RKAIQ
 __FAILED2:
 	return g_exit_result;
+#endif
 }
 
 #ifdef __cplusplus

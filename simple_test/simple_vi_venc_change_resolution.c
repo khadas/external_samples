@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/poll.h>
 #include <time.h>
 #include <unistd.h>
@@ -66,7 +67,6 @@ RK_U64 TEST_COMM_GetNowUs() {
 static void *GetMediaBuffer0(void *arg) {
 	(void)arg;
 	printf("========%s========\n", __func__);
-	void *pData = RK_NULL;
 	int loopCount = 0;
 	int s32Ret;
 	RK_U32 idx = 0;
@@ -370,7 +370,7 @@ int main(int argc, char *argv[]) {
 	while (!quit) {
 		usleep(50000);
 	}
-	pthread_join(&main_thread, NULL);
+	pthread_join(main_thread, NULL);
 
 	s32Ret = RK_MPI_SYS_UnBind(&stSrcChn, &stDestChn);
 	if (s32Ret != RK_SUCCESS) {

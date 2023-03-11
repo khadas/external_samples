@@ -150,6 +150,8 @@ static void *GetMediaBuffer(void *arg) {
 
 	VENC_STREAM_S stFrame;
 	stFrame.pstPack = malloc(sizeof(VENC_PACK_S));
+	if (!stFrame.pstPack)
+		return NULL;
 
 	while (!quit) {
 		s32Ret = RK_MPI_VENC_GetStream(0, &stFrame, 200000);
@@ -164,13 +166,13 @@ static void *GetMediaBuffer(void *arg) {
 			s32Ret = RK_MPI_VENC_ReleaseStream(0, &stFrame);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("RK_MPI_VENC_ReleaseStream fail %x", s32Ret);
-				return RK_FAILURE;
+				goto FAILED;
 			}
 			loopCount++;
 			vi_eptz(loopCount, vi_eptz_w[0], vi_eptz_h[0], vi_eptz_w[1], vi_eptz_h[1]);
 		} else {
 			RK_LOGE("RK_MPI_VENC_GetStream timeout", s32Ret);
-			return RK_FAILURE;
+			goto FAILED;;
 		}
 		if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt)) {
 			quit = true;
@@ -308,6 +310,7 @@ static XCamReturn SIMPLE_COMM_ISP_SofCb(rk_aiq_metas_t *meta) {
 static XCamReturn SIMPLE_COMM_ISP_ErrCb(rk_aiq_err_msg_t *msg) {
 	if (msg->err_code == XCAM_RETURN_BYPASS)
 		g_should_quit = true;
+	return XCAM_RETURN_NO_ERROR;
 }
 
 RK_S32 SIMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL MultiCam,
@@ -399,7 +402,6 @@ int main(int argc, char *argv[]) {
 	RK_S32 s32Ret = RK_SUCCESS;
 	RK_U32 u32Width = 1920;
 	RK_U32 u32Height = 1080;
-	RK_CHAR *pOutPath = NULL;
 	RK_CODEC_ID_E enCodecType = RK_VIDEO_ID_AVC;
 	RK_CHAR *pCodecName = "H264";
 	RK_S32 s32chnlId = 0;
@@ -511,7 +513,7 @@ int main(int argc, char *argv[]) {
 	while (!quit) {
 		usleep(500000);
 	}
-	pthread_join(&main_thread, NULL);
+	pthread_join(main_thread, NULL);
 
 	if (g_rtsplive)
 		rtsp_del_demo(g_rtsplive);

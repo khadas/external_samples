@@ -113,6 +113,9 @@ simple_vi_venc_combo: simple_vi_venc_combo.c
 simple_vi_eptz_test: simple_vi_eptz_test.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
 
+simple_vi_venc_offline: simple_vi_venc_offline.c
+	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq
+
 clean:
 	@echo "clean simple"
 	@rm -rf $(SIMPLE_OUT_DIR)

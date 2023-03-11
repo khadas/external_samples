@@ -182,6 +182,7 @@ static XCamReturn SIMPLE_COMM_ISP_SofCb(rk_aiq_metas_t *meta) {
 static XCamReturn SIMPLE_COMM_ISP_ErrCb(rk_aiq_err_msg_t *msg) {
 	if (msg->err_code == XCAM_RETURN_BYPASS)
 		g_should_quit = true;
+	return XCAM_RETURN_NO_ERROR;
 }
 
 RK_S32 SIMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL MultiCam,
@@ -280,8 +281,10 @@ int main(int argc, char *argv[]) {
 	int c;
 	char *iq_dir = NULL;
 	VI_SAVE_FILE_INFO_S stDebugFile;
+#ifdef RKAIQ
 	int hdr = 0;
 	int multi_sensor = RK_FALSE;
+#endif
 
 	while ((c = getopt(argc, argv, optstr)) != -1) {
 		switch (c) {
@@ -306,12 +309,14 @@ int main(int argc, char *argv[]) {
 		case 'o':
 			savefile = atoi(optarg);
 			break;
+#ifdef RKAIQ
 		case 'd':
 			hdr = atoi(optarg);
 			break;
 		case 'm':
 			multi_sensor = atoi(optarg);
 			break;
+#endif
 		case '?':
 		default:
 			print_usage(argv[0]);
@@ -360,7 +365,7 @@ int main(int argc, char *argv[]) {
 	while (!quit) {
 		usleep(50000);
 	}
-	pthread_join(&main_thread, NULL);
+	pthread_join(main_thread, NULL);
 	s32Ret = RK_MPI_VI_DisableChn(0, s32chnlId);
 	RK_LOGE("RK_MPI_VI_DisableChn %x", s32Ret);
 
