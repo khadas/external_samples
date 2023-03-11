@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/poll.h>
 #include <time.h>
 #include <unistd.h>
@@ -142,14 +143,14 @@ static int vi_chn_init(int channelId, int width, int height, int maxWidth,
 	memset(&g_stViWrap, 0, sizeof(VI_CHN_BUF_WRAP_S));
 	if (g_bWrapEn) {
 		if (g_u32WrapLine < 128 || g_u32WrapLine > height) {
-			printf("wrap mode buffer line must between [128, H]");
+			printf("wrap mode buffer line must between [128, H]\n");
 			return -1;
 		}
 		g_stViWrap.bEnable = RK_TRUE;
 		g_stViWrap.u32BufLine = g_u32WrapLine;
 		g_stViWrap.u32WrapBufferSize =
 		    g_stViWrap.u32BufLine * width * 3 / 2; // nv12 (w * wrapLine *3 / 2)
-		printf("set channel wrap line: %d, wrapBuffSize = %d", g_u32WrapLine,
+		printf("set channel wrap line: %d, wrapBuffSize = %d\n", g_u32WrapLine,
 		       g_stViWrap.u32WrapBufferSize);
 		RK_MPI_VI_SetChnWrapBufAttr(0, channelId, &g_stViWrap);
 	}
@@ -159,6 +160,8 @@ static int vi_chn_init(int channelId, int width, int height, int maxWidth,
 		printf("ERROR: create VI error! ret=%d\n", ret);
 		return ret;
 	}
+
+	printf("vi dev:0 channle: %d enable success\n", channelId);
 
 	return ret;
 }
@@ -224,7 +227,6 @@ static void *vi_venc_wrap(void *arg) {
 	void *pData = RK_NULL;
 
 	(void)arg;
-	VI_CHN_STATUS_S stChnStatus;
 	printf("========%s========\n", __func__);
 
 	while (!quit) {
@@ -245,11 +247,11 @@ static void *vi_venc_wrap(void *arg) {
 			s32Ret =
 			    RK_MPI_VENC_ReleaseStream(g_venc_cfgs[0].s32ChnId, &g_venc_stFrame[0]);
 			if (s32Ret != RK_SUCCESS) {
-				printf("RK_MPI_VENC_ReleaseStream fail %x", s32Ret);
+				printf("RK_MPI_VENC_ReleaseStream fail %x\n", s32Ret);
 			}
 			loopCount++;
 		} else {
-			printf("RK_MPI_VI_GetChnFrame fail %x", s32Ret);
+			printf("RK_MPI_VI_GetChnFrame fail %x\n", s32Ret);
 		}
 
 		if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt)) {
@@ -261,10 +263,10 @@ static void *vi_venc_wrap(void *arg) {
 	}
 }
 
-static RK_CHAR optstr[] = "?::d:n:w:h:W:H:c:I:o:";
+static RK_CHAR optstr[] = "?::d:n:w:h:W:H:c:I:o:r:L:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
-	printf("\t%s -I 0 -w 1920 -h 1080 -W 2560 -H 1440 -o 1\n", name);
+	printf("\t%s -I 0 -w 1920 -h 1080 -W 2560 -H 1440 -o 1 -r 1 -L 720\n", name);
 	printf("\t-w | --width: VI width, Default:2560\n");
 	printf("\t-h | --height: VI height, Default:1440\n");
 	printf("\t-W | --maxWidth: sensor output resolution max width, Default:2560\n");
@@ -273,6 +275,8 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-I | --camid: camera ctx id, Default 0. "
 	       "0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
 	printf("\t-o: output path, Default:0  0 or 1 /data/test_0.yuv\n");
+	printf("\t-r: enable wrap mode, Default: 1\n");
+	printf("\t-L: config wrap line, line cnt [128, maxHeight]\n");
 }
 static const struct option long_options[] = {
     {"aiq", optional_argument, NULL, 'a'},
@@ -354,7 +358,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	printf("#Resolution: %dx%d\n", u32Width, u32Height);
-	printf("#Sensor Max Resolution: %dx%d\n", g_u32MaxWidth, g_u32MaxHeight);
+	printf("#Sensor Max Resolution: %dx%d\n", u32MaxWidth, u32MaxHeight);
 	printf("#Output Path: %d\n", savefile);
 	printf("#CameraIdx: %d\n\n", s32chnlId);
 	printf("#Frame Count to save: %d\n", g_s32FrameCnt);
@@ -368,7 +372,6 @@ int main(int argc, char *argv[]) {
 
 	g_u32MaxWidth = u32MaxWidth;
 	g_u32MaxHeight = u32MaxHeight;
-
 	g_u32DstCodec = u32DstCodec;
 	g_u32DeBreath = u32DeBreath;
 
@@ -395,7 +398,7 @@ int main(int argc, char *argv[]) {
 	init_venc_cfg(0, (RK_CODEC_ID_E)u32DstCodec);
 	s32Ret = create_venc(0);
 	if (s32Ret != RK_SUCCESS) {
-		printf("create %d ch venc failed", g_venc_cfgs[0].s32ChnId);
+		printf("create %d ch venc failed\n", g_venc_cfgs[0].s32ChnId);
 		return s32Ret;
 	}
 	// bind vi to venc
@@ -404,7 +407,7 @@ int main(int argc, char *argv[]) {
 	stDestChn[0].s32ChnId = g_venc_cfgs[0].s32ChnId;
 	s32Ret = RK_MPI_SYS_Bind(&stSrcChn, &stDestChn[0]);
 	if (s32Ret != RK_SUCCESS) {
-		printf("bind %d ch venc failed", g_venc_cfgs[0].s32ChnId);
+		printf("bind %d ch venc failed\n", g_venc_cfgs[0].s32ChnId);
 		goto __FAILED;
 	}
 
@@ -416,16 +419,16 @@ int main(int argc, char *argv[]) {
 	while (!quit) {
 		usleep(50000);
 	}
-	pthread_join(&main_thread, NULL);
+	pthread_join(main_thread, NULL);
 
 	s32Ret = RK_MPI_VI_DisableChn(0, 0);
-	printf("RK_MPI_VI_DisableChn %x", s32Ret);
+	printf("RK_MPI_VI_DisableChn %x\n", s32Ret);
 
 	s32Ret = RK_MPI_VI_DisableDev(0);
-	printf("RK_MPI_VI_DisableDev %x", s32Ret);
+	printf("RK_MPI_VI_DisableDev %x\n", s32Ret);
 
 __FAILED:
-	printf("test running exit:%d", s32Ret);
+	printf("test running exit:%d\n", s32Ret);
 	RK_MPI_SYS_Exit();
 
 	return 0;
