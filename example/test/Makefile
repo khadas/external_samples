@@ -8,6 +8,10 @@ else
 LD_FLAGS += -lrockit
 endif
 
+ifeq ($(CONFIG_RK_IVA) ,y)
+LD_FLAGS += -lrockiva
+endif
+
 all:
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_isp_stresstest.c -o sample_isp_stresstest $(LD_FLAGS)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_venc_stresstest.c -o sample_venc_stresstest $(LD_FLAGS)
@@ -15,6 +19,7 @@ all:
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_mulit_isp_stresstest.c -o sample_mulit_isp_stresstest $(LD_FLAGS)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_avs_stresstest.c -o sample_avs_stresstest $(LD_FLAGS)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_vpss_stresstest.c -o sample_vpss_stresstest $(LD_FLAGS)
+	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_vi_venc_stresstest.c -o sample_demo_vi_venc_stresstest $(LD_FLAGS)
 
 install:
 	@mv -f sample_isp_stresstest $(SAMPLE_OUT_DIR)/bin
@@ -23,6 +28,7 @@ install:
 	@mv -f sample_mulit_isp_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_avs_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_vpss_stresstest $(SAMPLE_OUT_DIR)/bin
+	@mv -f sample_demo_vi_venc_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mkdir -p ../../../../output/out/userdata/
 	@cp -f source/160x96.bmp ../../../../output/out/userdata/
 	@cp -f source/192x96.bmp ../../../../output/out/userdata/
@@ -31,7 +37,7 @@ install:
 	@cp -f source/avs_stresstest.sh ../../../../output/out/userdata/
 	@cp -f source/vpss_stresstest.sh ../../../../output/out/userdata/
 	@cp -f source/isp_stresstest.sh ../../../../output/out/userdata/
-	@cp -f source/venc_stresstest.sh ../../../../output/out/userdata/	
+	@cp -f source/venc_stresstest.sh ../../../../output/out/userdata/
 	@cp -f source/demo_vi_venc_stresstest.sh ../../../../output/out/userdata/
 	@cp -f source/rgn_stresstest.sh ../../../../output/out/userdata/
 	@cp -f source/rv1126_stresstest.sh ../../../../output/out/userdata/
