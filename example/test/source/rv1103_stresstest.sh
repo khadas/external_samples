@@ -21,20 +21,14 @@ ifEnableSmartP=0
 #ordinary_stream_test_framecount
 ordinary_stream_test_framecount=450000
 
-camera_model=$1
-if [ "$camera_model" = "sc3336" ]; then
-        echo "-----------Now your sensor model: sc3336"
+# get script path
+script_file_path=$(dirname $0)
 
-    elif [ "$camera_model" = "sc4336" ]; then
-        echo "-----------Now your sensor model: sc4336"
-
-    elif [ "$camera_model" = "sc530ai" ]; then
-        echo "-----------Now your sensor model: sc530ai"
-
-    else
-        echo "------- error, must input sensor model: sc3336, sc4336, sc530ai ----"
-        echo "example: $0 sc3336"
-        exit 0
+#if enable HDR test
+if [[ ! -n "$1" ]] || [[ "$1" = "0" ]]; then
+    ifEnableHDR=off
+else
+    ifEnableHDR=on
 fi
 
 isp_stresstest()
@@ -46,14 +40,15 @@ isp_stresstest()
     # $4 --------vi_frame_switch_test_loop
     # $5 --------iq_file
 
-    echo "enter isp stresstest" >> $test_result_path
+    echo "----------------------enter isp stresstest----------------------" >> $test_result_path
 
-    eval $1 ./isp_stresstest.sh $test_result_path $test_loop $test_frame $vi_framerate_switch_loop $iqfilePath
+    eval $1 $script_file_path/isp_stresstest.sh $test_result_path $test_loop $test_frame $vi_framerate_switch_loop $iqfilePath
     if [ $? != 0 ]; then
-        echo "$1 ./isp_stresstest.sh $test_result_path $test_loop $test_frame $vi_framerate_switch_loop $iqfilePath   -----test failure"
+        echo "$1 $script_file_path/isp_stresstest.sh $test_result_path $test_loop $test_frame $vi_framerate_switch_loop $iqfilePath   -----test failure"
         exit 1
     fi
 
+    echo "----------------------exit isp stresstest----------------------" >> $test_result_path
 }
 
 venc_stresstest()
@@ -64,31 +59,33 @@ venc_stresstest()
     #      $3 --------test_frame
     #      $4 --------ifEnableWrap
 
-    echo "enter venc stresstest" >> $test_result_path
+    echo "----------------------enter venc stresstest----------------------" >> $test_result_path
 
-    eval $1 ./venc_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap
+    eval $1 $script_file_path/venc_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap
      if [ $? != 0 ]; then
-        echo "$1 ./venc_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap ----------test failure"
+        echo "$1 $script_file_path/venc_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap ----------test failure"
         exit 1
     fi
 
+    echo "----------------------exit venc stresstest----------------------" >> $test_result_path
 }
 
 rgn_stresstest()
 {
     #example: $0 <test_type> <test_result_path> <test_loop> <test_frame> <ifEnableWrap>"
-    #      $2 --------test_result_path
-    #      $3 --------test_loop
-    #      $4 --------test_frame
-    #      $5 --------ifEnableWrap
+    #      $1 --------test_result_path
+    #      $2 --------test_loop
+    #      $3 --------test_frame
+    #      $4 --------ifEnableWrap
 
-    echo "enter rgn stresstest" >> $test_result_path
+    echo "---------------------enter rgn stresstest---------------------" >> $test_result_path
 
-    eval $1 ./rgn_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap
+    eval $1 $script_file_path/rgn_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap
      if [ $? != 0 ]; then
-        echo "$1 ./rgn_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap ----------test failure"
+        echo "$1 $script_file_path/rgn_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap ----------test failure"
         exit 1
     fi
+    echo "---------------------exit rgn stresstest---------------------" >> $test_result_path
 }
 
 vpss_stresstest()
@@ -100,14 +97,15 @@ vpss_stresstest()
     #       \$2 --------test_loop\n
     #       \$3 --------test_frame\n"
 
-    echo "enter vpss stresstest" >> $test_result_path
+    echo "------------------------enter vpss stresstest------------------------" >> $test_result_path
 
-    eval $1 ./vpss_stresstest.sh $test_result_path $test_loop $test_frame
+    eval $1 $script_file_path/vpss_stresstest.sh $test_result_path $test_loop $test_frame
      if [ $? != 0 ]; then
-        echo "$1 ./vpss_stresstest.sh $test_result_path $test_loop $test_frame----------test failure"
+        echo "$1 $script_file_path/vpss_stresstest.sh $test_result_path $test_loop $test_frame----------test failure"
         exit 1
     fi
 
+    echo "------------------------exit vpss stresstest------------------------" >> $test_result_path
 }
 
 demo_vi_venc_stresstest()
@@ -124,13 +122,15 @@ demo_vi_venc_stresstest()
     #   \$8 --------sensor_width\n
     #   \$9 --------sensor_height\n"
 
-    echo "enter demo_vi_venc_stresstest stresstest" >> $test_result_path
+    echo "------------------------enter demo_vi_venc_stresstest stresstest------------------------" >> $test_result_path
 
-    eval $1 ./demo_vi_venc_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap $ifEnableSmartP $ordinary_stream_test_framecount $vi_framerate_switch_loop $sensor_width $sensor_height
+    eval $1 $script_file_path/demo_vi_venc_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap $ifEnableSmartP $ordinary_stream_test_framecount $vi_framerate_switch_loop $sensor_width $sensor_height
     if [ $? != 0 ]; then
-        echo -e "$1 ./demo_vi_venc_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap $ifEnableSmartP $ordinary_stream_test_framecount  $vi_framerate_switch_loop $sensor_width $sensor_height ----------test failure"
+        echo -e "$1 $script_file_path/demo_vi_venc_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap $ifEnableSmartP $ordinary_stream_test_framecount  $vi_framerate_switch_loop $sensor_width $sensor_height ----------test failure"
         exit 1
     fi
+
+    echo "------------------------exit demo_vi_venc_stresstest stresstest------------------------" >> $test_result_path
 
 }
 
@@ -146,18 +146,11 @@ do
     fi
 done
 
-echo "start rv1126 stresstest" > $test_result_path
-echo "start record rv1126 meminfo" > /tmp/testLog.txt
+echo "start rv1103 stresstest" > $test_result_path
+echo "start record rv1103 meminfo" > /tmp/testLog.txt
 
 #1.isp stresstest
-if [[ "$camera_model" = "sc3336" ]] || [[ "$camera_model" = "sc4336" ]]; then
-    test_mod="PN_MODE=on HDR=off FRAMERATE=on LDCH=on ISP_RESTART=on"
-elif [ "$camera_model" = "sc530ai" ]; then
-    test_mod="PN_MODE=on HDR=on FRAMERATE=on LDCH=on ISP_RESTART=on"
-else
-    echo " the camera model: $camera_model is't support, exit !!!"
-    exit 1
-fi
+test_mod="PN_MODE=on HDR=$ifEnableHDR FRAMERATE=on LDCH=on ISP_RESTART=on"
 isp_stresstest "$test_mod"
 
 #2.venc stresstest
@@ -173,14 +166,7 @@ test_mod="RESTART=on RESOLUTION=on"
 vpss_stresstest "$test_mod"
 
 #5.demo vi venc stresstest
-if [[ "$camera_model" = "sc3336" ]] || [[ "$camera_model" = "sc4336" ]]; then
-    test_mod="PN_MODE=on HDR=off FRAMERATE=on LDCH=on RESOLUTION=on ENCODE_TYPE=on SMART_P=off SVC=on MOTION=on IDR=on DETACH_ATTACH=on ORDINARY=on"
-elif [ "$camera_model" = "sc530ai" ]; then
-    test_mod="PN_MODE=on HDR=on FRAMERATE=on LDCH=on RESOLUTION=on ENCODE_TYPE=on SMART_P=off SVC=on MOTION=on IDR=on DETACH_ATTACH=on ORDINARY=on"
-else
-    echo " the camera model: $camera_model is't support, exit !!!"
-    exit 1
-fi
+test_mod="PN_MODE=on HDR=$ifEnableHDR FRAMERATE=on LDCH=on RESOLUTION=on ENCODE_TYPE=on SMART_P=off SVC=on MOTION=on IDR=on DETACH_ATTACH=on ORDINARY=on"
 demo_vi_venc_stresstest "$test_mod"
 
 #print test result
