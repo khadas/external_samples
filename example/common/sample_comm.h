@@ -80,6 +80,12 @@ typedef enum rk_CODEC_TYPE_E {
 	RK_CODEC_TYPE_NB
 } CODEC_TYPE_E;
 
+typedef enum rk_GET_LDCH_MODE_E {
+	RK_NONE_LDCH = 0,
+	RK_GET_LDCH_BY_FILE,
+	RK_GET_LDCH_BY_BUFF
+} GET_LDCH_MODE_E;
+
 /*******************************************************
     structure define
 *******************************************************/

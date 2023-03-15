@@ -18,7 +18,10 @@ all:
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_venc_stresstest.c -o sample_venc_stresstest $(LD_FLAGS)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_rgn_stresstest.c -o sample_rgn_stresstest $(LD_FLAGS)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_mulit_isp_stresstest.c -o sample_mulit_isp_stresstest $(LD_FLAGS)
+ifeq ($(HAVE_AVS), y)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_avs_stresstest.c -o sample_avs_stresstest $(LD_FLAGS)
+	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_vi_avs_venc_stresstest.c -o sample_demo_vi_avs_venc_stresstest $(LD_FLAGS)
+endif
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_vpss_stresstest.c -o sample_vpss_stresstest $(LD_FLAGS)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_vi_venc_stresstest.c -o sample_demo_vi_venc_stresstest $(LD_FLAGS)
 
@@ -28,7 +31,10 @@ install:
 	@mv -f sample_venc_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_rgn_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_mulit_isp_stresstest $(SAMPLE_OUT_DIR)/bin
+ifeq ($(HAVE_AVS), y)
 	@mv -f sample_avs_stresstest $(SAMPLE_OUT_DIR)/bin
+	@mv -f sample_demo_vi_avs_venc_stresstest $(SAMPLE_OUT_DIR)/bin
+endif
 	@mv -f sample_vpss_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_demo_vi_venc_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mkdir -p ../../../../output/out/userdata/
