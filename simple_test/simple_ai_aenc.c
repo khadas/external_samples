@@ -305,10 +305,10 @@ int main(int argc, char *argv[]) {
 			MB_BLK bBlk = pstStream.pMbBlk;
 			RK_VOID *pstFrame = RK_MPI_MB_Handle2VirAddr(bBlk);
 			RK_S32 frameSize = pstStream.u32Len;
-			RK_S32 timeStamp = pstStream.u64TimeStamp;
+			RK_U64 timeStamp = pstStream.u64TimeStamp;
 			eos = (frameSize <= 0) ? 1 : 0;
 			if (pstFrame) {
-				RK_LOGI("get frame data = %p, size = %d, timeStamp = %lld", pstFrame,
+				RK_LOGI("get frame data = %p, size = %d, timeStamp = %llu", pstFrame,
 				        frameSize, timeStamp);
 				if (save_file) {
 					fwrite(pstFrame, frameSize, 1, save_file);
