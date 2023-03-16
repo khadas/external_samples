@@ -159,6 +159,7 @@ do
         echo "rkipc exit"
         break
     else
+        sleep 1
         echo "rkipc active"
     fi
 done
