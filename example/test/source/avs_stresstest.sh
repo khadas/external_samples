@@ -1,65 +1,80 @@
 #!/bin/sh
 
+print_help()
+{
+    echo "example: <test_mod=on> $0 <test_result_path> <test_loop> <test_frame>"
+    echo "mod: 1.RESTART 2.RESOLUTION"
+    echo -e "
+          \$1 --------test_result_path: /tmp/stresstest.log\n
+          \$2 --------test_loop: 10000\n
+          \$3 --------test_frame: 10\n"
+}
+
+test_result_path=$1
+if [ "$1" = "help" ]; then
+    print_help
+    exit 1
+elif [ ! -n "$1" ]; then
+    echo "----------------- error!!! lack test_result_path, please input test_result_path"
+    print_help
+    exit 1
+else
+    echo " the test_result_path your input is: $1"
+fi
+
 #set test loop
-test_loop=10000
+test_loop=$2
+if [ ! -n "$2" ]; then
+    echo "----------------- error!!!, lack test_loop, please input test loop"
+    print_help
+    exit 1
+fi
 
 #set frame count for every loop
-frame_count=10
+frame_count=$3
+if [ ! -n "$3" ]; then
+    echo "----------------- error!!!!, lack frame_count, please input test frame"
+    print_help
+    exit 1
+fi
 
 test_case()
 {
-    #1. avs_deinit_ubind_test
-    echo -e "--------------------------------------- <sample_avs_stresstest> avs_deinit_ubind_test start -------------------------------------------\n"
-    echo -e "<sample_avs_stresstest --vi_size 1920x1080 --avs_size 3840x1080 -a /etc/iqfiles/ --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
-    sample_avs_stresstest --vi_size 1920x1080 --avs_size 3840x1080 -a /etc/iqfiles/ --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $frame_count
-    if [ $? -eq 0 ]; then
-        echo "-------------------------1 <sample_avs_stresstest> avs_deinit_ubind_test success" > /tmp/avs_stresstest_result.log
-        echo -e "--------------------------------------- <sample_avs_stresstest> avs_deinit_ubind_test success -------------------------------------------\n\n\n"
-    else 
-        echo "-------------------------1 <sample_avs_stresstest> avs_deinit_ubind_test failure" > /tmp/avs_stresstest_result.log
-        echo -e "--------------------------------------- <sample_avs_stresstest> avs_deinit_ubind_test failure -------------------------------------------\n\n\n"
-        exit 0
+    if [ "$RESTART" = "on" ]; then
+        #1. avs_deinit_ubind_test
+        echo -e "--------------------------------------- <sample_avs_stresstest> avs_deinit_ubind_test start -------------------------------------------\n"
+        echo -e "<sample_avs_stresstest --vi_size 1920x1080 --avs_size 3840x1080 -a /etc/iqfiles/ --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
+        sample_avs_stresstest --vi_size 1920x1080 --avs_size 3840x1080 -a /etc/iqfiles/ --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $frame_count
+        if [ $? -eq 0 ]; then
+            echo "-------------------------1 <sample_avs_stresstest> avs_deinit_ubind_test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_avs_stresstest> avs_deinit_ubind_test success -------------------------------------------\n\n\n"
+        else
+            echo "-------------------------1 <sample_avs_stresstest> avs_deinit_ubind_test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_avs_stresstest> avs_deinit_ubind_test failure -------------------------------------------\n\n\n"
+            exit 1
+        fi
     fi
-    
+
+    if [ "$RESOLUTION" = "on" ]; then
+        #2. avs_resolution_test
+        echo -e "--------------------------------------- <sample_avs_stresstest> avs_resolution_test start -------------------------------------------\n"
+        echo -e "<sample_avs_stresstest --vi_size 1920x1080 --avs_size 3840x1080 -a /etc/iqfiles/ --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
+        sample_avs_stresstest --vi_size 1920x1080 --avs_size 3840x1080 -a /etc/iqfiles/ --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $frame_count
+        if [ $? -eq 0 ]; then
+            echo "-------------------------2 <sample_avs_stresstest> avs_resolution_test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_avs_stresstest> avs_resolution_test success -------------------------------------------\n\n\n"
+        else
+            echo "-------------------------2 <sample_avs_stresstest> avs_resolution_test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_avs_stresstest> avs_resolution_test failure -------------------------------------------\n\n\n"
+            exit 1
+        fi
+    fi
     sleep 3
     echo 3 > /proc/sys/vm/drop_caches
-    cat /proc/meminfo | grep MemAvailable > /tmp/avs_stresstest_result.log
-
-
-    #2. avs_resolution_test
-    echo -e "--------------------------------------- <sample_avs_stresstest> avs_resolution_test start -------------------------------------------\n"
-    echo -e "<sample_avs_stresstest --vi_size 1920x1080 --avs_size 3840x1080 -a /etc/iqfiles/ --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
-    sample_avs_stresstest --vi_size 1920x1080 --avs_size 3840x1080 -a /etc/iqfiles/ --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $frame_count
-    if [ $? -eq 0 ]; then
-        echo "-------------------------2 <sample_avs_stresstest> avs_resolution_test success" >> /tmp/avs_stresstest_result.log
-        echo -e "--------------------------------------- <sample_avs_stresstest> avs_resolution_test success -------------------------------------------\n\n\n"
-    else
-        echo "-------------------------2 <sample_avs_stresstest> avs_resolution_test failure" >> /tmp/avs_stresstest_result.log
-        echo -e "--------------------------------------- <sample_avs_stresstest> avs_resolution_test failure -------------------------------------------\n\n\n"
-        exit 0
-    fi
-    
-    sleep 3
-    echo 3 > /proc/sys/vm/drop_caches
-    cat /proc/meminfo | grep MemAvailable >> /tmp/avs_stresstest_result.log
+    cat /proc/meminfo | grep MemAvailable >> $test_result_path
 
 }
 
-
-killall rkipc
-while true
-do
-    ps|grep rkipc |grep -v grep
-    if [ $? -ne 0 ]; then
-        echo "rkipc exit"
-        break
-    else
-        echo "rkipc active"
-    fi
-done
-
 test_case
-echo "avs_stresstest_result is:"
-cat /tmp/avs_stresstest_result.log
-cat /tmp/testLog.txt
 
+exit 0

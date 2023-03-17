@@ -1,192 +1,141 @@
 #!/bin/sh
 
+print_help()
+{
+    echo "example: <test_mod=on> $0 <test_result_path> <test_loop> <test_frame> <isp_group_mode> <vi_frame_switch_test_loop>"
+    echo "mod: 1.PN_MODE 2.HDR 3.FRAMERATE 4.LDCH 5.RESTART"
+    echo -e "
+          \$1 --------test_result_path: /tmp/stresstest.log\n
+          \$2 --------test_loop: 10000\n
+          \$3 --------test_frame: 10\n
+          \$4 --------isp_group_mode: 0: no-group, 1: group\n
+          \$5 --------vi_frame_switch_test_loop: 5000\n"
+}
+
+test_result_path=$1
+if [ "$1" = "help" ]; then
+    print_help
+    exit 1
+elif [ ! -n "$1" ]; then
+    echo "----------------- error!!! lack test_result_path, please input test_result_path"
+    print_help
+    exit 1
+else
+    echo " the test_result_path your input is: $1"
+fi
+
 #set test loop
-test_loop=10000
+test_loop=$2
+if [ ! -n "$2" ]; then
+    echo "----------------- error!!!, lack test_loop, please input test loop"
+    print_help
+    exit 1
+fi
 
 #set frame count for every loop
-frame_count=10
+frame_count=$3
+if [ ! -n "$3" ]; then
+    echo "----------------- error!!!!, lack frame_count, please input test frame"
+    print_help
+    exit 1
+fi
+
+isp_group_mode=$4
+if [ ! -n "$4" ]; then
+    echo "----------------- error!!!!, lack isp group mode seting, please input isp_group_mode"
+    print_help
+    exit 1
+fi
+
+vi_framerate_switch_loop=$5
+if [ ! -n "$5" ]; then
+    echo "----------------- warning!!!!, lack vi_framerate_switch_loop"
+fi
 
 test_case()
 {
-    #1: PN mode switch
-    echo -e "--------------------------------------- <sample_mulit_isp_stresstest> PN mode switch test start (no-group)-------------------------------------------\n"
-    echo -e "<sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 1 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 0>\n"
-    sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 1 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 0
-    if [ $? -eq 0 ]; then
-        echo "-------------------------1 <sample_mulit_isp_stresstest> PN mode switch test success (no-group)" > /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> PN mode switch test_result success (no-group)-------------------------------------------\n\n\n"
-    else 
-        echo "-------------------------1 <sample_mulit_isp_stresstest> PN mode switch test failure (no-group)" > /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> PN mode switch test_result failure (no-group)-------------------------------------------\n\n\n"
-        exit 0
+    if [ "$PN_MODE" = "on" ]; then
+        #1: PN mode switch
+        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> PN mode switch test start -------------------------------------------\n"
+        echo -e "<sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 1 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode>\n"
+        sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 1 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode
+        if [ $? -eq 0 ]; then
+            echo "-------------------------1 <sample_mulit_isp_stresstest> PN mode switch test success " >> $test_result_path
+            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> PN mode switch test_result success -------------------------------------------\n\n\n"
+        else
+            echo "-------------------------1 <sample_mulit_isp_stresstest> PN mode switch test failure " >> $test_result_path
+            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> PN mode switch test_result failure -------------------------------------------\n\n\n"
+            exit 1
+        fi
     fi
-    sleep 3
-    echo 3 > /proc/sys/vm/drop_caches
-    cat /proc/meminfo | grep MemAvailable >> /tmp/multi_isp_stresstest_result.log
 
-    #2: hdr mode switch test
-    echo -e "--------------------------------------- <sample_mulit_isp_stresstest> hdr_mode_switch_test start (no-group)-------------------------------------------\n"
-    echo -e "<sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 2 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 0>\n"
-    sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 2 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 0
-    if [ $? -eq 0 ]; then
-        echo "-------------------------2 <sample_mulit_isp_stresstest> HDR mode switch test success (no-group)" >> /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> hdr_mode_switch_test success (no-group)-------------------------------------------\n\n\n"
-    else 
-        echo "-------------------------2 <sample_mulit_isp_stresstest> HDR mode switch test failure (no-group)" >> /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> hdr_mode_switch_test failure (no-group)-------------------------------------------\n\n\n"
-        exit 0
+    if [ "$HDR" = "on" ]; then
+        #2: hdr mode switch test
+        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> hdr_mode_switch_test start -------------------------------------------\n"
+        echo -e "<sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 2 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode>\n"
+        sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 2 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode
+        if [ $? -eq 0 ]; then
+            echo "-------------------------2 <sample_mulit_isp_stresstest> HDR mode switch test success " >> $test_result_path
+            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> hdr_mode_switch_test success -------------------------------------------\n\n\n"
+        else
+            echo "-------------------------2 <sample_mulit_isp_stresstest> HDR mode switch test failure " >> $test_result_path
+            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> hdr_mode_switch_test failure -------------------------------------------\n\n\n"
+            exit 1
+        fi
     fi
-    sleep 3
-    echo 3 > /proc/sys/vm/drop_caches
-    cat /proc/meminfo | grep MemAvailable >> /tmp/multi_isp_stresstest_result.log
 
-    #3: frameRate switch test
-    echo -e "--------------------------------------- <sample_mulit_isp_stresstest> frameRate_switch_test start (no-group)-------------------------------------------\n"
-    echo -e "<sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 3 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 0>\n"
-    sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 3 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 0
-    if [ $? -eq 0 ]; then
-        echo "-------------------------3 <sample_mulit_isp_stresstest> isp frameRate switch test success (no-group)" >> /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> frameRate_switch_test success (no-group)-------------------------------------------\n\n\n"
-    else 
-        echo "-------------------------3 <sample_mulit_isp_stresstest> isp frameRate switch test failure (no-group)" >> /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> frameRate_switch_test failure (no-group)-------------------------------------------\n\n\n"
-        exit 0
+    if [ "$FRAMERATE" = "on" ]; then
+        #3: frameRate switch test
+        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> frameRate_switch_test start -------------------------------------------\n"
+        echo -e "<sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 3 --modeTestLoop $vi_framerate_switch_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode>\n"
+        sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 3 --modeTestLoop $vi_framerate_switch_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode
+        if [ $? -eq 0 ]; then
+            echo "-------------------------3 <sample_mulit_isp_stresstest> isp frameRate switch test success " >> $test_result_path
+            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> frameRate_switch_test success -------------------------------------------\n\n\n"
+        else
+            echo "-------------------------3 <sample_mulit_isp_stresstest> isp frameRate switch test failure " >> $test_result_path
+            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> frameRate_switch_test failure -------------------------------------------\n\n\n"
+            exit 1
+        fi
     fi
-    sleep 3
-    echo 3 > /proc/sys/vm/drop_caches
-    cat /proc/meminfo | grep MemAvailable >> /tmp/multi_isp_stresstest_result.log
 
-    #4: LDCH mode test
-    echo -e "--------------------------------------- <sample_mulit_isp_stresstest> LDCH mode test start (no-group)-------------------------------------------\n"
-    echo -e "<sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 5 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 0>\n"
-    sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 5 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 0
-    if [ $? -eq 0 ]; then
-        echo "-------------------------4 <sample_mulit_isp_stresstest> LDCH mode switch test success (no-group)" >> /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> LDCH mode test success (no-group)-------------------------------------------\n\n\n"
-    else 
-        echo "-------------------------4 <sample_mulit_isp_stresstest> LDCH mode switch test failure (no-group)" >> /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> LDCH mode test failure (no-group)-------------------------------------------\n\n\n"
-        exit 0
+    if [ "$LDCH" = "on" ]; then
+        #4: LDCH mode test
+        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> LDCH mode test start -------------------------------------------\n"
+        echo -e "<sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 4 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode>\n"
+        sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 4 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode
+        if [ $? -eq 0 ]; then
+            echo "-------------------------4 <sample_mulit_isp_stresstest> LDCH mode switch test success " >> $test_result_path
+            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> LDCH mode test success -------------------------------------------\n\n\n"
+        else
+            echo "-------------------------4 <sample_mulit_isp_stresstest> LDCH mode switch test failure " >> $test_result_path
+            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> LDCH mode test failure -------------------------------------------\n\n\n"
+            exit 1
+        fi
     fi
-    sleep 3
-    echo 3 > /proc/sys/vm/drop_caches
-    cat /proc/meminfo | grep MemAvailable >> /tmp/multi_isp_stresstest_result.log
 
-
-    #5: PN mode switch
-    echo -e "--------------------------------------- <sample_mulit_isp_stresstest> PN mode switch test start (group)-------------------------------------------\n"
-    echo -e "<sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 1 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 0>\n"
-    sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 1 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 1
-    if [ $? -eq 0 ]; then
-        echo "-------------------------1 <sample_mulit_isp_stresstest> PN mode switch test success (group)" > /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> PN mode switch test_result success (group)-------------------------------------------\n\n\n"
-    else 
-        echo "-------------------------1 <sample_mulit_isp_stresstest> PN mode switch test failure (group)" > /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> PN mode switch test_result failure (group)-------------------------------------------\n\n\n"
-        exit 0
-    fi
-    sleep 3
-    echo 3 > /proc/sys/vm/drop_caches
-    cat /proc/meminfo | grep MemAvailable >> /tmp/multi_isp_stresstest_result.log
-
-    #6: hdr mode switch test
-    echo -e "--------------------------------------- <sample_mulit_isp_stresstest> hdr_mode_switch_test start (group)-------------------------------------------\n"
-    echo -e "<sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 2 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 0>\n"
-    sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 2 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 1
-    if [ $? -eq 0 ]; then
-        echo "-------------------------2 <sample_mulit_isp_stresstest> HDR mode switch test success (group)" >> /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> hdr_mode_switch_test success (group)-------------------------------------------\n\n\n"
-    else 
-        echo "-------------------------2 <sample_mulit_isp_stresstest> HDR mode switch test failure (group)" >> /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> hdr_mode_switch_test failure (group)-------------------------------------------\n\n\n"
-        exit 0
-    fi
-    sleep 3
-    echo 3 > /proc/sys/vm/drop_caches
-    cat /proc/meminfo | grep MemAvailable >> /tmp/multi_isp_stresstest_result.log
-
-    #7: frameRate switch test
-    echo -e "--------------------------------------- <sample_mulit_isp_stresstest> frameRate_switch_test start (group)-------------------------------------------\n"
-    echo -e "<sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 3 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 0>\n"
-    sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 3 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 1
-    if [ $? -eq 0 ]; then
-        echo "-------------------------3 <sample_mulit_isp_stresstest> isp frameRate switch test success (group)" >> /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> frameRate_switch_test success (group)-------------------------------------------\n\n\n"
-    else 
-        echo "-------------------------3 <sample_mulit_isp_stresstest> isp frameRate switch test failure (group)" >> /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> frameRate_switch_test failure (group)-------------------------------------------\n\n\n"
-        exit 0
-    fi
-    sleep 3
-    echo 3 > /proc/sys/vm/drop_caches
-    cat /proc/meminfo | grep MemAvailable >> /tmp/multi_isp_stresstest_result.log
-
-    #8: LDCH mode test
-    echo -e "--------------------------------------- <sample_mulit_isp_stresstest> LDCH mode test start (group)-------------------------------------------\n"
-    echo -e "<sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 5 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 0>\n"
-    sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 5 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 1
-    if [ $? -eq 0 ]; then
-        echo "-------------------------4 <sample_mulit_isp_stresstest> LDCH mode switch test success (group)" >> /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> LDCH mode test success (group)-------------------------------------------\n\n\n"
-    else 
-        echo "-------------------------4 <sample_mulit_isp_stresstest> LDCH mode switch test failure (group)" >> /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> LDCH mode test failure (group)-------------------------------------------\n\n\n"
-        exit 0
-    fi
-    sleep 3
-    echo 3 > /proc/sys/vm/drop_caches
-    cat /proc/meminfo | grep MemAvailable >> /tmp/multi_isp_stresstest_result.log
-
-    #9: isp_deinit_init_test
-    echo -e "--------------------------------------- <sample_mulit_isp_stresstest> isp_deinit_init_test start (no-group)-------------------------------------------\n"
-    echo -e "<sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 6 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 0>\n"
-    sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 6 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 0
-    if [ $? -eq 0 ]; then
-        echo "-------------------------4 <sample_mulit_isp_stresstest> isp_deinit_init_test success (no-group)" >> /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> isp_deinit_init test success (no-group)-------------------------------------------\n\n\n"
-    else 
-        echo "-------------------------4 <sample_mulit_isp_stresstest> isp_deinit_init test failure (no-group)" >> /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> isp_deinit_init test failure (no-group)-------------------------------------------\n\n\n"
-        exit 0
-    fi
-    sleep 3
-    echo 3 > /proc/sys/vm/drop_caches
-    cat /proc/meminfo | grep MemAvailable >> /tmp/multi_isp_stresstest_result.log
-
-    #10: isp_deinit_init_test
-    echo -e "--------------------------------------- <sample_mulit_isp_stresstest> isp_deinit_init_test start (group)-------------------------------------------\n"
-    echo -e "<sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 6 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 0>\n"
-    sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 6 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode 1
-    if [ $? -eq 0 ]; then
-        echo "-------------------------4 <sample_mulit_isp_stresstest> isp_deinit_init_test success (group)" >> /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> isp_deinit_init test success (group)-------------------------------------------\n\n\n"
-    else 
-        echo "-------------------------4 <sample_mulit_isp_stresstest> isp_deinit_init test failure (group)" >> /tmp/multi_isp_stresstest_result.log
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> isp_deinit_init test failure (group)-------------------------------------------\n\n\n"
-        exit 0
+    if [ "$RESTART" = "on" ]; then
+        #4: isp_deinit_init test
+        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> isp_deinit_init test start -------------------------------------------\n"
+        echo -e "<sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 5 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode>\n"
+        sample_mulit_isp_stresstest -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080 --modeTestType 5 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode
+        if [ $? -eq 0 ]; then
+            echo "-------------------------5 <sample_mulit_isp_stresstest> isp_deinit_init switch test success " >> $test_result_path
+            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> isp_deinit_init test success -------------------------------------------\n\n\n"
+        else
+            echo "-------------------------5 <sample_mulit_isp_stresstest> isp_deinit_init switch test failure " >> $test_result_path
+            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> isp_deinit_init test failure -------------------------------------------\n\n\n"
+            exit 1
+        fi
     fi
 
     sleep 3
     echo 3 > /proc/sys/vm/drop_caches
-    cat /proc/meminfo | grep MemAvailable >> /tmp/multi_isp_stresstest_result.log
+    cat /proc/meminfo | grep MemAvailable >> $test_result_path
 
 }
 
-
-killall rkipc
-while true
-do
-    ps|grep rkipc |grep -v grep
-    if [ $? -ne 0 ]; then
-        echo "rkipc exit"
-        break
-    else
-        echo "rkipc active"
-    fi
-done
-
 test_case
-echo "multi_isp_stresstest_result is:"
-cat /tmp/multi_isp_stresstest_result.log
-cat /tmp/testLog.txt
+
+exit 0
 
