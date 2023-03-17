@@ -79,6 +79,7 @@ static const struct option long_options[] = {
     {"cam0_ldch_path", required_argument, NULL, 'L'},
     {"cam1_ldch_path", required_argument, NULL, 'L' + 'm'},
     {"ldch", required_argument, NULL, 'l' + 'd'},
+    {"ispLaunchMode", required_argument, NULL, 'i' + 'm'},
     {"help", optional_argument, NULL, '?'},
     {NULL, 0, NULL, 0},
 };
@@ -124,6 +125,7 @@ static void print_usage(const RK_CHAR *name) {
 	       "/oem/usr/share/iqfiles/cam1_ldch_mesh.bin\n");
 	printf("\t--ldch: set ldch, 0: disable, 1: read_file_set_ldch, 2: "
 	       "read_buff_set_ldch. Default: 2\n");
+	printf("\t--ispLaunchMode : 0: single cam init, 1: camera group init. default: 1\n");
 }
 
 /******************************************************************************
@@ -191,6 +193,7 @@ static void *venc_get_stream(void *pArgs) {
 int main(int argc, char *argv[]) {
 	RK_S32 s32Ret = RK_FAILURE;
 	SAMPLE_MPI_CTX_S *ctx;
+	RK_BOOL bIfIspGroupInit = RK_TRUE;
 	RK_U32 u32ViWidth = 1920;
 	RK_U32 u32ViHeight = 1080;
 	RK_U32 u32AvsWidth = 3840;
@@ -362,6 +365,9 @@ int main(int argc, char *argv[]) {
 		case 'l' + 'd':
 			eGetLdchMode = atoi(optarg);
 			break;
+		case 'i' + 'm':
+			bIfIspGroupInit = atoi(optarg);
+			break;
 #ifdef RKAIQ
 		case 'M':
 			if (atoi(optarg)) {
@@ -432,25 +438,38 @@ int main(int argc, char *argv[]) {
 #ifdef RKAIQ
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
-		rk_aiq_camgroup_instance_cfg_t camgroup_cfg;
-
-		memset(&camgroup_cfg, 0, sizeof(camgroup_cfg));
-		camgroup_cfg.sns_num = s32CamNum;
-		camgroup_cfg.config_file_dir = iq_file_dir;
-
-		s32Ret = SAMPLE_COMM_ISP_CamGroup_Init(
-		    s32CamGrpId, hdr_mode, bMultictx, eGetLdchMode, pLdchMeshData, &camgroup_cfg);
-		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init failure");
-			return -1;
+		if (bIfIspGroupInit == RK_FALSE) {
+			for (RK_S32 i = 0; i < s32CamNum; i++) {
+				s32Ret = SAMPLE_COMM_ISP_Init(i, hdr_mode, bMultictx, iq_file_dir);
+				s32Ret |= SAMPLE_COMM_ISP_Run(i);
+				if (s32Ret != RK_SUCCESS) {
+					RK_LOGE("ISP init failure camid:%d", i);
+					return RK_FAILURE;
+				}
+			}
 		} else {
-			RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init success");
-		}
-		s32Ret = SAMPLE_COMM_ISP_CamGroup_SetFrameRate(s32CamGrpId, s32DstFps);
-		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("SAMPLE_COMM_ISP_CamGroup_SetFrameRate failure");
-		} else {
-			RK_LOGE("SAMPLE_COMM_ISP_CamGroup_SetFrameRate success");
+			rk_aiq_camgroup_instance_cfg_t camgroup_cfg;
+
+			memset(&camgroup_cfg, 0, sizeof(camgroup_cfg));
+			camgroup_cfg.sns_num = s32CamNum;
+			camgroup_cfg.config_file_dir = iq_file_dir;
+
+			s32Ret =
+			    SAMPLE_COMM_ISP_CamGroup_Init(s32CamGrpId, hdr_mode, bMultictx,
+			                                  eGetLdchMode, pLdchMeshData, &camgroup_cfg);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init failure");
+				return RK_FAILURE;
+			} else {
+				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init success");
+			}
+			s32Ret = SAMPLE_COMM_ISP_CamGroup_SetFrameRate(s32CamGrpId, s32DstFps);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_SetFrameRate failure");
+				return RK_FAILURE;
+			} else {
+				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_SetFrameRate success");
+			}
 		}
 
 #endif
@@ -475,7 +494,7 @@ int main(int argc, char *argv[]) {
 		ctx->vi[i].u32Height = u32ViHeight;
 		ctx->vi[i].s32DevId = i;
 		ctx->vi[i].u32PipeId = i;
-		ctx->vi[i].bIfIspGroupInit = RK_TRUE;
+		ctx->vi[i].bIfIspGroupInit = bIfIspGroupInit;
 		ctx->vi[i].s32ChnId = 2; // rk3588 mainpath:0 selfpath:1 fbcpath:2
 		ctx->vi[i].stChnAttr.stIspOpt.stMaxSize.u32Width = u32ViWidth;
 		ctx->vi[i].stChnAttr.stIspOpt.stMaxSize.u32Height = u32ViHeight;
@@ -489,12 +508,14 @@ int main(int argc, char *argv[]) {
 		SAMPLE_COMM_VI_CreateChn(&ctx->vi[i]);
 	}
 
-	for (i = 0; i < s32CamNum; i++) {
-		s32Ret = RK_MPI_VI_StartPipe(ctx->vi[i].u32PipeId);
-		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("RK_MPI_VI_StartPipe failure:$#X pipe:%d", s32Ret,
-			        ctx->vi[i].u32PipeId);
-			goto __VI_INITFAIL;
+	if (bIfIspGroupInit == RK_TRUE) {
+		for (i = 0; i < s32CamNum; i++) {
+			s32Ret = RK_MPI_VI_StartPipe(ctx->vi[i].u32PipeId);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("RK_MPI_VI_StartPipe failure:$#X pipe:%d", s32Ret,
+				        ctx->vi[i].u32PipeId);
+				goto __VI_INITFAIL;
+			}
 		}
 	}
 	/* avs startgrp*/
@@ -740,11 +761,13 @@ int main(int argc, char *argv[]) {
 	SAMPLE_COMM_AVS_DestroyGrp(&ctx->avs);
 
 __AVS_FAILED:
-	for (i = 0; i < s32CamNum; i++) {
-		s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
-		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
-			        ctx->vi[i].u32PipeId);
+	if (bIfIspGroupInit == RK_TRUE) {
+		for (i = 0; i < s32CamNum; i++) {
+			s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
+				        ctx->vi[i].u32PipeId);
+			}
 		}
 	}
 __VI_INITFAIL:
@@ -757,7 +780,21 @@ __FAILED:
 	RK_MPI_SYS_Exit();
 	if (iq_file_dir) {
 #ifdef RKAIQ
-		SAMPLE_COMM_ISP_CamGroup_Stop(s32CamId);
+		if (bIfIspGroupInit == RK_FALSE) {
+			for (RK_S32 i = 0; i < s32CamNum; i++) {
+				s32Ret = SAMPLE_COMM_ISP_Stop(i);
+				if (s32Ret != RK_SUCCESS) {
+					RK_LOGE("SAMPLE_COMM_ISP_Stop failure:%#X", s32Ret);
+					return s32Ret;
+				}
+			}
+		} else {
+			s32Ret = SAMPLE_COMM_ISP_CamGroup_Stop(s32CamGrpId);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Stop failure:%#X", s32Ret);
+				return s32Ret;
+			}
+		}
 #endif
 	}
 __FAILED2:

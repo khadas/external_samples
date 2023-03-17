@@ -83,7 +83,7 @@ static void sigterm_handler(int sig) {
 	program_normal_exit(__func__, __LINE__);
 }
 
-static RK_CHAR optstr[] = "?::a::A:n:l:o:M:f:L:d:m:v:s:t:c:";
+static RK_CHAR optstr[] = "?::a::A:n:l:o:M:f:L:d:m:v:s:t:c:i:";
 static const struct option long_options[] = {
     {"aiq", optional_argument, NULL, 'a'},
     {"calib_file_path", required_argument, NULL, 'A'},
@@ -101,6 +101,7 @@ static const struct option long_options[] = {
     {"mode_test_type", required_argument, NULL, 'm'},
     {"mode_test_loop", required_argument, NULL, 't' + 'l'},
     {"test_frame_count", required_argument, NULL, 'c'},
+    {"ispLaunchMode", required_argument, NULL, 'i'},
     {"help", optional_argument, NULL, '?'},
     {NULL, 0, NULL, 0},
 };
@@ -141,6 +142,8 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t--mode_test_loop : module test loop, default: -1\n");
 	printf("\t--test_frame_count : set the venc reveive frame count for every test "
 	       "loop, default: 10\n");
+	printf("\t-i | --ispLaunchMode : 0: single cam init, 1: camera group init. default: "
+	       "1\n");
 }
 
 /******************************************************************************
@@ -488,6 +491,7 @@ static RK_S32 global_param_deinit(void) {
  * Description : main
  ******************************************************************************/
 int main(int argc, char *argv[]) {
+	RK_BOOL bIfIspGroupInit = RK_TRUE;
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_U32 u32ViWidth = 1920;
 	RK_U32 u32ViHeight = 1080;
@@ -595,6 +599,9 @@ int main(int argc, char *argv[]) {
 		case 'c':
 			gModeTest->u32TestFrameCount = atoi(optarg);
 			break;
+		case 'i':
+			bIfIspGroupInit = atoi(optarg);
+			break;
 		case '?':
 		default:
 			print_usage(argv[0]);
@@ -657,26 +664,38 @@ int main(int argc, char *argv[]) {
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
 		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
-		rk_aiq_camgroup_instance_cfg_t camgroup_cfg;
-
-		memset(&camgroup_cfg, 0, sizeof(camgroup_cfg));
-		camgroup_cfg.sns_num = s32CamNum;
-		camgroup_cfg.config_file_dir = iq_file_dir;
-
-		s32Ret = SAMPLE_COMM_ISP_CamGroup_Init(
-		    s32CamGrpId, hdr_mode, bMultictx, eGetLdchMode, pLdchMeshData, &camgroup_cfg);
-		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init failure");
-			return s32Ret;
+		if (bIfIspGroupInit == RK_FALSE) {
+			for (RK_S32 i = 0; i < s32CamNum; i++) {
+				s32Ret = SAMPLE_COMM_ISP_Init(i, hdr_mode, bMultictx, iq_file_dir);
+				s32Ret |= SAMPLE_COMM_ISP_Run(i);
+				if (s32Ret != RK_SUCCESS) {
+					RK_LOGE("ISP init failure camid:%d", i);
+					return RK_FAILURE;
+				}
+			}
 		} else {
-			RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init success");
-		}
-		s32Ret = SAMPLE_COMM_ISP_CamGroup_SetFrameRate(s32CamGrpId, u32ViFps);
-		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("SAMPLE_COMM_ISP_CamGroup_SetFrameRate failure");
-			return s32Ret;
-		} else {
-			RK_LOGE("SAMPLE_COMM_ISP_CamGroup_SetFrameRate success");
+			rk_aiq_camgroup_instance_cfg_t camgroup_cfg;
+
+			memset(&camgroup_cfg, 0, sizeof(camgroup_cfg));
+			camgroup_cfg.sns_num = s32CamNum;
+			camgroup_cfg.config_file_dir = iq_file_dir;
+
+			s32Ret =
+			    SAMPLE_COMM_ISP_CamGroup_Init(s32CamGrpId, hdr_mode, bMultictx,
+			                                  eGetLdchMode, pLdchMeshData, &camgroup_cfg);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init failure");
+				return s32Ret;
+			} else {
+				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init success");
+			}
+			s32Ret = SAMPLE_COMM_ISP_CamGroup_SetFrameRate(s32CamGrpId, u32ViFps);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_SetFrameRate failure");
+				return s32Ret;
+			} else {
+				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_SetFrameRate success");
+			}
 		}
 
 #endif
@@ -689,7 +708,7 @@ int main(int argc, char *argv[]) {
 		ctx->vi[i].s32DevId = i;
 		ctx->vi[i].u32PipeId = i;
 		ctx->vi[i].s32ChnId = 2;
-		ctx->vi[i].bIfIspGroupInit = RK_TRUE;
+		ctx->vi[i].bIfIspGroupInit = bIfIspGroupInit;
 		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 2;
 		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
 		ctx->vi[i].stChnAttr.u32Depth = 2;
@@ -699,13 +718,14 @@ int main(int argc, char *argv[]) {
 		ctx->vi[i].stChnAttr.stFrameRate.s32DstFrameRate = -1;
 		SAMPLE_COMM_VI_CreateChn(&ctx->vi[i]);
 	}
-
-	for (i = 0; i < s32CamNum; i++) {
-		s32Ret = RK_MPI_VI_StartPipe(ctx->vi[i].u32PipeId);
-		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("RK_MPI_VI_StartPipe failure:$#X pipe:%d", s32Ret,
-			        ctx->vi[i].u32PipeId);
-			goto __VI_INITFAIL;
+	if (bIfIspGroupInit) {
+		for (i = 0; i < s32CamNum; i++) {
+			s32Ret = RK_MPI_VI_StartPipe(ctx->vi[i].u32PipeId);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("RK_MPI_VI_StartPipe failure:$#X pipe:%d", s32Ret,
+				        ctx->vi[i].u32PipeId);
+				goto __VI_INITFAIL;
+			}
 		}
 	}
 	/* avs start grp */
@@ -768,11 +788,13 @@ int main(int argc, char *argv[]) {
 	SAMPLE_COMM_AVS_StopGrp(&ctx->avs);
 	SAMPLE_COMM_AVS_DestroyGrp(&ctx->avs);
 	/* Destroy VI[0] */
-	for (i = 0; i < s32CamNum; i++) {
-		s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
-		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
-			        ctx->vi[i].u32PipeId);
+	if (bIfIspGroupInit) {
+		for (i = 0; i < s32CamNum; i++) {
+			s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
+				        ctx->vi[i].u32PipeId);
+			}
 		}
 	}
 __VI_INITFAIL:
@@ -784,7 +806,21 @@ __FAILED:
 	RK_MPI_SYS_Exit();
 	if (iq_file_dir) {
 #ifdef RKAIQ
-		SAMPLE_COMM_ISP_CamGroup_Stop(s32CamId);
+		if (bIfIspGroupInit == RK_FALSE) {
+			for (RK_S32 i = 0; i < s32CamNum; i++) {
+				s32Ret = SAMPLE_COMM_ISP_Stop(i);
+				if (s32Ret != RK_SUCCESS) {
+					RK_LOGE("SAMPLE_COMM_ISP_Stop failure:%#X", s32Ret);
+					return s32Ret;
+				}
+			}
+		} else {
+			s32Ret = SAMPLE_COMM_ISP_CamGroup_Stop(s32CamGrpId);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Stop failure:%#X", s32Ret);
+				return s32Ret;
+			}
+		}
 #endif
 	}
 

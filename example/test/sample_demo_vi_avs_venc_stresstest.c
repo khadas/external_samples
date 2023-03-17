@@ -48,6 +48,7 @@ typedef struct _rkModeTest {
 	RK_BOOL bIfModuleTestThreadQuit;
 	RK_BOOL bIfModuleTestopen;
 	RK_BOOL bIfEnableRtsp;
+	RK_BOOL bIfIspGroupInit;
 	RK_S32 s32ModuleTestType;
 	RK_S32 s32CamGrpId;
 	RK_S32 s32CamNum;
@@ -119,6 +120,7 @@ static const struct option long_options[] = {
     {"test_frame", required_argument, NULL, 't' + 'f'},
     {"chn_id", required_argument, NULL, 'c' + 'i'},
     {"vi_chn_buf_cnt", required_argument, NULL, 'v' + 'b'},
+    {"ispLaunchMode", required_argument, NULL, 'i'},
     {"help", optional_argument, NULL, '?'},
     {NULL, 0, NULL, 0},
 };
@@ -148,6 +150,8 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-e | --encode : encode type, Default:h265cbr, Value:h264cbr, "
 	       "h264vbr, h265cbr, h265vbr\n");
 	printf("\t-F | --dstfps : set venc output fps, Default: 15\n");
+	printf("\t-i | --ispLaunchMode : 0: single cam init, 1: camera group init. default: "
+	       "1\n");
 	printf("\t--vi_size : set vi resolution WidthxHeight, default: 1920x1080\n");
 	printf(
 	    "\t--avs_chn0_size : set avs chn0 resolution WidthxHeight, default: 3840x1080\n");
@@ -290,22 +294,34 @@ static RK_S32 media_init(g_mode_test *gModeTest) {
 	}
 
 	/* isp init */
-	s32Ret = SAMPLE_COMM_ISP_CamGroup_Init(
-	    gModeTest->s32CamGrpId, gModeTest->hdr_mode, RK_TRUE, gModeTest->eGetLdchMode,
-	    gModeTest->pLdchMeshData, &gModeTest->camgroup_cfg);
-	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init failure:%#X", s32Ret);
-		program_handle_error(__func__, __LINE__);
-		return s32Ret;
-	}
+	if (gModeTest->bIfIspGroupInit) {
+		s32Ret = SAMPLE_COMM_ISP_CamGroup_Init(
+		    gModeTest->s32CamGrpId, gModeTest->hdr_mode, RK_TRUE, gModeTest->eGetLdchMode,
+		    gModeTest->pLdchMeshData, &gModeTest->camgroup_cfg);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init failure:%#X", s32Ret);
+			program_handle_error(__func__, __LINE__);
+			return s32Ret;
+		}
 
-	/* set isp framerate */
-	s32Ret = SAMPLE_COMM_ISP_CamGroup_SetFrameRate(gModeTest->s32CamGrpId,
-	                                               gModeTest->s32IspFps);
-	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("SAMPLE_COMM_ISP_CamGroup_SetFrameRate failure");
-		program_handle_error(__func__, __LINE__);
-		return s32Ret;
+		/* set isp framerate */
+		s32Ret = SAMPLE_COMM_ISP_CamGroup_SetFrameRate(gModeTest->s32CamGrpId,
+		                                               gModeTest->s32IspFps);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("SAMPLE_COMM_ISP_CamGroup_SetFrameRate failure");
+			program_handle_error(__func__, __LINE__);
+			return s32Ret;
+		}
+	} else {
+		for (RK_S32 i = 0; i < gModeTest->s32CamNum; i++) {
+			s32Ret = SAMPLE_COMM_ISP_Init(i, gModeTest->hdr_mode, RK_FALSE,
+			                              gModeTest->camgroup_cfg.config_file_dir);
+			s32Ret |= SAMPLE_COMM_ISP_Run(i);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("ISP init failure camid:%d", i);
+				return RK_FAILURE;
+			}
+		}
 	}
 
 	/* rtsp init */
@@ -326,13 +342,15 @@ static RK_S32 media_init(g_mode_test *gModeTest) {
 		}
 	}
 
-	for (RK_S32 i = 0; i < gModeTest->s32CamNum; i++) {
-		s32Ret = RK_MPI_VI_StartPipe(ctx->vi[i].u32PipeId);
-		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("RK_MPI_VI_StartPipe failure:$#X pipe:%d", s32Ret,
-			        ctx->vi[i].u32PipeId);
-			program_handle_error(__func__, __LINE__);
-			return s32Ret;
+	if (gModeTest->bIfIspGroupInit) {
+		for (RK_S32 i = 0; i < gModeTest->s32CamNum; i++) {
+			s32Ret = RK_MPI_VI_StartPipe(ctx->vi[i].u32PipeId);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("RK_MPI_VI_StartPipe failure:$#X pipe:%d", s32Ret,
+				        ctx->vi[i].u32PipeId);
+				program_handle_error(__func__, __LINE__);
+				return s32Ret;
+			}
 		}
 	}
 
@@ -447,14 +465,15 @@ static RK_S32 media_deinit(g_mode_test *gModeTest) {
 	SAMPLE_COMM_AVS_StopGrp(&ctx->avs);
 	SAMPLE_COMM_AVS_DestroyGrp(&ctx->avs);
 
-	for (RK_S32 i = 0; i < gModeTest->s32CamNum; i++) {
-		s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
-		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
-			        ctx->vi[i].u32PipeId);
+	if (gModeTest->bIfIspGroupInit) {
+		for (RK_S32 i = 0; i < gModeTest->s32CamNum; i++) {
+			s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
+				        ctx->vi[i].u32PipeId);
+			}
 		}
 	}
-
 	/* Destroy VI[0] */
 	for (RK_S32 i = 0; i < gModeTest->s32CamNum; i++) {
 		SAMPLE_COMM_VI_DestroyChn(&ctx->vi[i]);
@@ -464,7 +483,21 @@ static RK_S32 media_deinit(g_mode_test *gModeTest) {
 	RK_MPI_SYS_Exit();
 
 	/* isp deinit */
-	SAMPLE_COMM_ISP_CamGroup_Stop(gModeTest->s32CamGrpId);
+	if (gModeTest->bIfIspGroupInit == RK_FALSE) {
+		for (RK_S32 i = 0; i < gModeTest->s32CamNum; i++) {
+			s32Ret = SAMPLE_COMM_ISP_Stop(i);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("SAMPLE_COMM_ISP_Stop failure:%#X", s32Ret);
+				return s32Ret;
+			}
+		}
+	} else {
+		s32Ret = SAMPLE_COMM_ISP_CamGroup_Stop(gModeTest->s32CamGrpId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Stop failure:%#X", s32Ret);
+			return s32Ret;
+		}
+	}
 
 	RK_LOGE("----------------media_deinit finish  !!!");
 	return s32Ret;
@@ -484,7 +517,7 @@ static RK_S32 media_deinit_init(g_mode_test *gModeTest) {
 	prctl(PR_SET_NAME, "media_deinit_init");
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_S32 s32TestCount = 0;
-	static int i = 0;
+
 	while (!gModeTest->bIfModuleTestThreadQuit) {
 
 		s32Ret = media_deinit(gModeTest);
@@ -681,6 +714,7 @@ static RK_S32 global_param_init(void) {
 	gModeTest->eGetLdchMode = RK_GET_LDCH_BY_BUFF;
 	gModeTest->s32IspFps = 15;
 	gModeTest->s32CamNum = 2;
+	gModeTest->bIfIspGroupInit = RK_TRUE;
 
 	for (RK_S32 i = 0; i < VENC_NUM_MAX; i++) {
 		sem_init(&g_sem_module_test[i], 0, 0);
@@ -883,6 +917,9 @@ int main(int argc, char *argv[]) {
 		case 'v' + 'b':
 			u32ViChnBuffCnt = atoi(optarg);
 			break;
+		case 'i':
+			gModeTest->bIfIspGroupInit = atoi(optarg);
+			break;
 		case '?':
 		default:
 			print_usage(argv[0]);
@@ -979,7 +1016,7 @@ int main(int argc, char *argv[]) {
 		ctx->vi[i].s32DevId = i;
 		ctx->vi[i].u32PipeId = i;
 		ctx->vi[i].s32ChnId = s32ChnId;
-		ctx->vi[i].bIfIspGroupInit = RK_TRUE;
+		ctx->vi[i].bIfIspGroupInit = gModeTest->bIfIspGroupInit;
 		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = u32ViChnBuffCnt;
 		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
 		ctx->vi[i].stChnAttr.u32Depth = 0;
