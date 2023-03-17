@@ -80,213 +80,229 @@ test_case()
 
     if [ "$PN_MODE" = "on" ]; then
         #isp p/n mode switch
-        echo -e "--------------------------------------- <sample_demo_vi_venc> isp p/n mode switch test start -------------------------------------------\n"
-        echo -e "<sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1 --wrap $ifOpenWrap
+        echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> isp p/n mode switch test start -------------------------------------------\n"
+        echo -e "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1 --wrap $ifOpenWrap>\n"
+        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1 --wrap $ifOpenWrap
         if [ $? -eq 0 ]; then
-            echo "-------------------------<sample_demo_vi_venc> isp p/n mode switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> isp p/n mode switch test success -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> isp p/n mode switch test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> isp p/n mode switch test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------<sample_demo_vi_venc> isp p/n mode switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> isp p/n mode switch test failure -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> isp p/n mode switch test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> isp p/n mode switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
 
     if [ "$HDR" = "on" ]; then
         #isp hdr mode switch test
-        echo -e "--------------------------------------- <sample_demo_vi_venc> isp hdr mode switch switch test start -------------------------------------------\n"
-        echo -e "<sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 2 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 2 --wrap $ifOpenWrap
+        echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> isp hdr mode switch switch test start -------------------------------------------\n"
+        echo -e "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 2 --wrap $ifOpenWrap>\n"
+        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 2 --wrap $ifOpenWrap
         if [ $? -eq 0 ]; then
-            echo "-------------------------<sample_demo_vi_venc> isp hdr mode switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> isp hdr mode switch switch test success -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> isp hdr mode switch test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> isp hdr mode switch switch test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------<sample_demo_vi_venc> isp hdr mode switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> isp hdr mode switch switch test failure -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> isp hdr mode switch test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> isp hdr mode switch switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
 
     if [ "$FRAMERATE" = "on" ]; then
         #isp framerate switch test
-        echo -e "--------------------------------------- <sample_demo_vi_venc> isp framerate switch test start -------------------------------------------\n"
-        echo -e "<sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $vi_framerate_switch_loop --mode_test_type 3 --wrap $ifOpenWrap\n>"
-        sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $vi_framerate_switch_loop --mode_test_type 3 --wrap $ifOpenWrap
+        echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> isp framerate switch test start -------------------------------------------\n"
+        echo -e "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $vi_framerate_switch_loop --mode_test_type 3 --wrap $ifOpenWrap\n>"
+        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $vi_framerate_switch_loop --mode_test_type 3 --wrap $ifOpenWrap
         if [ $? -eq 0 ]; then
-            echo "-------------------------<sample_demo_vi_venc> isp framerate switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> isp framerate switch test success -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> isp framerate switch test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> isp framerate switch test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------<sample_demo_vi_venc> isp framerate switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> isp framerate switch test failure -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> isp framerate switch test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> isp framerate switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
 
     if [ "$LDCH" = "on" ]; then
         #isp LDCH switch test
-        echo -e "--------------------------------------- <sample_demo_vi_venc> isp LDCH switch test start -------------------------------------------\n"
-        echo -e "<sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 4 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 4 --wrap $ifOpenWrap
+        echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> isp LDCH switch test start -------------------------------------------\n"
+        echo -e "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 4 --wrap $ifOpenWrap>\n"
+        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 4 --wrap $ifOpenWrap
         if [ $? -eq 0 ]; then
-            echo "-------------------------<sample_demo_vi_venc> isp LDCH switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> isp LDCH  switch test success -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> isp LDCH switch test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> isp LDCH  switch test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------<sample_demo_vi_venc> isp LDCH switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> isp LDCH  switch test failure -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> isp LDCH switch test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> isp LDCH  switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
 
     if [ "$RESOLUTION" = "on" ]; then
         #venc resolution switch test
-        echo -e "--------------------------------------- <sample_demo_vi_venc> venc resolution switch test start -------------------------------------------\n"
-        echo -e "<sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 5 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 5 --wrap $ifOpenWrap
+        echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch test start -------------------------------------------\n"
+        echo -e "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 5 --wrap $ifOpenWrap>\n"
+        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 5 --wrap $ifOpenWrap
         if [ $? -eq 0 ]; then
-            echo "-------------------------<sample_demo_vi_venc> venc resolution switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> venc resolution switch test success -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> venc resolution switch test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------<sample_demo_vi_venc> venc resolution switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> venc resolution switch test failure -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> venc resolution switch test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
 
     if [ "$ENCODE_TYPE" = "on" ]; then
         # encode type switch test
-        echo -e "--------------------------------------- <sample_demo_vi_venc> encode type switch test start -------------------------------------------\n"
-        echo -e "<sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 6 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 6 --wrap $ifOpenWrap
+        echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> encode type switch test start -------------------------------------------\n"
+        echo -e "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 6 --wrap $ifOpenWrap>\n"
+        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 6 --wrap $ifOpenWrap
         if [ $? -eq 0 ]; then
-            echo "-------------------------<sample_demo_vi_venc> venc encode type switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> encode type switch test success -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> venc encode type switch test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> encode type switch test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------<sample_demo_vi_venc> venc encode type switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> encode type switch test failure -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> venc encode type switch test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> encode type switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
 
     if [ "$SMART_P" = "on" ]; then
         #smartp mode switch test
-        echo -e "--------------------------------------- <sample_demo_vi_venc> smartp mode switch test start -------------------------------------------\n"
-        echo -e "<sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 7 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 7 --wrap $ifOpenWrap
+        echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> smartp mode switch test start -------------------------------------------\n"
+        echo -e "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 7 --wrap $ifOpenWrap>\n"
+        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 7 --wrap $ifOpenWrap
         if [ $? -eq 0 ]; then
-            echo "-------------------------<sample_demo_vi_venc> venc smartp mode switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> smartp mode switch test success -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> venc smartp mode switch test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> smartp mode switch test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------<sample_demo_vi_venc> venc smartp mode switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> smartp mode switch test failure -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> venc smartp mode switch test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> smartp mode switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
 
     if [ "$SVC" = "on" ]; then
         #SVC mode switch test
-        echo -e "--------------------------------------- <sample_demo_vi_venc> SVC mode switch test start -------------------------------------------\n"
-        echo -e "<sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 8 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 8 --wrap $ifOpenWrap
+        echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> SVC mode switch test start -------------------------------------------\n"
+        echo -e "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 8 --wrap $ifOpenWrap>\n"
+        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 8 --wrap $ifOpenWrap
         if [ $? -eq 0 ]; then
-            echo "-------------------------<sample_demo_vi_venc> venc SVC mode switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> SVC mode switch test success -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> venc SVC mode switch test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> SVC mode switch test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------<sample_demo_vi_venc> venc SVC mode switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> SVC mode switch test failure -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> venc SVC mode switch test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> SVC mode switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
 
     if [ "$MOTION" = "on" ]; then
         #motion deblur switch test
-        echo -e "--------------------------------------- <sample_demo_vi_venc> motion deblur switch test start -------------------------------------------\n"
-        echo -e "<sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 9 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 9 --wrap $ifOpenWrap
+        echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> motion deblur switch test start -------------------------------------------\n"
+        echo -e "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 9 --wrap $ifOpenWrap>\n"
+        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 9 --wrap $ifOpenWrap
         if [ $? -eq 0 ]; then
-            echo "-------------------------<sample_demo_vi_venc> venc motion deblur switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> motion deblur switch test success -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> venc motion deblur switch test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> motion deblur switch test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------<sample_demo_vi_venc> venc motion deblur switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> motion deblur switch test failure -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> venc motion deblur switch test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> motion deblur switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
 
     if [ "$IDR" = "on" ]; then
         #force IDR switch test
-        echo -e "--------------------------------------- <sample_demo_vi_venc> force IDR switch test start -------------------------------------------\n"
-        echo -e "<sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 10 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 10 --wrap $ifOpenWrap
+        echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> force IDR switch test start -------------------------------------------\n"
+        echo -e "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 10 --wrap $ifOpenWrap>\n"
+        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 10 --wrap $ifOpenWrap
         if [ $? -eq 0 ]; then
-            echo "-------------------------<sample_demo_vi_venc> venc force IDR switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> force IDR switch test success -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> venc force IDR switch test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> force IDR switch test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------<sample_demo_vi_venc> venc force IDR switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> force IDR switch test failure -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> venc force IDR switch test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> force IDR switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
 
     if [ "$ROTATION" = "on" ]; then
         #venc chn rotation switch test
-        echo -e "--------------------------------------- <sample_demo_vi_venc> venc chn rotation test start -------------------------------------------\n"
-        echo -e "<sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 11 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 11 --wrap $ifOpenWrap
+        echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> venc chn rotation test start -------------------------------------------\n"
+        echo -e "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 11 --wrap $ifOpenWrap>\n"
+        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 11 --wrap $ifOpenWrap
         if [ $? -eq 0 ]; then
-            echo "-------------------------<sample_demo_vi_venc> venc chn rotation switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> venc chn rotation test success -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> venc chn rotation switch test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> venc chn rotation test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------<sample_demo_vi_venc> venc chn rotation switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> venc chn rotation test failure -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> venc chn rotation switch test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> venc chn rotation test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
 
     if [ "$DETACH_ATTACH" = "on" ]; then
         #rgn detach/attach switch test
-        echo -e "--------------------------------------- <sample_demo_vi_venc> rgn detach/attach test start -------------------------------------------\n"
-        echo -e "<sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 12 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 12 --wrap $ifOpenWrap
+        echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> rgn detach/attach test start -------------------------------------------\n"
+        echo -e "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 12 --wrap $ifOpenWrap>\n"
+        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 12 --wrap $ifOpenWrap
         if [ $? -eq 0 ]; then
-            echo "-------------------------<sample_demo_vi_venc> rgn detach/attach switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> rgn detach/attach test success -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> rgn detach/attach switch test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> rgn detach/attach test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------<sample_demo_vi_venc> rgn detach/attach switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> rgn detach/attach test failure -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> rgn detach/attach switch test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> rgn detach/attach test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
 
     if [ "$ORDINARY" = "on" ]; then
         #ordinary stream test
-        echo -e "--------------------------------------- <sample_demo_vi_venc> ordinary stream test start -------------------------------------------\n"
-        echo -e "<sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l $ordinary_stream_test_framecount --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 0 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc -w 1920 -h 1080 -a /etc/iqfiles/ -l $ordinary_stream_test_framecount --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 0 --wrap $ifOpenWrap
+        echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> ordinary stream test start -------------------------------------------\n"
+        echo -e "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l $ordinary_stream_test_framecount --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 0 --wrap $ifOpenWrap>\n"
+        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l $ordinary_stream_test_framecount --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 0 --wrap $ifOpenWrap
         if [ $? -eq 0 ]; then
-            echo "-------------------------<sample_demo_vi_venc> ordinary stream test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> ordinary stream test success -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> ordinary stream test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> ordinary stream test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------<sample_demo_vi_venc> ordinary stream test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> ordinary stream test failure -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> ordinary stream test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> ordinary stream test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
 
     if [ "$RESOLUTION_RV1126" = "on" ]; then
         #venc resolution switch for_RV1126 test
-        echo -e "--------------------------------------- <sample_demo_vi_venc> venc resolution switch for_RV1126 test start -------------------------------------------\n"
-        echo -e "<sample_demo_vi_venc -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 13>\n"
-        sample_demo_vi_venc -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 13
+        echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test start -------------------------------------------\n"
+        echo -e "<sample_demo_vi_venc_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 13>\n"
+        sample_demo_vi_venc_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 13
         if [ $? -eq 0 ]; then
-            echo "-------------------------<sample_demo_vi_venc> venc resolution switch for_RV1126 test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> venc resolution switch for_RV1126 test success -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------<sample_demo_vi_venc> venc resolution switch for_RV1126 test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc> venc resolution switch for_RV1126 test failure -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test failure -------------------------------------------\n\n\n"
             return
         fi
     fi
+
+    if [ "$RESTART" = "on" ]; then
+        #venc resolution switch for_RV1126 test
+        echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test start -------------------------------------------\n"
+        echo -e "<sample_demo_vi_venc_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 14>\n"
+        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 14
+        if [ $? -eq 0 ]; then
+            echo "-------------------------<sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test success -------------------------------------------\n\n\n"
+        else
+            echo "-------------------------<sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test failure -------------------------------------------\n\n\n"
+            return
+        fi
+    fi
+
     sleep 1
     echo 3 > /proc/sys/vm/drop_caches
     cat /proc/meminfo | grep MemAvailable >> $test_result_path

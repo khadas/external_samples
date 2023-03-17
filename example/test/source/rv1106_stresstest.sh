@@ -153,7 +153,7 @@ echo "start stresstest" > $test_result_path
 echo "start record meminfo" > /tmp/testLog.txt
 
 #1.isp stresstest
-test_mod="PN_MODE=on HDR=$ifEnableHDR FRAMERATE=on LDCH=on ISP_RESTART=on"
+test_mod="PN_MODE=$ifEnableHDR HDR=$ifEnableHDR FRAMERATE=on LDCH=on ISP_RESTART=$ifEnableHDR"
 isp_stresstest "$test_mod"
 
 #2.venc stresstest
@@ -169,7 +169,7 @@ test_mod="RESTART=on RESOLUTION=on"
 vpss_stresstest "$test_mod"
 
 #5.demo vi venc stresstest
-test_mod="PN_MODE=on HDR=$ifEnableHDR FRAMERATE=on LDCH=on RESOLUTION=on ENCODE_TYPE=on SMART_P=on SVC=on MOTION=on IDR=on ROTATION=on DETACH_ATTACH=on ORDINARY=on"
+test_mod="PN_MODE=$ifEnableHDR HDR=$ifEnableHDR FRAMERATE=on LDCH=on RESOLUTION=on ENCODE_TYPE=on SMART_P=on SVC=on MOTION=on IDR=on ROTATION=on DETACH_ATTACH=on ORDINARY=on RESTART=on"
 demo_vi_venc_stresstest "$test_mod"
 
 #print test result
