@@ -284,22 +284,22 @@ test_case()
         else
             echo "-------------------------<sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test failure" >> $test_result_path
             echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test failure -------------------------------------------\n\n\n"
-            return
+            exit 1
         fi
     fi
 
     if [ "$RESTART" = "on" ]; then
-        #venc resolution switch for_RV1126 test
-        echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test start -------------------------------------------\n"
-        echo -e "<sample_demo_vi_venc_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 14>\n"
-        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 14
+        #media_deinit_init test
+        echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> media_deinit_init test start -------------------------------------------\n"
+        echo -e "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 14 --wrap $ifOpenWrap --smartP $smartP>\n"
+        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 14 --wrap $ifOpenWrap --smartP $smartP
         if [ $? -eq 0 ]; then
-            echo "-------------------------<sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test success -------------------------------------------\n\n\n"
+            echo "-------------------------<sample_demo_vi_venc_stresstest> media_deinit_init test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> media_deinit_init test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------<sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test failure -------------------------------------------\n\n\n"
-            return
+            echo "-------------------------<sample_demo_vi_venc_stresstest> media_deinit_init test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> media_deinit_init test failure -------------------------------------------\n\n\n"
+            exit 1
         fi
     fi
 
