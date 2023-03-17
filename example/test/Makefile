@@ -53,6 +53,7 @@ endif
 	@cp -f source/demo_vi_avs_venc_stresstest.sh ../../../../output/out/userdata/
 	@cp -f source/rv1106_multi_cam_stresstest.sh ../../../../output/out/userdata/
 	@cp -f source/multi_isp_stresstest.sh ../../../../output/out/userdata/
+	@cp -f source/rv1126_multi_cam_stresstest.sh ../../../../output/out/userdata/
 
 clean:
 	@echo "clean test"
