@@ -86,7 +86,7 @@ static const struct option long_options[] = {
  ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
-	printf("\t%s --vi_size 1920x1080 --avs_chn0_size 3840x1080 --avs_chn1_size 1920x1080 "
+	printf("\t%s --vi_size 1920x1080 --avs_chn0_size 3840x1080 --avs_chn1_size 1920x544 "
 	       "-a /etc/iqfiles/ -e h265cbr -b "
 	       "4096 -n 2\n",
 	       name);
@@ -110,7 +110,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf(
 	    "\t--avs_chn0_size: set avs chn0 resolution WidthxHeight, default: 3840x1080\n");
 	printf(
-	    "\t--avs_chn1_size: set avs chn1 resolution WidthxHeight, default: 1920x1080\n");
+	    "\t--avs_chn1_size: set avs chn1 resolution WidthxHeight, default: 1920x544\n");
 	printf("\t--hdr_mode: set hdr mode, 0: normal 1: HDR2, 2: HDR3, Default: 0\n");
 	printf("\t--stitch_distance: set stitch distance, default: 5.0(m)\n");
 	printf("\t--cam0_ldch_path: cam0 ldch mesh path, default: "
@@ -190,7 +190,7 @@ int main(int argc, char *argv[]) {
 	RK_U32 u32AvsChn0Width = 3840;
 	RK_U32 u32AvsChn0Height = 1080;
 	RK_U32 u32AvsChn1Width = 1920;
-	RK_U32 u32AvsChn1Height = 1080;
+	RK_U32 u32AvsChn1Height = 544;
 	RK_CHAR *pAvsCalibFilePath = "/oem/usr/share/avs_calib/calib_file.xml";
 	RK_CHAR *pAvsMeshAlphaPath = "/tmp/";
 	RK_CHAR *pAvsLutFilePath = NULL;
@@ -392,7 +392,8 @@ int main(int argc, char *argv[]) {
 	ctx->avs.stAvsChnAttr[0].enCompressMode = COMPRESS_MODE_NONE;
 	ctx->avs.stAvsChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
 	ctx->avs.stAvsChnAttr[0].stFrameRate.s32DstFrameRate = -1;
-	ctx->avs.stAvsChnAttr[0].u32FrameBufCnt = 1;
+	ctx->avs.stAvsChnAttr[0].u32FrameBufCnt = 2;
+	ctx->avs.stAvsChnAttr[0].u32Depth = 1;
 	ctx->avs.stAvsChnAttr[0].u32Width = u32AvsChn0Width;
 	ctx->avs.stAvsChnAttr[0].u32Height = u32AvsChn0Height;
 	ctx->avs.stAvsChnAttr[0].enDynamicRange = DYNAMIC_RANGE_SDR8;
@@ -400,7 +401,8 @@ int main(int argc, char *argv[]) {
 	ctx->avs.stAvsChnAttr[1].enCompressMode = COMPRESS_MODE_NONE;
 	ctx->avs.stAvsChnAttr[1].stFrameRate.s32SrcFrameRate = -1;
 	ctx->avs.stAvsChnAttr[1].stFrameRate.s32DstFrameRate = -1;
-	ctx->avs.stAvsChnAttr[1].u32FrameBufCnt = 1;
+	ctx->avs.stAvsChnAttr[1].u32FrameBufCnt = 2;
+	ctx->avs.stAvsChnAttr[1].u32Depth = 1;
 	ctx->avs.stAvsChnAttr[1].u32Width = u32AvsChn1Width;
 	ctx->avs.stAvsChnAttr[1].u32Height = u32AvsChn1Height;
 	ctx->avs.stAvsChnAttr[1].enDynamicRange = DYNAMIC_RANGE_SDR8;
@@ -462,6 +464,7 @@ int main(int argc, char *argv[]) {
 		ctx->vi[i].s32DevId = i;
 		ctx->vi[i].u32PipeId = i;
 		ctx->vi[i].s32ChnId = 1;
+		ctx->vi[i].bIfIspGroupInit = RK_TRUE;
 		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 2;
 		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
 		ctx->vi[i].stChnAttr.u32Depth = 0;
@@ -472,6 +475,14 @@ int main(int argc, char *argv[]) {
 		SAMPLE_COMM_VI_CreateChn(&ctx->vi[i]);
 	}
 
+	for (RK_S32 i = 0; i < s32CamNum; i++) {
+		s32Ret = RK_MPI_VI_StartPipe(ctx->vi[i].u32PipeId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VI_StartPipe failure:$#X pipe:%d", s32Ret,
+			        ctx->vi[i].u32PipeId);
+			goto __VI_INITFAIL;
+		}
+	}
 	/* avs startgrp*/
 	s32Ret = SAMPLE_COMM_AVS_StartGrp(&ctx->avs);
 	if (s32Ret != RK_SUCCESS) {
@@ -491,8 +502,9 @@ int main(int argc, char *argv[]) {
 	ctx->venc[0].getStreamCbFunc = venc_get_stream;
 	ctx->venc[0].s32loopCount = s32loopCnt;
 	ctx->venc[0].dstFilePath = pOutPathVenc;
-	ctx->venc[0].u32BuffSize = ctx->venc[0].u32Width * ctx->venc[0].u32Height / 3;
-	ctx->venc[0].u32StreamBufCnt = 2;
+	ctx->venc[0].u32BuffSize = ctx->venc[0].u32Width * ctx->venc[0].u32Height / 4;
+	ctx->venc[0].u32StreamBufCnt = 4;
+	ctx->venc[0].enable_buf_share = RK_TRUE;
 	// H264  66：Baseline  77：Main Profile 100：High Profile
 	// H265  0：Main Profile  1：Main 10 Profile
 	// MJPEG 0：Baseline
@@ -517,8 +529,9 @@ int main(int argc, char *argv[]) {
 	ctx->venc[1].getStreamCbFunc = venc_get_stream;
 	ctx->venc[1].s32loopCount = s32loopCnt;
 	ctx->venc[1].dstFilePath = pOutPathVenc;
-	ctx->venc[1].u32BuffSize = ctx->venc[1].u32Width * ctx->venc[1].u32Height / 3;
-	ctx->venc[1].u32StreamBufCnt = 2;
+	ctx->venc[1].u32BuffSize = ctx->venc[1].u32Width * ctx->venc[1].u32Height / 4;
+	ctx->venc[1].u32StreamBufCnt = 4;
+	ctx->venc[1].enable_buf_share = RK_TRUE;
 	// H264  66：Baseline  77：Main Profile 100：High Profile
 	// H265  0：Main Profile  1：Main 10 Profile
 	// MJPEG 0：Baseline
@@ -644,6 +657,14 @@ int main(int argc, char *argv[]) {
 	SAMPLE_COMM_AVS_DestroyGrp(&ctx->avs);
 
 __AVS_FAILED:
+	for (RK_S32 i = 0; i < s32CamNum; i++) {
+		s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
+			        ctx->vi[i].u32PipeId);
+		}
+	}
+__VI_INITFAIL:
 	// Destroy VI[0]
 	for (RK_S32 i = 0; i < s32CamNum; i++) {
 		SAMPLE_COMM_VI_DestroyChn(&ctx->vi[i]);

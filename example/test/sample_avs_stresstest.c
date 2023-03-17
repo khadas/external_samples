@@ -706,6 +706,7 @@ int main(int argc, char *argv[]) {
 		ctx->vi[i].s32DevId = i;
 		ctx->vi[i].u32PipeId = i;
 		ctx->vi[i].s32ChnId = 2;
+		ctx->vi[i].bIfIspGroupInit = RK_TRUE;
 		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 2;
 		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
 		ctx->vi[i].stChnAttr.u32Depth = 2;
@@ -716,6 +717,14 @@ int main(int argc, char *argv[]) {
 		SAMPLE_COMM_VI_CreateChn(&ctx->vi[i]);
 	}
 
+	for (i = 0; i < s32CamNum; i++) {
+		s32Ret = RK_MPI_VI_StartPipe(ctx->vi[i].u32PipeId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VI_StartPipe failure:$#X pipe:%d", s32Ret,
+			        ctx->vi[i].u32PipeId);
+			goto __VI_INITFAIL;
+		}
+	}
 	/* avs start grp */
 	s32Ret = SAMPLE_COMM_AVS_StartGrp(&ctx->avs);
 	if (s32Ret != RK_SUCCESS) {
@@ -786,6 +795,14 @@ int main(int argc, char *argv[]) {
 	SAMPLE_COMM_AVS_StopGrp(&ctx->avs);
 	SAMPLE_COMM_AVS_DestroyGrp(&ctx->avs);
 	/* Destroy VI[0] */
+	for (i = 0; i < s32CamNum; i++) {
+		s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
+			        ctx->vi[i].u32PipeId);
+		}
+	}
+__VI_INITFAIL:
 	for (i = 0; i < s32CamNum; i++) {
 		SAMPLE_COMM_VI_DestroyChn(&ctx->vi[i]);
 	}

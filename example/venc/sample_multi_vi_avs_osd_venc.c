@@ -491,6 +491,7 @@ int main(int argc, char *argv[]) {
 		ctx->vi[i].u32Height = u32ViHeight;
 		ctx->vi[i].s32DevId = i;
 		ctx->vi[i].u32PipeId = i;
+		ctx->vi[i].bIfIspGroupInit = RK_TRUE;
 		ctx->vi[i].s32ChnId = 2; // rk3588 mainpath:0 selfpath:1 fbcpath:2
 		ctx->vi[i].stChnAttr.stIspOpt.stMaxSize.u32Width = u32ViWidth;
 		ctx->vi[i].stChnAttr.stIspOpt.stMaxSize.u32Height = u32ViHeight;
@@ -504,6 +505,14 @@ int main(int argc, char *argv[]) {
 		SAMPLE_COMM_VI_CreateChn(&ctx->vi[i]);
 	}
 
+	for (i = 0; i < s32CamNum; i++) {
+		s32Ret = RK_MPI_VI_StartPipe(ctx->vi[i].u32PipeId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VI_StartPipe failure:$#X pipe:%d", s32Ret,
+			        ctx->vi[i].u32PipeId);
+			goto __VI_INITFAIL;
+		}
+	}
 	/* avs startgrp*/
 	s32Ret = SAMPLE_COMM_AVS_StartGrp(&ctx->avs);
 	if (s32Ret != RK_SUCCESS) {
@@ -766,6 +775,14 @@ int main(int argc, char *argv[]) {
 	SAMPLE_COMM_AVS_DestroyGrp(&ctx->avs);
 
 __AVS_FAILED:
+	for (i = 0; i < s32CamNum; i++) {
+		s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
+			        ctx->vi[i].u32PipeId);
+		}
+	}
+__VI_INITFAIL:
 	// Destroy VI[0]
 	for (i = 0; i < s32CamNum; i++) {
 		SAMPLE_COMM_VI_DestroyChn(&ctx->vi[i]);
