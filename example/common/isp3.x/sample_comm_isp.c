@@ -406,6 +406,33 @@ RK_S32 SAMPLE_COMM_ISP_SetLDCH(RK_U32 CamId, RK_U32 u32Level, RK_BOOL bIfEnable)
 	return RK_SUCCESS;
 }
 
+RK_S32 SAMPLE_COMM_ISP_CamGroup_SetLDCH(RK_U32 CamId, RK_U32 u32Level,
+                                        RK_BOOL bIfEnable) {
+	RK_S32 s32Ret = RK_FAILURE;
+	rk_aiq_ldch_v21_attrib_t ldchAttr;
+	memset(&ldchAttr, 0, sizeof(rk_aiq_ldch_v21_attrib_t));
+	if (CamId >= MAX_AIQ_CTX || !g_aiq_camgroup_ctx[CamId]) {
+		printf("%s : CamId is over %d or not init\n", __FUNCTION__, MAX_AIQ_CTX);
+		return RK_FAILURE;
+	}
+	s32Ret = rk_aiq_user_api2_aldch_v21_GetAttrib(
+	    (rk_aiq_sys_ctx_t *)g_aiq_camgroup_ctx[CamId], &ldchAttr);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("rk_aiq_user_api2_aldch_v21_GetAttrib FAILURE:%X", s32Ret);
+		return s32Ret;
+	}
+	ldchAttr.en = bIfEnable;
+	ldchAttr.correct_level = u32Level;
+	s32Ret = rk_aiq_user_api2_aldch_v21_SetAttrib(
+	    (rk_aiq_sys_ctx_t *)g_aiq_camgroup_ctx[CamId], &ldchAttr);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("rk_aiq_user_api2_aldch_v21_SetAttrib FAILURE:%X", s32Ret);
+		return s32Ret;
+	}
+
+	return RK_SUCCESS;
+}
+
 #ifdef __cplusplus
 #if __cplusplus
 }

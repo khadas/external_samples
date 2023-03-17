@@ -490,24 +490,34 @@ static void ldch_mode_test(RK_S32 test_loop) {
 
 	while (!gModeTest->bModuleTestThreadQuit) {
 
-		for (i = 0; i < gModeTest->u32CamNum; i++) {
-			s32Ret = SAMPLE_COMM_ISP_SetLDCH(gModeTest->s32CamId[i], u32LdchLevel,
-			                                 bIfLDCHEnable);
+		if (!gModeTest->bIfIspGroupInit) {
+			for (i = 0; i < gModeTest->u32CamNum; i++) {
+				s32Ret = SAMPLE_COMM_ISP_SetLDCH(gModeTest->s32CamId[i], u32LdchLevel,
+				                                 bIfLDCHEnable);
+				if (s32Ret != RK_SUCCESS) {
+					RK_LOGE("SAMPLE_COMM_ISP_SetLDCH failure camId:%d", gModeTest->s32CamId[i]);
+					program_handle_error(__func__, __LINE__);
+					break;
+				}
+			}
+		} else {
+			s32Ret = SAMPLE_COMM_ISP_CamGroup_SetLDCH(gModeTest->s32CamGroupId,
+			                                          u32LdchLevel, bIfLDCHEnable);
 			if (s32Ret != RK_SUCCESS) {
-				RK_LOGE("SAMPLE_COMM_ISP_SetLDCH failure camId:%d",
-				        gModeTest->s32CamId[i]);
+				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_SetLDCH failure camId:%d", gModeTest->s32CamGroupId);
 				program_handle_error(__func__, __LINE__);
 				break;
 			}
-
-			if (bIfLDCHEnable) {
-				u32LdchLevel++;
-				if (u32LdchLevel > LDCH_MAX_LEVEL) {
-					u32LdchLevel = 0;
-				}
-			}
-			bIfLDCHEnable = !bIfLDCHEnable;
 		}
+
+		if (bIfLDCHEnable) {
+			u32LdchLevel++;
+			if (u32LdchLevel > LDCH_MAX_LEVEL) {
+				u32LdchLevel = 0;
+			}
+		}
+		bIfLDCHEnable = !bIfLDCHEnable;
+
 		wait_module_test_switch_success();
 		test_count++;
 
@@ -700,7 +710,7 @@ RK_S32 global_param_deinit(void) {
 		gModeTest = RK_NULL;
 	}
 
-	for (RK_S32 i; i < CAM_NUM_MAX; i++) {
+	for (RK_S32 i = 0; i < CAM_NUM_MAX; i++) {
 		sem_destroy(&g_sem_module_test[i]);
 		pthread_mutex_destroy(&g_frame_count_mutex[i]);
 	}
