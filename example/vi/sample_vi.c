@@ -96,7 +96,6 @@ static void *vi_get_stream(void *pArgs) {
 	FILE *fp = RK_NULL;
 	void *pData = RK_NULL;
 	RK_S32 loopCount = 0;
-	RK_U32 u32DataLen = 0;
 
 	if (ctx->dstFilePath) {
 		snprintf(name, sizeof(name), "/%s/vi_%d.bin", ctx->dstFilePath, ctx->s32DevId);
@@ -125,7 +124,7 @@ static void *vi_get_stream(void *pArgs) {
 			}
 
 			if (fp) {
-				fwrite(pData, 1, u32DataLen, fp);
+				fwrite(pData, 1, ctx->stViFrame.stVFrame.u64PrivateData, fp);
 				fflush(fp);
 			}
 
