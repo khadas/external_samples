@@ -523,13 +523,13 @@ int main(int argc, char *argv[]) {
 	ctx->venc[1].u32Height = u32AvsChn1Height;
 	ctx->venc[1].u32Fps = s32DstFps;
 	ctx->venc[1].u32Gop = s32DstFps * 2;
-	ctx->venc[1].u32BitRate = s32BitRate;
 	ctx->venc[1].enCodecType = enCodecType;
 	ctx->venc[1].enRcMode = enRcMode;
 	ctx->venc[1].getStreamCbFunc = venc_get_stream;
 	ctx->venc[1].s32loopCount = s32loopCnt;
 	ctx->venc[1].dstFilePath = pOutPathVenc;
 	ctx->venc[1].u32BuffSize = ctx->venc[1].u32Width * ctx->venc[1].u32Height / 4;
+	ctx->venc[1].u32BitRate = ctx->venc[1].u32BuffSize * 8 / 1024;
 	ctx->venc[1].u32StreamBufCnt = 4;
 	ctx->venc[1].enable_buf_share = RK_TRUE;
 	// H264  66：Baseline  77：Main Profile 100：High Profile
