@@ -89,20 +89,21 @@ avs_stresstest()
 
 demo_vi_avs_venc_stresstest()
 {
-    # echo "example: <test_mod=on> $0 <test_result_path> <test_loop> <test_frame> <vi_chnid>"
+    # echo "example: <test_mod=on> $0 <test_result_path> <test_loop> <test_frame> <vi_chnid> <ordinary_stream_test_framecount>"
     # echo "mod: 1.RESTART 2.RESOLUTION"
     # echo -e "
     #       \$1 --------test_result_path: /tmp/stresstest.log\n
     #       \$2 --------test_loop: 10000\n
     #       \$3 --------test_frame: 10\n
-    #       \$4 --------vi_chnid: 1\n"
+    #       \$4 --------vi_chnid: 1\n
+    #       \$5 --------<ordinary_stream_test_framecount>: 450000\n"
     
     echo "--------------------enter demo_vi_avs_venc_stresstest-------------------" >> $test_result_path
     
-    eval $1 $script_path/demo_vi_avs_venc_stresstest.sh $test_result_path $test_loop $test_frame $vi_chnid
+    eval $1 $script_path/demo_vi_avs_venc_stresstest.sh $test_result_path $test_loop $test_frame $vi_chnid $ordinary_stream_test_framecount
 
     if [ $? != 0 ]; then
-        echo "$1 $script_path/demo_vi_avs_venc_stresstest.sh $test_result_path $test_loop $test_frame $vi_chnid   -----test failure"
+        echo "$1 $script_path/demo_vi_avs_venc_stresstest.sh $test_result_path $test_loop $test_frame $vi_chnid $ordinary_stream_test_framecount  -----test failure"
         exit 1
     fi
 
@@ -134,7 +135,7 @@ test_mod="RESTART=on RESOLUTION=on"
 avs_stresstest "$test_mod"
 
 #3.demo vi avs venc stresstests
-test_mod="RESTART=on RESOLUTION=on"
+test_mod="RESTART=on RESOLUTION=on ORDINARY=on"
 demo_vi_avs_venc_stresstest "$test_mod"
 
 #print test result

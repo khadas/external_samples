@@ -2,13 +2,15 @@
 
 print_help()
 {
-    echo "example: <test_mod=on> $0 <test_result_path> <test_loop> <test_frame> <vi_chnid>"
+    echo "example: <test_mod=on> $0 <test_result_path> <test_loop> <test_frame> <vi_chnid> <ordinary_stream_test_framecount>"
     echo "mod: 1.RESTART 2.RESOLUTION"
     echo -e "
           \$1 --------test_result_path: /tmp/stresstest.log\n
           \$2 --------test_loop: 10000\n
           \$3 --------test_frame: 10\n
-          \$4 --------vi_chnid: 1\n"
+          \$4 --------vi_chnid: 1\n
+          \$5 --------<ordinary_stream_test_framecount>: 450000\n"
+
 }
 
 test_result_path=$1
@@ -47,6 +49,12 @@ if [ ! -n "$4" ]; then
     exit 1
 fi
 
+#set ordinary_stream_test_framecount
+ordinary_stream_test_framecount=$5
+if [ ! -n "$5" ]; then
+    echo "----------------- error !!!!, lack ordinary_stream_test_framecount setting, please input setting"
+fi
+
 test_case()
 {
     if [ "$RESTART" = "on" ]; then
@@ -75,6 +83,21 @@ test_case()
         else
             echo "-------------------------2 <sample_demo_vi_avs_venc_stresstest> avs_resolution_test failure" >> $test_result_path
             echo -e "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> avs_resolution_test failure -------------------------------------------\n\n\n"
+            exit 1
+        fi
+    fi
+
+    if [ "$ORDINARY" = "on" ]; then
+        #3. ordinary stream test
+        echo -e "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> ordinary stream test start -------------------------------------------\n"
+        echo -e "<sample_demo_vi_avs_venc_stresstest --vi_size 1920x1080 --avs_chn0_size 3840x1080 --avs_chn1_size 1920x544 -a /etc/iqfiles/ -e h265cbr -b 4096 -n 2 --chn_id $vi_chnid -l $ordinary_stream_test_framecount>\n"
+        sample_demo_vi_avs_venc_stresstest --vi_size 1920x1080 --avs_chn0_size 3840x1080 --avs_chn1_size 1920x544 -a /etc/iqfiles/ -e h265cbr -b 4096 -n 2 --chn_id $vi_chnid -l $ordinary_stream_test_framecount
+        if [ $? -eq 0 ]; then
+            echo "-------------------------3 <sample_demo_vi_avs_venc_stresstest> ordinary stream test success" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> ordinary stream test success -------------------------------------------\n\n\n"
+        else
+            echo "-------------------------3 <sample_demo_vi_avs_venc_stresstest> ordinary stream test failure" >> $test_result_path
+            echo -e "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> ordinary stream test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
