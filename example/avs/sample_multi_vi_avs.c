@@ -38,7 +38,6 @@ extern "C" {
 #include "sample_comm.h"
 
 #define VI_NUM_MAX 8
-#define LDCH_MESH_SIZE 33196
 
 typedef struct _rkMpiCtx {
 	SAMPLE_VI_CTX_S vi[VI_NUM_MAX];
@@ -194,7 +193,7 @@ int main(int argc, char *argv[]) {
 	RK_S32 s32loopCnt = -1;
 	RK_S32 s32LdchEnable = 2;
 	RK_S32 i;
-	RK_S32 s32SetLDCH = 2;
+	GET_LDCH_MODE_E eGetLdchMode = RK_GET_LDCH_BY_BUFF;
 	MPP_CHN_S stSrcChn, stDestChn;
 	pthread_t avs_thread_id;
 	RK_FLOAT fStitchDistance = 5;
@@ -254,7 +253,7 @@ int main(int argc, char *argv[]) {
 			fStitchDistance = atof(optarg);
 			break;
 		case 'l' + 'd':
-			s32SetLDCH = atoi(optarg);
+			eGetLdchMode = atoi(optarg);
 			break;
 		case 'L':
 			pCam0LdchMeshPath = optarg;
@@ -289,17 +288,6 @@ int main(int argc, char *argv[]) {
 	printf("#pCam0LdchMeshPath: %s\n", pCam0LdchMeshPath);
 	printf("#pCam1LdchMeshPath: %s\n", pCam1LdchMeshPath);
 
-	if (s32SetLDCH) {
-		for (RK_S32 i = 0; i < s32CamNum; i++) {
-			pLdchMeshData[i] = malloc(LDCH_MESH_SIZE);
-			if (!pLdchMeshData[i]) {
-				RK_LOGE("malloc for pLdchMeshData failure");
-				return -1;
-			}
-			RK_LOGD("pLdchMeshData:%p pLdchMeshData[%d]:%p", pLdchMeshData, i,
-			        pLdchMeshData[i]);
-		}
-	}
 	/* SYS Init */
 	if (RK_MPI_SYS_Init() != RK_SUCCESS) {
 		goto __FAILED;
@@ -308,14 +296,11 @@ int main(int argc, char *argv[]) {
 	/* Avs grp create */
 	ctx->avs.s32GrpId = 0;
 	ctx->avs.s32ChnId = 0;
-	if (s32SetLDCH) {
-		ctx->avs.bIfSetStitchDistance = RK_TRUE;
-	}
+	ctx->avs.eGetLdchMode = eGetLdchMode;
 	ctx->avs.u32SrcWidth = u32ViWidth;
 	ctx->avs.u32SrcHeight = u32ViHeight;
 	ctx->avs.fDistance = fStitchDistance;
 	ctx->avs.pLdchMeshData = (RK_U16 **)pLdchMeshData;
-	ctx->avs.u32LdchMeshSize = LDCH_MESH_SIZE;
 	ctx->avs.stAvsGrpAttr.enMode = 0; // 0: blend 1: no blend
 	ctx->avs.stAvsGrpAttr.u32PipeNum = s32CamNum;
 	ctx->avs.stAvsGrpAttr.stGainAttr.enMode = AVS_GAIN_MODE_AUTO;
@@ -352,8 +337,8 @@ int main(int argc, char *argv[]) {
 		camgroup_cfg.sns_num = s32CamNum;
 		camgroup_cfg.config_file_dir = iq_file_dir;
 
-		s32Ret = SAMPLE_COMM_ISP_CamGroup_Init(s32CamGrpId, hdr_mode, bMultictx,
-		                                       s32SetLDCH, pLdchMeshData, &camgroup_cfg);
+		s32Ret = SAMPLE_COMM_ISP_CamGroup_Init(
+		    s32CamGrpId, hdr_mode, bMultictx, eGetLdchMode, pLdchMeshData, &camgroup_cfg);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init failure");
 			return -1;
@@ -417,25 +402,6 @@ int main(int argc, char *argv[]) {
 	}
 
 	pthread_create(&avs_thread_id, 0, avs_get_stream, (void *)(&ctx->avs));
-
-	/* update LDCH mesh */
-	if (s32SetLDCH) {
-		if (pLdchMeshData[0] && pLdchMeshData[1]) {
-			s32Ret = SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(s32CamGrpId, s32SetLDCH,
-			                                                (RK_U16 **)pLdchMeshData);
-			if (s32Ret != RK_SUCCESS) {
-				RK_LOGE("SAMPLE_COMM_ISP_UpdataLdchMesh failure s32Ret:%#X", s32Ret);
-			}
-		}
-	}
-	if (pLdchMeshData[0]) {
-		free(pLdchMeshData[0]);
-		pLdchMeshData[0] = RK_NULL;
-	}
-	if (pLdchMeshData[1]) {
-		free(pLdchMeshData[1]);
-		pLdchMeshData[1] = RK_NULL;
-	}
 
 	printf("%s initial finish\n", __func__);
 

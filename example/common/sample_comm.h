@@ -212,13 +212,12 @@ typedef struct _rkMpiVPSSCtx {
 } SAMPLE_VPSS_CTX_S;
 
 typedef struct _rkMpiAVSCtx {
-	RK_BOOL bIfSetStitchDistance;
+	GET_LDCH_MODE_E eGetLdchMode;
 	RK_S32 s32loopCount;
 	RK_U32 u32SrcWidth;
 	RK_U32 u32SrcHeight;
 	RK_FLOAT fDistance;
 	RK_U16 **pLdchMeshData;
-	RK_U32 u32LdchMeshSize;
 	AVS_GRP s32GrpId;
 	AVS_CHN s32ChnId;
 	AVS_MOD_PARAM_S stAvsModParam;

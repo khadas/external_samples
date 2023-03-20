@@ -39,7 +39,6 @@ extern "C" {
 
 #define VI_NUM_MAX 8
 #define VENC_NUM_MAX 2
-#define LDCH_MESH_SIZE 33196
 
 rtsp_demo_handle g_rtsplive = RK_NULL;
 static rtsp_session_handle g_rtsp_session[VENC_NUM_MAX] = {RK_NULL};
@@ -107,6 +106,8 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-e | --encode: encode type, Default:h264cbr, Value:h264cbr, "
 	       "h264vbr, h265cbr, h265vbr\n");
 	printf("\t-F | --dstfps: set venc output fps, Default: 15\n");
+	printf("\t-i | --ispLaunchMode : 0: single cam init, 1: camera group init. default: "
+	       "1\n");
 	printf("\t--vi_size: set vi resolution WidthxHeight, default: 1920x1080\n");
 	printf(
 	    "\t--avs_chn0_size: set avs chn0 resolution WidthxHeight, default: 3840x1080\n");
@@ -120,8 +121,6 @@ static void print_usage(const RK_CHAR *name) {
 	       "/oem/usr/share/iqfiles/cam1_ldch_mesh.bin\n");
 	printf("\t--set_ldch: set ldch, 0: disable, 1: read_file_set_ldch, 2: "
 	       "read_buff_set_ldch. Default: 2\n");
-	printf(
-	    "\t-i --ispLaunchMode : 0: single cam init, 1: camera group init. default: 1\n");
 }
 
 /******************************************************************************
@@ -210,7 +209,7 @@ int main(int argc, char *argv[]) {
 	RK_S32 s32loopCnt = -1;
 	RK_S32 s32BitRate = 4 * 1024;
 	RK_S32 s32CamGrpId = 0;
-	RK_S32 s32SetLDCH = 2;
+	GET_LDCH_MODE_E eGetLdchMode = RK_GET_LDCH_BY_BUFF;
 	RK_FLOAT fStitchDistance = 5;
 	RK_VOID *pLdchMeshData[VI_NUM_MAX] = {0};
 	RK_BOOL bIfIspGroupInit = RK_TRUE;
@@ -330,7 +329,7 @@ int main(int argc, char *argv[]) {
 			}
 			break;
 		case 'l' + 'd':
-			s32SetLDCH = atoi(optarg);
+			eGetLdchMode = atoi(optarg);
 			break;
 		case 'i':
 			bIfIspGroupInit = atoi(optarg);
@@ -357,29 +356,14 @@ int main(int argc, char *argv[]) {
 		goto __FAILED;
 	}
 
-	if (s32SetLDCH) {
-		for (RK_S32 i = 0; i < s32CamNum; i++) {
-			pLdchMeshData[i] = malloc(LDCH_MESH_SIZE);
-			if (!pLdchMeshData[i]) {
-				RK_LOGE("malloc for pLdchMeshData failure");
-				return -1;
-			}
-			RK_LOGD("pLdchMeshData:%p pLdchMeshData[%d]:%p", pLdchMeshData, i,
-			        pLdchMeshData[i]);
-		}
-	}
-
 	/* Init avs[0] */
 	ctx->avs.s32GrpId = 0;
 	ctx->avs.s32ChnId = 0;
-	if (s32SetLDCH) {
-		ctx->avs.bIfSetStitchDistance = RK_TRUE;
-	}
+	ctx->avs.eGetLdchMode = eGetLdchMode;
 	ctx->avs.u32SrcWidth = u32ViWidth;
 	ctx->avs.u32SrcHeight = u32ViHeight;
 	ctx->avs.fDistance = fStitchDistance;
 	ctx->avs.pLdchMeshData = (RK_U16 **)pLdchMeshData;
-	ctx->avs.u32LdchMeshSize = LDCH_MESH_SIZE;
 	/* GrpAttr setting */
 	ctx->avs.stAvsGrpAttr.enMode = 0; /* 0: blend 1: no blend */
 	ctx->avs.stAvsGrpAttr.u32PipeNum = s32CamNum;
@@ -432,16 +416,15 @@ int main(int argc, char *argv[]) {
 					return RK_FAILURE;
 				}
 			}
-		} else if (bIfIspGroupInit == RK_TRUE) {
+		} else {
 			rk_aiq_camgroup_instance_cfg_t camgroup_cfg;
 
 			memset(&camgroup_cfg, 0, sizeof(camgroup_cfg));
 			camgroup_cfg.sns_num = s32CamNum;
 			camgroup_cfg.config_file_dir = iq_file_dir;
-
 			s32Ret =
 			    SAMPLE_COMM_ISP_CamGroup_Init(s32CamGrpId, hdr_mode, bMultictx,
-			                                  s32SetLDCH, pLdchMeshData, &camgroup_cfg);
+			                                  eGetLdchMode, pLdchMeshData, &camgroup_cfg);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init failure");
 				return -1;
@@ -454,9 +437,6 @@ int main(int argc, char *argv[]) {
 			} else {
 				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_SetFrameRate success");
 			}
-		} else {
-			RK_LOGE("ISP dosen't support this launch mode %d", bIfIspGroupInit);
-			return RK_FAILURE;
 		}
 
 #endif
@@ -610,15 +590,6 @@ int main(int argc, char *argv[]) {
 	stDestChn.s32DevId = 0;
 	stDestChn.s32ChnId = ctx->venc[1].s32ChnId;
 	SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
-
-	if (pLdchMeshData[0]) {
-		free(pLdchMeshData[0]);
-		pLdchMeshData[0] = RK_NULL;
-	}
-	if (pLdchMeshData[1]) {
-		free(pLdchMeshData[1]);
-		pLdchMeshData[1] = RK_NULL;
-	}
 
 	printf("%s initial finish\n", __func__);
 

@@ -38,15 +38,32 @@ RK_S32 SAMPLE_COMM_AVS_CreateGrp(SAMPLE_AVS_CTX_S *ctx) {
 		return s32Ret;
 	}
 
-	if (ctx->bIfSetStitchDistance) {
+	if (ctx->eGetLdchMode == RK_GET_LDCH_BY_BUFF) {
 		AVS_FINAL_LUT_S pstFinalLut;
 		MB_EXT_CONFIG_S stMbExtConfig;
+		PIC_BUF_ATTR_S stBufAttr = {0};
+		MB_PIC_CAL_S stPicCal = {0};
+		stBufAttr.u32Width = ctx->u32SrcWidth;
+		stBufAttr.u32Height = ctx->u32SrcHeight;
+		s32Ret = RK_MPI_CAL_AVS_GetFinalLutBufferSize(&stBufAttr, &stPicCal);
+		if (s32Ret != RK_SUCCESS || stPicCal.u32MBSize == 0) {
+			RK_LOGE("RK_MPI_CAL_AVS_GetFinalLutBufferSize failure:%#X", s32Ret);
+			return s32Ret;
+		}
+
 		memset(&pstFinalLut, 0, sizeof(AVS_FINAL_LUT_S));
 		for (RK_S32 i = 0; i < ctx->stAvsGrpAttr.u32PipeNum; i++) {
 			memset(&stMbExtConfig, 0, sizeof(MB_EXT_CONFIG_S));
+			ctx->pLdchMeshData[i] = malloc(stPicCal.u32MBSize);
+			if (!ctx->pLdchMeshData[i]) {
+				RK_LOGE("malloc for pLdchMeshData failure");
+				return RK_FAILURE;
+			}
+			RK_LOGD("pLdchMeshData:%p pLdchMeshData[%d]:%p", ctx->pLdchMeshData, i,
+			        ctx->pLdchMeshData[i]);
 			stMbExtConfig.pOpaque = ctx->pLdchMeshData[i];
 			stMbExtConfig.pu8VirAddr = (RK_U8 *)ctx->pLdchMeshData[i];
-			stMbExtConfig.u64Size = ctx->u32LdchMeshSize;
+			stMbExtConfig.u64Size = stPicCal.u32MBSize;
 			RK_LOGD("pLdchMeshData:%p, ctx->pLdchMeshData[%d]:%p", ctx->pLdchMeshData, i,
 			        ctx->pLdchMeshData[i]);
 			s32Ret = RK_MPI_SYS_CreateMB(&(pstFinalLut.pLdchBlk[i]), &stMbExtConfig);
@@ -169,6 +186,14 @@ RK_S32 SAMPLE_COMM_AVS_DestroyGrp(SAMPLE_AVS_CTX_S *ctx) {
 		return s32Ret;
 	}
 
+	if (ctx->eGetLdchMode == RK_GET_LDCH_BY_BUFF) {
+		for (RK_S32 i = 0; i < ctx->stAvsGrpAttr.u32PipeNum; i++) {
+			if (ctx->pLdchMeshData[i] != RK_NULL) {
+				free(ctx->pLdchMeshData[i]);
+				ctx->pLdchMeshData[i] = RK_NULL;
+			}
+		}
+	}
 	return RK_SUCCESS;
 }
 

@@ -41,7 +41,6 @@ extern "C" {
 #define VI_NUM_MAX 8
 #define VENC_NUM_MAX 2
 #define BUFF_SIZE 255
-#define LDCH_MESH_SIZE 33196
 
 typedef struct _rkModeTest {
 	RK_BOOL bIfMainThreadQuit;
@@ -917,16 +916,7 @@ int main(int argc, char *argv[]) {
 	gModeTest->s32CamNum = s32CamNum;
 	gModeTest->enCodecType = enCodecType;
 
-	if (gModeTest->eGetLdchMode == RK_GET_LDCH_BY_BUFF) {
-		for (RK_S32 i = 0; i < gModeTest->s32CamNum; i++) {
-			gModeTest->pLdchMeshData[i] = malloc(LDCH_MESH_SIZE);
-			if (!gModeTest->pLdchMeshData[i]) {
-				printf("malloc for pLdchMeshData failure\n");
-				return RK_FAILURE;
-			}
-			printf("malloc for pLdchMeshData[%d]:%p\n", i, gModeTest->pLdchMeshData[i]);
-		}
-	} else if (gModeTest->eGetLdchMode == RK_GET_LDCH_BY_FILE) {
+	if (gModeTest->eGetLdchMode == RK_GET_LDCH_BY_FILE) {
 		for (RK_S32 i = 0; i < gModeTest->s32CamNum; i++) {
 			memset(&ldch_path[i], 0, sizeof(rk_isp_ldch_path));
 			ldch_path[i].pCLdchPath = pLdchDir;
@@ -934,20 +924,20 @@ int main(int argc, char *argv[]) {
 		}
 		ldch_path[0].pCLdchName = pCam0LdchMeshName;
 		ldch_path[1].pCLdchName = pCam1LdchMeshName;
-	} else {
-		printf("----------Isp LDCH status is closed\n");
 	}
+
+	printf("----------isp get ldch mode is:%d (0: no-ldch, 1: get ldch from file, 2: get "
+	       "ldch from buff)\n",
+	       gModeTest->eGetLdchMode);
 
 	/* Init avs[0] */
 	ctx->avs.s32GrpId = 0;
 	ctx->avs.s32ChnId = 0;
-	if (gModeTest->eGetLdchMode == RK_GET_LDCH_BY_BUFF) {
-		ctx->avs.bIfSetStitchDistance = RK_TRUE;
-		ctx->avs.fDistance = fStitchDistance;
-		ctx->avs.pLdchMeshData = (RK_U16 **)gModeTest->pLdchMeshData;
-		ctx->avs.u32LdchMeshSize = LDCH_MESH_SIZE;
-	}
-
+	ctx->avs.u32SrcWidth = u32ViWidth;
+	ctx->avs.u32SrcHeight = u32ViHeight;
+	ctx->avs.eGetLdchMode = gModeTest->eGetLdchMode;
+	ctx->avs.fDistance = fStitchDistance;
+	ctx->avs.pLdchMeshData = (RK_U16 **)gModeTest->pLdchMeshData;
 	/* GrpAttr setting */
 	ctx->avs.stAvsGrpAttr.enMode = 0; /* 0: blend 1: no blend */
 	ctx->avs.stAvsGrpAttr.u32PipeNum = s32CamNum;
@@ -1097,16 +1087,6 @@ int main(int argc, char *argv[]) {
 	}
 
 __MEDIA_INIT_FAILURE:
-
-	/* release mesh data */
-	if (gModeTest->eGetLdchMode == RK_GET_LDCH_BY_BUFF) {
-		for (RK_S32 i = 0; i < VENC_NUM_MAX; i++) {
-			if (gModeTest->pLdchMeshData[i]) {
-				free(gModeTest->pLdchMeshData[i]);
-				gModeTest->pLdchMeshData[i] = RK_NULL;
-			}
-		}
-	}
 
 	global_param_deinit();
 
