@@ -201,7 +201,7 @@ int main(int argc, char *argv[]) {
 	pthread_t avs_thread_id;
 	RK_FLOAT fStitchDistance = 5;
 	RK_BOOL bIfIspGroupInit = RK_TRUE;
-	RK_U16 *pLdchMeshData[VI_NUM_MAX] = {0};
+	RK_U16 *pLdchMeshData[VI_NUM_MAX] = {NULL};
 
 	if (argc < 2) {
 		print_usage(argv[0]);
@@ -294,6 +294,11 @@ int main(int argc, char *argv[]) {
 	printf("#fStitchDistance: %f\n", fStitchDistance);
 	printf("#pCam0LdchMeshPath: %s\n", pCam0LdchMeshPath);
 	printf("#pCam1LdchMeshPath: %s\n", pCam1LdchMeshPath);
+
+	if (eGetLdchMode == RK_GET_LDCH_BY_FILE && pCam0LdchMeshPath && pCam1LdchMeshPath) {
+		pLdchMeshData[0] = pCam0LdchMeshPath;
+		pLdchMeshData[1] = pCam1LdchMeshPath;
+	}
 
 	/* SYS Init */
 	if (RK_MPI_SYS_Init() != RK_SUCCESS) {

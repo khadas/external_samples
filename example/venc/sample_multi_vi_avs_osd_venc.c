@@ -393,6 +393,11 @@ int main(int argc, char *argv[]) {
 	printf("#pCam0LdchMeshPath: %s\n", pCam0LdchMeshPath);
 	printf("#pCam1LdchMeshPath: %s\n", pCam1LdchMeshPath);
 
+	if (eGetLdchMode == RK_GET_LDCH_BY_FILE && pCam0LdchMeshPath && pCam1LdchMeshPath) {
+		pLdchMeshData[0] = pCam0LdchMeshPath;
+		pLdchMeshData[1] = pCam1LdchMeshPath;
+	}
+
 	if (RK_MPI_SYS_Init() != RK_SUCCESS) {
 		goto __FAILED;
 	}

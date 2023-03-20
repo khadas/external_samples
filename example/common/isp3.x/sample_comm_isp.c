@@ -165,9 +165,8 @@ XCamReturn SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(int CamGrpId, uint8_t SetLdchM
 	rk_aiq_sys_ctx_t *aiq_ctx = NULL;
 	rk_aiq_camgroup_camInfos_t camInfos;
 	rk_aiq_ldch_v21_attrib_t ldchAttr;
-	rk_isp_ldch_path *prk_isp_ldch_path;
 	memset(&camInfos, 0, sizeof(camInfos));
-	if (SetLdchMode < 1 || SetLdchMode > 2) {
+	if (SetLdchMode != RK_GET_LDCH_BY_FILE && SetLdchMode != RK_GET_LDCH_BY_BUFF) {
 		printf("this Ldch mode:%d, if want to set ldch, 1: read file set ldch, 2: read "
 		       "buff set ldch\n",
 		       SetLdchMode);
@@ -188,7 +187,7 @@ XCamReturn SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(int CamGrpId, uint8_t SetLdchM
 
 			ret = rk_aiq_user_api2_aldch_v21_GetAttrib(aiq_ctx, &ldchAttr);
 			if (ret == XCAM_RETURN_NO_ERROR) {
-				if (SetLdchMode == 2) {
+				if (SetLdchMode == RK_GET_LDCH_BY_BUFF) {
 					ldchAttr.update_lut_mode =
 					    RK_AIQ_LDCH_UPDATE_LUT_FROM_EXTERNAL_BUFFER;
 					ldchAttr.en = true;
@@ -196,15 +195,20 @@ XCamReturn SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(int CamGrpId, uint8_t SetLdchM
 					ldchAttr.lut.u.buffer.addr = LdchMesh[i];
 					ldchAttr.lut.u.buffer.size = isp_get_ldch_mesh_size(LdchMesh[i]);
 				} else {
-					prk_isp_ldch_path = (rk_isp_ldch_path *)LdchMesh[i];
+					char *pLastWord = NULL;
+					pLastWord = strrchr(LdchMesh[i], '/');
+					if (!pLastWord) {
+						printf("---- error !!! the: %s path isn't to be parsed!!!!\n",
+						       (char *)LdchMesh[i]);
+						return -1;
+					}
 					ldchAttr.en = true;
 					ldchAttr.lut.update_flag = true;
 					ldchAttr.update_lut_mode = RK_AIQ_LDCH_UPDATE_LUT_FROM_EXTERNAL_FILE;
-					sprintf(ldchAttr.lut.u.file.config_file_dir, "%s",
-					        prk_isp_ldch_path->pCLdchPath);
-					sprintf(ldchAttr.lut.u.file.mesh_file_name, "%s",
-					        prk_isp_ldch_path->pCLdchName);
-					printf("lut file_dir %s, mesh_file %s\n",
+					memcpy(ldchAttr.lut.u.file.config_file_dir, (char *)LdchMesh[i],
+					       (pLastWord - (char *)LdchMesh[i]) + 1);
+					sprintf(ldchAttr.lut.u.file.mesh_file_name, "%s", (pLastWord + 1));
+					printf("lut file_dir: %s, mesh_file: %s\n",
 					       ldchAttr.lut.u.file.config_file_dir,
 					       ldchAttr.lut.u.file.mesh_file_name);
 				}

@@ -111,10 +111,9 @@ static const struct option long_options[] = {
     {"dstfps", required_argument, NULL, 'F'},
     {"hdr_mode", required_argument, NULL, 'h' + 'm'},
     {"stitch_distance", required_argument, NULL, 'd'},
-    {"ldch_dir", required_argument, NULL, 'l' + 'd'},
-    {"cam0_ldch_name", required_argument, NULL, 'L'},
-    {"cam1_ldch_name", required_argument, NULL, 'L' + 'm'},
-    {"set_ldch", required_argument, NULL, 's' + 'l'},
+    {"cam0_ldch_path", required_argument, NULL, 'L'},
+    {"cam1_ldch_path", required_argument, NULL, 'L' + 'm'},
+    {"set_ldch", required_argument, NULL, 'l' + 'd'},
     {"test_type", required_argument, NULL, 't' + 't'},
     {"test_loop", required_argument, NULL, 't' + 'l'},
     {"test_frame", required_argument, NULL, 't' + 'f'},
@@ -159,11 +158,10 @@ static void print_usage(const RK_CHAR *name) {
 	    "\t--avs_chn1_size : set avs chn1 resolution WidthxHeight, default: 1920x544\n");
 	printf("\t--hdr_mode : set hdr mode, 0: normal 1: HDR2, 2: HDR3, Default: 0\n");
 	printf("\t--stitch_distance : set stitch distance, default: 5.0(m)\n");
-	printf("\t--ldch_dir : set ldch dir, default: /oem/usr/share/iqfiles/ \n");
-	printf("\t--cam0_ldch_name : cam0 ldch mesh path, default: "
-	       "cam0_ldch_mesh.bin\n");
-	printf("\t--cam1_ldch_name : cam1 ldch mesh path, default: "
-	       "cam1_ldch_mesh.bin\n");
+	printf("\t--cam0_ldch_path : cam0 ldch mesh path, default: "
+	       "/oem/usr/share/iqfiles/cam0_ldch_mesh.bin\n");
+	printf("\t--cam1_ldch_path : cam1 ldch mesh path, default: "
+	       "/oem/usr/share/iqfiles/cam1_ldch_mesh.bin\n");
 	printf("\t--set_ldch : set ldch, 0: disable, 1: read_file_set_ldch, 2: "
 	       "read_buff_set_ldch. Default: 2\n");
 	printf("\t--test_type : test type, 0:none, 1: media_deinit_init 2: "
@@ -770,9 +768,8 @@ int main(int argc, char *argv[]) {
 	RK_CHAR *pAvsMeshAlphaPath = "/tmp/";
 	RK_CHAR *pAvsLutFilePath = NULL;
 	RK_CHAR *pOutPathVenc = NULL;
-	RK_CHAR *pLdchDir = "/oem/usr/share/iqfiles/";
-	RK_CHAR *pCam0LdchMeshName = "cam0_ldch_mesh.bin";
-	RK_CHAR *pCam1LdchMeshName = "cam1_ldch_mesh.bin";
+	RK_CHAR *pCam0LdchMeshPath = "/oem/usr/share/iqfiles/cam0_ldch_mesh.bin";
+	RK_CHAR *pCam1LdchMeshPath = "/oem/usr/share/iqfiles/cam1_ldch_mesh.bin";
 	CODEC_TYPE_E enCodecType = RK_CODEC_TYPE_H265;
 	VENC_RC_MODE_E enRcMode = VENC_RC_MODE_H265CBR;
 	rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
@@ -785,7 +782,6 @@ int main(int argc, char *argv[]) {
 	RK_S32 s32ChnId = 1;
 	RK_U32 u32ViChnBuffCnt = 2;
 	RK_FLOAT fStitchDistance = 5;
-	rk_isp_ldch_path ldch_path[VI_NUM_MAX] = {0};
 	pthread_t mode_test_thread = 0;
 
 	if (argc < 2) {
@@ -863,10 +859,10 @@ int main(int argc, char *argv[]) {
 			fStitchDistance = atof(optarg);
 			break;
 		case 'L':
-			pCam0LdchMeshName = optarg;
+			pCam0LdchMeshPath = optarg;
 			break;
 		case 'L' + 'm':
-			pCam1LdchMeshName = optarg;
+			pCam1LdchMeshPath = optarg;
 			break;
 		case 'v' + 's':
 			u32ViWidth = atoi(optarg);
@@ -897,9 +893,6 @@ int main(int argc, char *argv[]) {
 			}
 			break;
 		case 'l' + 'd':
-			pLdchDir = optarg;
-			break;
-		case 's' + 'l':
 			gModeTest->eGetLdchMode = atoi(optarg);
 			break;
 		case 't' + 't':
@@ -935,9 +928,8 @@ int main(int argc, char *argv[]) {
 	printf("#Output Path: %s\n", pOutPathVenc);
 	printf("#IQ Path: %s\n", iq_file_dir);
 	printf("#fStitchDistance: %f\n", fStitchDistance);
-	printf("#ldch dir: %s\n", pLdchDir);
-	printf("#pCam0LdchMeshName: %s\n", pCam0LdchMeshName);
-	printf("#pCam1LdchMeshName: %s\n", pCam1LdchMeshName);
+	printf("#pCam0LdchMeshPath: %s\n", pCam0LdchMeshPath);
+	printf("#pCam1LdchMeshPath: %s\n", pCam1LdchMeshPath);
 
 	if (iq_file_dir) {
 #ifdef RKAIQ
@@ -953,19 +945,11 @@ int main(int argc, char *argv[]) {
 	gModeTest->s32CamNum = s32CamNum;
 	gModeTest->enCodecType = enCodecType;
 
-	if (gModeTest->eGetLdchMode == RK_GET_LDCH_BY_FILE) {
-		for (RK_S32 i = 0; i < gModeTest->s32CamNum; i++) {
-			memset(&ldch_path[i], 0, sizeof(rk_isp_ldch_path));
-			ldch_path[i].pCLdchPath = pLdchDir;
-			gModeTest->pLdchMeshData[i] = &ldch_path[i];
-		}
-		ldch_path[0].pCLdchName = pCam0LdchMeshName;
-		ldch_path[1].pCLdchName = pCam1LdchMeshName;
+	if (gModeTest->eGetLdchMode == RK_GET_LDCH_BY_FILE && pCam0LdchMeshPath &&
+	    pCam1LdchMeshPath) {
+		gModeTest->pLdchMeshData[0] = pCam0LdchMeshPath;
+		gModeTest->pLdchMeshData[1] = pCam1LdchMeshPath;
 	}
-
-	printf("----------isp get ldch mode is:%d (0: no-ldch, 1: get ldch from file, 2: get "
-	       "ldch from buff)\n",
-	       gModeTest->eGetLdchMode);
 
 	/* Init avs[0] */
 	ctx->avs.s32GrpId = 0;

@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
 	RK_S32 s32CamGrpId = 0;
 	GET_LDCH_MODE_E eGetLdchMode = RK_GET_LDCH_BY_BUFF;
 	RK_FLOAT fStitchDistance = 5;
-	RK_VOID *pLdchMeshData[VI_NUM_MAX] = {0};
+	RK_VOID *pLdchMeshData[VI_NUM_MAX] = {NULL};
 	RK_BOOL bIfIspGroupInit = RK_TRUE;
 
 	if (argc < 2) {
@@ -237,7 +237,7 @@ int main(int argc, char *argv[]) {
 	RK_BOOL bMultictx = RK_FALSE;
 #endif
 	int c;
-	char *iq_file_dir = NULL;
+	char *iq_file_dir = "/etc/iqfiles/";
 	while ((c = getopt_long(argc, argv, optstr, long_options, NULL)) != -1) {
 		const char *tmp_optarg = optarg;
 		switch (c) {
@@ -351,6 +351,11 @@ int main(int argc, char *argv[]) {
 	printf("#fStitchDistance: %f\n", fStitchDistance);
 	printf("#pCam0LdchMeshPath: %s\n", pCam0LdchMeshPath);
 	printf("#pCam1LdchMeshPath: %s\n", pCam1LdchMeshPath);
+
+	if (eGetLdchMode == RK_GET_LDCH_BY_FILE && pCam0LdchMeshPath && pCam1LdchMeshPath) {
+		pLdchMeshData[0] = pCam0LdchMeshPath;
+		pLdchMeshData[1] = pCam1LdchMeshPath;
+	}
 
 	if (RK_MPI_SYS_Init() != RK_SUCCESS) {
 		goto __FAILED;
