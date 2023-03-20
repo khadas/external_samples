@@ -93,6 +93,7 @@ g_mode_test *gModeTest;
 SAMPLE_MPI_CTX_S *ctx;
 RK_S32 g_exit_result = RK_SUCCESS;
 sem_t g_sem_module_test[VENC_CHN_MAX];
+pthread_mutex_t g_rtsp_mutex = {0};
 pthread_mutex_t g_frame_count_mutex[VENC_CHN_MAX];
 RK_BOOL g_rtsp_ifenbale = RK_FALSE;
 rtsp_demo_handle g_rtsplive = RK_NULL;
@@ -311,9 +312,11 @@ static void *venc_get_stream(void *pArgs) {
 
 			if (g_rtsp_ifenbale && ctx->s32ChnId != TDE_JPEG_CHNID &&
 			    ctx->s32ChnId != COMBO_JPEG_CHNID) {
+				pthread_mutex_lock(&g_rtsp_mutex);
 				rtsp_tx_video(g_rtsp_session[ctx->s32ChnId], pData,
 				              ctx->stFrame.pstPack->u32Len, ctx->stFrame.pstPack->u64PTS);
 				rtsp_do_event(g_rtsplive);
+				pthread_mutex_unlock(&g_rtsp_mutex);
 			} else {
 				RK_LOGD("venc %d get_stream count: %d", ctx->s32ChnId, loopCount);
 			}
@@ -2132,6 +2135,10 @@ static RK_S32 global_param_init(void) {
 			return RK_FAILURE;
 		}
 	}
+	if (RK_SUCCESS != pthread_mutex_init(&g_rtsp_mutex, RK_NULL)) {
+		RK_LOGE("pthread_mutex_init failure");
+		return RK_FAILURE;
+	}
 
 	return RK_SUCCESS;
 }
@@ -2152,6 +2159,7 @@ static RK_S32 global_param_deinit(void) {
 		sem_destroy(&g_sem_module_test[i]);
 		pthread_mutex_destroy(&g_frame_count_mutex[i]);
 	}
+	pthread_mutex_destroy(&g_rtsp_mutex);
 	return RK_SUCCESS;
 }
 
