@@ -226,6 +226,7 @@ typedef struct _rkMpiAVSCtx {
 	AVS_CHN_ATTR_S stAvsChnAttr[AVS_MAX_CHN_NUM];
 	VIDEO_FRAME_INFO_S stVideoFrame;
 	RK_CHAR *dstFilePath;
+	RK_CHAR *pInputYUVPath;
 } SAMPLE_AVS_CTX_S;
 
 typedef struct _rkMpiTDECtx {
