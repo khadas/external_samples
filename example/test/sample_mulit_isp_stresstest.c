@@ -495,7 +495,8 @@ static void ldch_mode_test(RK_S32 test_loop) {
 				s32Ret = SAMPLE_COMM_ISP_SetLDCH(gModeTest->s32CamId[i], u32LdchLevel,
 				                                 bIfLDCHEnable);
 				if (s32Ret != RK_SUCCESS) {
-					RK_LOGE("SAMPLE_COMM_ISP_SetLDCH failure camId:%d", gModeTest->s32CamId[i]);
+					RK_LOGE("SAMPLE_COMM_ISP_SetLDCH failure camId:%d",
+					        gModeTest->s32CamId[i]);
 					program_handle_error(__func__, __LINE__);
 					break;
 				}
@@ -504,7 +505,8 @@ static void ldch_mode_test(RK_S32 test_loop) {
 			s32Ret = SAMPLE_COMM_ISP_CamGroup_SetLDCH(gModeTest->s32CamGroupId,
 			                                          u32LdchLevel, bIfLDCHEnable);
 			if (s32Ret != RK_SUCCESS) {
-				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_SetLDCH failure camId:%d", gModeTest->s32CamGroupId);
+				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_SetLDCH failure camId:%d",
+				        gModeTest->s32CamGroupId);
 				program_handle_error(__func__, __LINE__);
 				break;
 			}

@@ -19,7 +19,7 @@
 #include "rk_mpi_mb.h"
 #include "rk_mpi_sys.h"
 
-#define AI_ALGO_FRAMES 256  // baed on 16kHz, it's  128 during 8kHz
+#define AI_ALGO_FRAMES 256 // baed on 16kHz, it's  128 during 8kHz
 
 static bool quit = false;
 static void sigterm_handler(int sig) {
@@ -30,49 +30,49 @@ static void sigterm_handler(int sig) {
 static RK_U32 code_type = RK_AUDIO_ID_ADPCM_G726;
 
 typedef struct _rkMpiAICtx {
-    const char *srcFilePath;
-    const char *dstFilePath;
-    RK_S32      s32LoopCount;
-    RK_S32      s32ChnNum;
-    RK_S32      s32DeviceSampleRate;
-    RK_S32      s32SampleRate;
-    RK_S32      s32DeviceChannel;
-    RK_S32      s32Channel;
-    RK_S32      s32BitWidth;
-    RK_S32      s32DevId;
-    RK_S32      s32FrameNumber;
-    RK_S32      s32FrameLength;
-    char       *chCardName;
-    RK_S32      s32ChnIndex;
-    RK_S32      s32SetVolumeCurve;
-    RK_S32      s32SetVolume;
-    RK_S32      s32SetMute;
-    RK_S32      s32SetFadeRate;
-    RK_S32      s32SetTrackMode;
-    RK_S32      s32GetVolume;
-    RK_S32      s32GetMute;
-    RK_S32      s32GetTrackMode;
-    RK_S32      s32LoopbackMode;
-    RK_S32      s32DevFd;
-    RK_S32      s32DataReadEnable;
-    RK_S32      s32AedEnable;
-    RK_S32      s32BcdEnable;
-    RK_S32      s32BuzEnable;
-    RK_S32      s32GbsEnable;
-    RK_S32      s32AedLoudCount;
-    RK_S32      s32BcdCount;
-    RK_S32      s32BuzCount;
-    RK_S32      s32GbsCount;
-    RK_S32      s32VqeGapMs;
-    RK_S32      s32VqeEnable;
-    RK_S32      s32DumpAlgo;
-    const char *pVqeCfgPath;
+	const char *srcFilePath;
+	const char *dstFilePath;
+	RK_S32 s32LoopCount;
+	RK_S32 s32ChnNum;
+	RK_S32 s32DeviceSampleRate;
+	RK_S32 s32SampleRate;
+	RK_S32 s32DeviceChannel;
+	RK_S32 s32Channel;
+	RK_S32 s32BitWidth;
+	RK_S32 s32DevId;
+	RK_S32 s32FrameNumber;
+	RK_S32 s32FrameLength;
+	char *chCardName;
+	RK_S32 s32ChnIndex;
+	RK_S32 s32SetVolumeCurve;
+	RK_S32 s32SetVolume;
+	RK_S32 s32SetMute;
+	RK_S32 s32SetFadeRate;
+	RK_S32 s32SetTrackMode;
+	RK_S32 s32GetVolume;
+	RK_S32 s32GetMute;
+	RK_S32 s32GetTrackMode;
+	RK_S32 s32LoopbackMode;
+	RK_S32 s32DevFd;
+	RK_S32 s32DataReadEnable;
+	RK_S32 s32AedEnable;
+	RK_S32 s32BcdEnable;
+	RK_S32 s32BuzEnable;
+	RK_S32 s32GbsEnable;
+	RK_S32 s32AedLoudCount;
+	RK_S32 s32BcdCount;
+	RK_S32 s32BuzCount;
+	RK_S32 s32GbsCount;
+	RK_S32 s32VqeGapMs;
+	RK_S32 s32VqeEnable;
+	RK_S32 s32DumpAlgo;
+	const char *pVqeCfgPath;
 } TEST_AI_CTX_S;
 
 RK_S32 init_ai_aed() {
 	int s32DevId = 0;
 	int s32ChnIndex = 0;
-    RK_S32 result;
+	RK_S32 result;
 
 	AI_AED_CONFIG_S stAiAedConfig, stAiAedConfig2;
 
@@ -82,15 +82,15 @@ RK_S32 init_ai_aed() {
 
 	result = RK_MPI_AI_SetAedAttr(s32DevId, s32ChnIndex, &stAiAedConfig);
 	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: SetAedAttr(%d,%d) failed with %#x",
-			__FUNCTION__, s32DevId, s32ChnIndex, result);
+		RK_LOGE("%s: SetAedAttr(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
+		        s32ChnIndex, result);
 		return result;
 	}
 
 	result = RK_MPI_AI_GetAedAttr(s32DevId, s32ChnIndex, &stAiAedConfig2);
 	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: SetAedAttr(%d,%d) failed with %#x",
-			__FUNCTION__, s32DevId, s32ChnIndex, result);
+		RK_LOGE("%s: SetAedAttr(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
+		        s32ChnIndex, result);
 		return result;
 	}
 
@@ -102,18 +102,18 @@ RK_S32 init_ai_aed() {
 
 	result = RK_MPI_AI_EnableAed(s32DevId, s32ChnIndex);
 	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: EnableAed(%d,%d) failed with %#x",
-			__FUNCTION__, s32DevId, s32ChnIndex, result);
+		RK_LOGE("%s: EnableAed(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
+		        s32ChnIndex, result);
 		return result;
 	}
 
-    return RK_SUCCESS;
+	return RK_SUCCESS;
 }
 
 static RK_S32 init_ai_bcd() {
 	int s32DevId = 0;
 	int s32ChnIndex = 0;
-    RK_S32 result;
+	RK_S32 result;
 
 	AI_BCD_CONFIG_S stAiBcdConfig, stAiBcdConfig2;
 
@@ -121,15 +121,15 @@ static RK_S32 init_ai_bcd() {
 
 	result = RK_MPI_AI_SetBcdAttr(s32DevId, s32ChnIndex, &stAiBcdConfig);
 	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: SetBcdAttr(%d,%d) failed with %#x",
-			__FUNCTION__, s32DevId, s32ChnIndex, result);
+		RK_LOGE("%s: SetBcdAttr(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
+		        s32ChnIndex, result);
 		return result;
 	}
 
 	result = RK_MPI_AI_GetBcdAttr(s32DevId, s32ChnIndex, &stAiBcdConfig2);
 	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: SetBcdAttr(%d,%d) failed with %#x",
-			__FUNCTION__, s32DevId, s32ChnIndex, result);
+		RK_LOGE("%s: SetBcdAttr(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
+		        s32ChnIndex, result);
 		return result;
 	}
 
@@ -141,18 +141,18 @@ static RK_S32 init_ai_bcd() {
 
 	result = RK_MPI_AI_EnableBcd(s32DevId, s32ChnIndex);
 	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: EnableBcd(%d,%d) failed with %#x",
-			__FUNCTION__, s32DevId, s32ChnIndex, result);
+		RK_LOGE("%s: EnableBcd(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
+		        s32ChnIndex, result);
 		return result;
 	}
 
-    return RK_SUCCESS;
+	return RK_SUCCESS;
 }
 
 static RK_S32 init_ai_buz() {
 	int s32DevId = 0;
 	int s32ChnIndex = 0;
-    RK_S32 result;
+	RK_S32 result;
 
 	AI_BUZ_CONFIG_S stAiBuzConfig, stAiBuzConfig2;
 
@@ -160,15 +160,15 @@ static RK_S32 init_ai_buz() {
 
 	result = RK_MPI_AI_SetBuzAttr(s32DevId, s32ChnIndex, &stAiBuzConfig);
 	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: SetBuzAttr(%d,%d) failed with %#x",
-			__FUNCTION__, s32DevId, s32ChnIndex, result);
+		RK_LOGE("%s: SetBuzAttr(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
+		        s32ChnIndex, result);
 		return result;
 	}
 
 	result = RK_MPI_AI_GetBuzAttr(s32DevId, s32ChnIndex, &stAiBuzConfig2);
 	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: SetBuzAttr(%d,%d) failed with %#x",
-			__FUNCTION__, s32DevId, s32ChnIndex, result);
+		RK_LOGE("%s: SetBuzAttr(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
+		        s32ChnIndex, result);
 		return result;
 	}
 
@@ -180,18 +180,18 @@ static RK_S32 init_ai_buz() {
 
 	result = RK_MPI_AI_EnableBuz(s32DevId, s32ChnIndex);
 	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: EnableBuz(%d,%d) failed with %#x",
-			__FUNCTION__, s32DevId, s32ChnIndex, result);
+		RK_LOGE("%s: EnableBuz(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
+		        s32ChnIndex, result);
 		return result;
 	}
 
-    return RK_SUCCESS;
+	return RK_SUCCESS;
 }
 
 static RK_S32 init_ai_gbs() {
 	int s32DevId = 0;
 	int s32ChnIndex = 0;
-    RK_S32 result;
+	RK_S32 result;
 
 	AI_GBS_CONFIG_S stAiGbsConfig, stAiGbsConfig2;
 
@@ -199,15 +199,15 @@ static RK_S32 init_ai_gbs() {
 
 	result = RK_MPI_AI_SetGbsAttr(s32DevId, s32ChnIndex, &stAiGbsConfig);
 	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: SetGbsAttr(%d,%d) failed with %#x",
-			__FUNCTION__, s32DevId, s32ChnIndex, result);
+		RK_LOGE("%s: SetGbsAttr(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
+		        s32ChnIndex, result);
 		return result;
 	}
 
 	result = RK_MPI_AI_GetGbsAttr(s32DevId, s32ChnIndex, &stAiGbsConfig2);
 	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: SetGbsAttr(%d,%d) failed with %#x",
-			__FUNCTION__, s32DevId, s32ChnIndex, result);
+		RK_LOGE("%s: SetGbsAttr(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
+		        s32ChnIndex, result);
 		return result;
 	}
 
@@ -219,12 +219,12 @@ static RK_S32 init_ai_gbs() {
 
 	result = RK_MPI_AI_EnableGbs(s32DevId, s32ChnIndex);
 	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: EnableGbs(%d,%d) failed with %#x",
-			__FUNCTION__, s32DevId, s32ChnIndex, result);
+		RK_LOGE("%s: EnableGbs(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
+		        s32ChnIndex, result);
 		return result;
 	}
 
-    return RK_SUCCESS;
+	return RK_SUCCESS;
 }
 
 //声音质量增强
@@ -295,8 +295,8 @@ RK_S32 ai_set_other(RK_S32 s32SetVolume) {
 	return 0;
 }
 
-RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate,
-                      RK_U32 u32FrameCnt, RK_S32 aiVqe, RK_S32 aiSed) {
+RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate, RK_U32 u32FrameCnt,
+                      RK_S32 aiVqe, RK_S32 aiSed) {
 	printf("\n=======%s=======\n", __func__);
 	AIO_ATTR_S aiAttr;
 	AI_CHN_PARAM_S pstParams;
@@ -530,92 +530,97 @@ static RK_S32 adec_data_free(void *opaque) {
 	return 0;
 }
 
-void* getDataThread(void * ptr) {
-    TEST_AI_CTX_S *params = (TEST_AI_CTX_S *)(ptr);
+void *getDataThread(void *ptr) {
+	TEST_AI_CTX_S *params = (TEST_AI_CTX_S *)(ptr);
 	int aiDevId = 0;
 	int aiChn = 0;
-    RK_S32 result = 0, count = 2;
-    RK_S32 s32MilliSec = -1;
-    AUDIO_FRAME_S getFrame;
-    RK_U8  *srcData = RK_NULL;
-    RK_S32 s32AiAlgoFrames = 0;
-    RK_U32 aed_count = 0, aed_flag = 0;
-    RK_U32 bcd_count = 0, bcd_flag = 0;
-    RK_U32 buz_count = 0, buz_flag = 0;
-    RK_U32 gbs_count = 0, gbs_flag = 0;
+	RK_S32 result = 0, count = 2;
+	RK_S32 s32MilliSec = -1;
+	AUDIO_FRAME_S getFrame;
+	RK_U8 *srcData = RK_NULL;
+	RK_S32 s32AiAlgoFrames = 0;
+	RK_U32 aed_count = 0, aed_flag = 0;
+	RK_U32 bcd_count = 0, bcd_flag = 0;
+	RK_U32 buz_count = 0, buz_flag = 0;
+	RK_U32 gbs_count = 0, gbs_flag = 0;
 
-    while (!quit && count > 0) {
+	while (!quit && count > 0) {
 		if (params->s32LoopCount > 1)
 			count--;
 
 #if TEST_AI_WITH_FD
-        test_ai_poll_event(-1, params->s32DevFd);
+		test_ai_poll_event(-1, params->s32DevFd);
 #endif
-        result = RK_MPI_AI_GetFrame(params->s32DevId, params->s32ChnIndex, &getFrame, RK_NULL, s32MilliSec);
-        if (result == 0) {
-            void* data = RK_MPI_MB_Handle2VirAddr(getFrame.pMbBlk);
-            RK_LOGV("data = %p, len = %d", data, getFrame.u32Len);
-            RK_MPI_AI_ReleaseFrame(params->s32DevId, params->s32ChnIndex, &getFrame, RK_NULL);
-        }
+		result = RK_MPI_AI_GetFrame(params->s32DevId, params->s32ChnIndex, &getFrame,
+		                            RK_NULL, s32MilliSec);
+		if (result == 0) {
+			void *data = RK_MPI_MB_Handle2VirAddr(getFrame.pMbBlk);
+			RK_LOGV("data = %p, len = %d", data, getFrame.u32Len);
+			RK_MPI_AI_ReleaseFrame(params->s32DevId, params->s32ChnIndex, &getFrame,
+			                       RK_NULL);
+		}
 
-        // dump results of SED(AED/BCD) modules
-        if (params->s32AedEnable) {
-            AI_AED_RESULT_S aed_result;
+		// dump results of SED(AED/BCD) modules
+		if (params->s32AedEnable) {
+			AI_AED_RESULT_S aed_result;
 
-            memset(&aed_result, 0, sizeof(aed_result));
-            result = RK_MPI_AI_GetAedResult(params->s32DevId, params->s32ChnIndex, &aed_result);
-            if (result == 0) {
-                if (aed_result.bAcousticEventDetected)
-                    RK_LOGI("AED Result: AcousticEvent:%d",
-                            aed_result.bAcousticEventDetected);
-                if (aed_result.bLoudSoundDetected) {
-                    params->s32AedLoudCount++;
-                    RK_LOGI("AED Result: LoudSound:%d",
-                            aed_result.bLoudSoundDetected);
-                }
+			memset(&aed_result, 0, sizeof(aed_result));
+			result = RK_MPI_AI_GetAedResult(params->s32DevId, params->s32ChnIndex,
+			                                &aed_result);
+			if (result == 0) {
+				if (aed_result.bAcousticEventDetected)
+					RK_LOGI("AED Result: AcousticEvent:%d",
+					        aed_result.bAcousticEventDetected);
+				if (aed_result.bLoudSoundDetected) {
+					params->s32AedLoudCount++;
+					RK_LOGI("AED Result: LoudSound:%d", aed_result.bLoudSoundDetected);
+				}
 
-                if (aed_result.bLoudSoundDetected)
-                    RK_LOGI("AED Result: LoudSound Volume Result:%f db",
-                            aed_result.lsdResult);
-            }
-        }
+				if (aed_result.bLoudSoundDetected)
+					RK_LOGI("AED Result: LoudSound Volume Result:%f db",
+					        aed_result.lsdResult);
+			}
+		}
 
-        if (params->s32BcdEnable) {
-            AI_BCD_RESULT_S bcd_result;
+		if (params->s32BcdEnable) {
+			AI_BCD_RESULT_S bcd_result;
 
-            memset(&bcd_result, 0, sizeof(bcd_result));
-            result = RK_MPI_AI_GetBcdResult(params->s32DevId, params->s32ChnIndex, &bcd_result);
-            if (result == 0 && bcd_result.bBabyCry) {
-                params->s32BcdCount++;
-                RK_LOGI("BCD Result: BabyCry:%d", bcd_result.bBabyCry);
-            }
-        }
+			memset(&bcd_result, 0, sizeof(bcd_result));
+			result = RK_MPI_AI_GetBcdResult(params->s32DevId, params->s32ChnIndex,
+			                                &bcd_result);
+			if (result == 0 && bcd_result.bBabyCry) {
+				params->s32BcdCount++;
+				RK_LOGI("BCD Result: BabyCry:%d", bcd_result.bBabyCry);
+			}
+		}
 
-        if (params->s32BuzEnable) {
-            AI_BUZ_RESULT_S buz_result;
+		if (params->s32BuzEnable) {
+			AI_BUZ_RESULT_S buz_result;
 
-            memset(&buz_result, 0, sizeof(buz_result));
-            result = RK_MPI_AI_GetBuzResult(params->s32DevId, params->s32ChnIndex, &buz_result);
-            if (result == 0 && buz_result.bBuzz) {
-                params->s32BuzCount++;
-                RK_LOGI("BUZ Result: Buzz:%d", buz_result.bBuzz);
-            }
-        }
+			memset(&buz_result, 0, sizeof(buz_result));
+			result = RK_MPI_AI_GetBuzResult(params->s32DevId, params->s32ChnIndex,
+			                                &buz_result);
+			if (result == 0 && buz_result.bBuzz) {
+				params->s32BuzCount++;
+				RK_LOGI("BUZ Result: Buzz:%d", buz_result.bBuzz);
+			}
+		}
 
-        if (params->s32GbsEnable) {
-            AI_GBS_RESULT_S gbs_result;
+		if (params->s32GbsEnable) {
+			AI_GBS_RESULT_S gbs_result;
 
-            memset(&gbs_result, 0, sizeof(gbs_result));
-            result = RK_MPI_AI_GetGbsResult(params->s32DevId, params->s32ChnIndex, &gbs_result);
-            if (result == 0 && gbs_result.bGbs) {
-                params->s32GbsCount++;
-                RK_LOGI("GBS Result: Gbs:%d", gbs_result.bGbs);
-            }
-        }
-    }
+			memset(&gbs_result, 0, sizeof(gbs_result));
+			result = RK_MPI_AI_GetGbsResult(params->s32DevId, params->s32ChnIndex,
+			                                &gbs_result);
+			if (result == 0 && gbs_result.bGbs) {
+				params->s32GbsCount++;
+				RK_LOGI("GBS Result: Gbs:%d", gbs_result.bGbs);
+			}
+		}
+	}
 
-    pthread_exit(NULL);
-    return RK_NULL;
+	pthread_exit(NULL);
+	return RK_NULL;
 }
 
 static RK_CHAR optstr[] = "?::r:t:v:s:l:";
@@ -637,38 +642,38 @@ int main(int argc, char *argv[]) {
 	RK_CHAR *pCodecName = "g726";
 	int ret = 0;
 	int c;
-    TEST_AI_CTX_S params;
-    pthread_t tidSend;
-    pthread_t tidGet;
-    pthread_t tidComand;
+	TEST_AI_CTX_S params;
+	pthread_t tidSend;
+	pthread_t tidGet;
+	pthread_t tidComand;
 
-    params.srcFilePath        = RK_NULL;
-    params.dstFilePath        = RK_NULL;
-    params.s32LoopCount       = 1;
-    params.s32ChnNum          = 1;
-    params.s32BitWidth        = 16;
-    params.s32FrameNumber     = 4;
-    params.s32FrameLength     = 1024;
-    params.chCardName         = RK_NULL;
-    params.s32DevId           = 0;
-    params.s32SetVolumeCurve  = 0;
-    params.s32SetVolume       = 100;
-    params.s32SetMute         = 0;
-    params.s32SetTrackMode    = 0;
-    params.s32SetFadeRate     = 0;
-    params.s32GetVolume       = 0;
-    params.s32GetMute         = 0;
-    params.s32GetTrackMode    = 0;
-    params.s32DataReadEnable  = 0;
-    params.s32AedEnable       = 0;
-    params.s32BcdEnable       = 0;
-    params.s32BuzEnable       = 0;
-    params.s32GbsEnable       = 0;
-    params.s32VqeGapMs        = 16;
-    params.s32VqeEnable       = 0;
-    params.pVqeCfgPath        = RK_NULL;
-    params.s32LoopbackMode    = AUDIO_LOOPBACK_NONE;
-    params.s32DumpAlgo        = 0;
+	params.srcFilePath = RK_NULL;
+	params.dstFilePath = RK_NULL;
+	params.s32LoopCount = 1;
+	params.s32ChnNum = 1;
+	params.s32BitWidth = 16;
+	params.s32FrameNumber = 4;
+	params.s32FrameLength = 1024;
+	params.chCardName = RK_NULL;
+	params.s32DevId = 0;
+	params.s32SetVolumeCurve = 0;
+	params.s32SetVolume = 100;
+	params.s32SetMute = 0;
+	params.s32SetTrackMode = 0;
+	params.s32SetFadeRate = 0;
+	params.s32GetVolume = 0;
+	params.s32GetMute = 0;
+	params.s32GetTrackMode = 0;
+	params.s32DataReadEnable = 0;
+	params.s32AedEnable = 0;
+	params.s32BcdEnable = 0;
+	params.s32BuzEnable = 0;
+	params.s32GbsEnable = 0;
+	params.s32VqeGapMs = 16;
+	params.s32VqeEnable = 0;
+	params.pVqeCfgPath = RK_NULL;
+	params.s32LoopbackMode = AUDIO_LOOPBACK_NONE;
+	params.s32DumpAlgo = 0;
 
 	while ((c = getopt(argc, argv, optstr)) != -1) {
 		switch (c) {
@@ -732,10 +737,10 @@ int main(int argc, char *argv[]) {
 	RK_MPI_SYS_Init();
 
 	for (int i = 0; i < loopCount; i++) {
-        params.s32AedLoudCount    = 0;
-        params.s32BcdCount        = 0;
-        params.s32BuzCount        = 0;
-        params.s32GbsCount        = 0;
+		params.s32AedLoudCount = 0;
+		params.s32BcdCount = 0;
+		params.s32BuzCount = 0;
+		params.s32GbsCount = 0;
 
 		init_mpi_aenc(s32SampleRate);
 		init_mpi_adec(s32SampleRate);
@@ -752,7 +757,7 @@ int main(int argc, char *argv[]) {
 		stChnAENC.s32DevId = 0;
 		stChnAENC.s32ChnId = 0;
 
-		//bind AI-AENC
+		// bind AI-AENC
 		ret = RK_MPI_SYS_Bind(&stChnAI, &stChnAENC);
 		if (ret) {
 			printf("Bind AI[0] to AENC[0] failed! ret=%d\n", ret);
@@ -768,7 +773,7 @@ int main(int argc, char *argv[]) {
 		stChnADEC.s32DevId = 0;
 		stChnADEC.s32ChnId = 0;
 
-		//bind AENC-ADEC
+		// bind AENC-ADEC
 		ret = RK_MPI_SYS_Bind(&stChnAENC, &stChnADEC);
 		if (ret) {
 			printf("Bind AENC[0] to ADEC[0] failed! ret=%d\n", ret);
@@ -784,14 +789,14 @@ int main(int argc, char *argv[]) {
 		stChnAO.s32DevId = 0;
 		stChnAO.s32ChnId = 0;
 
-		//bind ADEC-AO
+		// bind ADEC-AO
 		ret = RK_MPI_SYS_Bind(&stChnADEC, &stChnAO);
 		if (ret) {
 			printf("Bind ADEC[0] to AO[0] failed! ret=%d\n", ret);
 			return -1;
 		}
 
-        pthread_create(&tidGet, RK_NULL, getDataThread, (void *)(&params));
+		pthread_create(&tidGet, RK_NULL, getDataThread, (void *)(&params));
 		printf("%s initial finish\n", __func__);
 
 		while (!quit) {
@@ -830,29 +835,25 @@ int main(int argc, char *argv[]) {
 		if (s32AiSed) {
 			ret = RK_MPI_AI_DisableBuz(0, 0);
 			if (ret != RK_SUCCESS) {
-				RK_LOGE("%s: RK_MPI_AI_DisableBuz failed with %#x",
-					__FUNCTION__, ret);
+				RK_LOGE("%s: RK_MPI_AI_DisableBuz failed with %#x", __FUNCTION__, ret);
 				return ret;
 			}
 
 			ret = RK_MPI_AI_DisableBcd(0, 0);
 			if (ret != RK_SUCCESS) {
-				RK_LOGE("%s: RK_MPI_AI_DisableBcd failed with %#x",
-					__FUNCTION__, ret);
+				RK_LOGE("%s: RK_MPI_AI_DisableBcd failed with %#x", __FUNCTION__, ret);
 				return ret;
 			}
 
 			ret = RK_MPI_AI_DisableAed(0, 0);
 			if (ret != RK_SUCCESS) {
-				RK_LOGE("%s: RK_MPI_AI_DisableAed failed with %#x",
-					__FUNCTION__, ret);
+				RK_LOGE("%s: RK_MPI_AI_DisableAed failed with %#x", __FUNCTION__, ret);
 				return ret;
 			}
 
 			ret = RK_MPI_AI_DisableGbs(0, 0);
 			if (ret != RK_SUCCESS) {
-				RK_LOGE("%s: RK_MPI_AI_DisableGbs failed with %#x",
-					__FUNCTION__, ret);
+				RK_LOGE("%s: RK_MPI_AI_DisableGbs failed with %#x", __FUNCTION__, ret);
 				return ret;
 			}
 		}
