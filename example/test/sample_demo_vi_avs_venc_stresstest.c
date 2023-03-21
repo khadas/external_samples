@@ -49,6 +49,7 @@ typedef struct _rkModeTest {
 	RK_BOOL bIfModuleTestopen;
 	RK_BOOL bIfEnableRtsp;
 	RK_BOOL bIfIspGroupInit;
+	RK_BOOL bIfOsdDisplay;
 	RK_S32 s32ModuleTestType;
 	RK_S32 s32CamGrpId;
 	RK_S32 s32CamNum;
@@ -120,6 +121,8 @@ static const struct option long_options[] = {
     {"chn_id", required_argument, NULL, 'c' + 'i'},
     {"vi_chn_buf_cnt", required_argument, NULL, 'v' + 'b'},
     {"ispLaunchMode", required_argument, NULL, 'i'},
+    {"input_bmp_path", required_argument, NULL, 'i' + 'b'},
+    {"osd_display", required_argument, RK_NULL, 'o' + 'd'},
     {"help", optional_argument, NULL, '?'},
     {NULL, 0, NULL, 0},
 };
@@ -171,6 +174,8 @@ static void print_usage(const RK_CHAR *name) {
 	       "<test_frame>, mode_test start next loop, default: 10\n");
 	printf("\t--chn_id : set vi channel id, default: 1\n");
 	printf("\t--vi_chn_buf_cnt : set vi chn buff cnt, default: 2\n");
+	printf("\t--input_bmp_path : set bmp path for osd, default: NULL\n");
+	printf("\t--osd_display : osd if display, 0: no-display, 1: display. default: 1\n");
 }
 
 /******************************************************************************
@@ -372,11 +377,13 @@ static RK_S32 media_init(g_mode_test *gModeTest) {
 	}
 
 	/* rgn init */
-	s32Ret = SAMPLE_COMM_RGN_CreateChn(&ctx->rgn);
-	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("SAMPLE_COMM_VENC_CreateChn failure:%#X", s32Ret);
-		program_handle_error(__func__, __LINE__);
-		return s32Ret;
+	if (gModeTest->bIfOsdDisplay) {
+		s32Ret = SAMPLE_COMM_RGN_CreateChn(&ctx->rgn);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("SAMPLE_COMM_VENC_CreateChn failure:%#X", s32Ret);
+			program_handle_error(__func__, __LINE__);
+			return s32Ret;
+		}
 	}
 
 	// Bind VI[0] and avs[0]
@@ -417,8 +424,9 @@ static RK_S32 media_deinit(g_mode_test *gModeTest) {
 	MPP_CHN_S stSrcChn, stDestChn;
 
 	/* Destroy RGN[0] */
-	SAMPLE_COMM_RGN_DestroyChn(&ctx->rgn);
-
+	if (gModeTest->bIfOsdDisplay) {
+		SAMPLE_COMM_RGN_DestroyChn(&ctx->rgn);
+	}
 	for (RK_S32 i = 0; i < VENC_NUM_MAX; i++) {
 		// Destroy VENC
 		gModeTest->bIfVencThreadQuit[i] = RK_TRUE;
@@ -713,6 +721,7 @@ static RK_S32 global_param_init(void) {
 	gModeTest->s32IspFps = 15;
 	gModeTest->s32CamNum = 2;
 	gModeTest->bIfIspGroupInit = RK_TRUE;
+	gModeTest->bIfOsdDisplay = RK_TRUE;
 
 	for (RK_S32 i = 0; i < VENC_NUM_MAX; i++) {
 		sem_init(&g_sem_module_test[i], 0, 0);
@@ -770,6 +779,7 @@ int main(int argc, char *argv[]) {
 	RK_CHAR *pOutPathVenc = NULL;
 	RK_CHAR *pCam0LdchMeshPath = "/oem/usr/share/iqfiles/cam0_ldch_mesh.bin";
 	RK_CHAR *pCam1LdchMeshPath = "/oem/usr/share/iqfiles/cam1_ldch_mesh.bin";
+	RK_CHAR *pBmpPath = NULL;
 	CODEC_TYPE_E enCodecType = RK_CODEC_TYPE_H265;
 	VENC_RC_MODE_E enRcMode = VENC_RC_MODE_H265CBR;
 	rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
@@ -912,6 +922,12 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'i':
 			gModeTest->bIfIspGroupInit = atoi(optarg);
+			break;
+		case 'i' + 'b':
+			pBmpPath = optarg;
+			break;
+		case 'o' + 'd':
+			gModeTest->bIfOsdDisplay = atoi(optarg);
 			break;
 		case '?':
 		default:
@@ -1063,16 +1079,27 @@ int main(int argc, char *argv[]) {
 	    VENC_GOPMODE_NORMALP; // VENC_GOPMODE_SMARTP
 
 	/* Init RGN */
+	RK_U32 u32BmpWidth = 0;
+	RK_U32 u32BmpHeight = 0;
+	s32Ret = SAMPLE_COMM_GetBmpResolution(pBmpPath, &u32BmpWidth, &u32BmpHeight);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("SAMPLE_COMM_GetBmpResolution failure");
+		u32BmpWidth = 640;
+		u32BmpHeight = 640;
+	}
 	ctx->rgn.rgnHandle = 0;
-	ctx->rgn.stRgnAttr.enType = COVER_RGN;
+	ctx->rgn.stRgnAttr.enType = OVERLAY_RGN;
 	ctx->rgn.stMppChn.enModId = RK_ID_VENC;
-	ctx->rgn.stMppChn.s32ChnId = 0;
-	ctx->rgn.stMppChn.s32DevId = ctx->venc[0].s32ChnId;
-	ctx->rgn.stRegion.s32X = 0;        // must be 16 aligned
-	ctx->rgn.stRegion.s32Y = 0;        // must be 16 aligned
-	ctx->rgn.stRegion.u32Width = 640;  // must be 16 aligned
-	ctx->rgn.stRegion.u32Height = 640; // must be 16 aligned
-	ctx->rgn.u32Color = 0x00ff00;
+	ctx->rgn.stMppChn.s32ChnId = ctx->venc[0].s32ChnId;
+	ctx->rgn.stMppChn.s32DevId = 0;
+	ctx->rgn.stRegion.s32X = ctx->venc[0].u32Width / 2; // must be 16 aligned
+	ctx->rgn.stRegion.s32Y = 0;                         // must be 16 aligned
+	ctx->rgn.stRegion.u32Width = u32BmpWidth;           // must be 16 aligned
+	ctx->rgn.stRegion.u32Height = u32BmpHeight;         // must be 16 aligned
+	ctx->rgn.u32BmpFormat = RK_FMT_BGRA5551;
+	ctx->rgn.u32BgAlpha = 128;
+	ctx->rgn.u32FgAlpha = 128;
+	ctx->rgn.srcFileBmpName = pBmpPath;
 	ctx->rgn.u32Layer = 1;
 
 	/* mode test thread launch */

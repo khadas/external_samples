@@ -58,7 +58,7 @@ static void sigterm_handler(int sig) {
 	g_bMainThreadQuit = true;
 }
 
-static RK_CHAR optstr[] = "?::a::A:n:b:l:o:e:F:h:m:d:L:v:s:e:";
+static RK_CHAR optstr[] = "?::a::A:n:b:l:o:e:F:h:m:d:L:v:s:e:i:";
 static const struct option long_options[] = {
     {"aiq", optional_argument, NULL, 'a'},
     {"calib_file_path", required_argument, NULL, 'A'},
@@ -77,6 +77,8 @@ static const struct option long_options[] = {
     {"cam1_ldch_path", required_argument, NULL, 'L' + 'm'},
     {"set_ldch", required_argument, NULL, 'l' + 'd'},
     {"ispLaunchMode", required_argument, NULL, 'i'},
+    {"input_bmp_path", required_argument, NULL, 'i' + 'b'},
+    {"osd_display", required_argument, RK_NULL, 'o' + 'd'},
     {"help", optional_argument, NULL, '?'},
     {NULL, 0, NULL, 0},
 };
@@ -121,6 +123,8 @@ static void print_usage(const RK_CHAR *name) {
 	       "/oem/usr/share/iqfiles/cam1_ldch_mesh.bin\n");
 	printf("\t--set_ldch: set ldch, 0: disable, 1: read_file_set_ldch, 2: "
 	       "read_buff_set_ldch. Default: 2\n");
+	printf("\t--input_bmp_path : set bmp path for osd, default: NULL\n");
+	printf("\t--osd_display : osd if display, 0: no-display, 1: display. default: 1\n");
 }
 
 /******************************************************************************
@@ -187,6 +191,7 @@ static void *venc_get_stream(void *pArgs) {
 int main(int argc, char *argv[]) {
 	RK_S32 s32Ret = RK_FAILURE;
 	SAMPLE_MPI_CTX_S *ctx = RK_NULL;
+	RK_BOOL bIfOsdDisplay = RK_TRUE;
 	RK_U32 u32ViWidth = 1920;
 	RK_U32 u32ViHeight = 1080;
 	RK_U32 u32AvsChn0Width = 3840;
@@ -199,6 +204,7 @@ int main(int argc, char *argv[]) {
 	RK_CHAR *pOutPathVenc = NULL;
 	RK_CHAR *pCam0LdchMeshPath = "/oem/usr/share/iqfiles/cam0_ldch_mesh.bin";
 	RK_CHAR *pCam1LdchMeshPath = "/oem/usr/share/iqfiles/cam1_ldch_mesh.bin";
+	RK_CHAR *pBmpPath = NULL;
 	CODEC_TYPE_E enCodecType = RK_CODEC_TYPE_H264;
 	VENC_RC_MODE_E enRcMode = VENC_RC_MODE_H264CBR;
 	rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
@@ -333,6 +339,12 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'i':
 			bIfIspGroupInit = atoi(optarg);
+			break;
+		case 'i' + 'b':
+			pBmpPath = optarg;
+			break;
+		case 'o' + 'd':
+			bIfOsdDisplay = atoi(optarg);
 			break;
 		case '?':
 		default:
@@ -554,18 +566,31 @@ int main(int argc, char *argv[]) {
 	SAMPLE_COMM_VENC_CreateChn(&ctx->venc[1]);
 
 	/* Init RGN */
+	RK_U32 u32BmpWidth = 0;
+	RK_U32 u32BmpHeight = 0;
+	s32Ret = SAMPLE_COMM_GetBmpResolution(pBmpPath, &u32BmpWidth, &u32BmpHeight);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("SAMPLE_COMM_GetBmpResolution failure");
+		u32BmpWidth = 640;
+		u32BmpHeight = 640;
+	}
 	ctx->rgn.rgnHandle = 0;
-	ctx->rgn.stRgnAttr.enType = COVER_RGN;
+	ctx->rgn.stRgnAttr.enType = OVERLAY_RGN;
 	ctx->rgn.stMppChn.enModId = RK_ID_VENC;
-	ctx->rgn.stMppChn.s32ChnId = 0;
-	ctx->rgn.stMppChn.s32DevId = ctx->venc[0].s32ChnId;
-	ctx->rgn.stRegion.s32X = 0;        // must be 16 aligned
-	ctx->rgn.stRegion.s32Y = 0;        // must be 16 aligned
-	ctx->rgn.stRegion.u32Width = 640;  // must be 16 aligned
-	ctx->rgn.stRegion.u32Height = 640; // must be 16 aligned
-	ctx->rgn.u32Color = 0x00ff00;
+	ctx->rgn.stMppChn.s32ChnId = ctx->venc[0].s32ChnId;
+	ctx->rgn.stMppChn.s32DevId = 0;
+	ctx->rgn.stRegion.s32X = ctx->venc[0].u32Width / 2; // must be 16 aligned
+	ctx->rgn.stRegion.s32Y = 0;                         // must be 16 aligned
+	ctx->rgn.stRegion.u32Width = u32BmpWidth;           // must be 16 aligned
+	ctx->rgn.stRegion.u32Height = u32BmpHeight;         // must be 16 aligned
+	ctx->rgn.u32BmpFormat = RK_FMT_BGRA5551;
+	ctx->rgn.u32BgAlpha = 128;
+	ctx->rgn.u32FgAlpha = 128;
+	ctx->rgn.srcFileBmpName = pBmpPath;
 	ctx->rgn.u32Layer = 1;
-	SAMPLE_COMM_RGN_CreateChn(&ctx->rgn);
+	if (bIfOsdDisplay) {
+		SAMPLE_COMM_RGN_CreateChn(&ctx->rgn);
+	}
 
 	// Bind VI[0] and avs[0]
 	for (RK_S32 i = 0; i < s32CamNum; i++) {
@@ -604,8 +629,9 @@ int main(int argc, char *argv[]) {
 
 	printf("%s exit!\n", __func__);
 	/* Destroy RGN[0] */
-	SAMPLE_COMM_RGN_DestroyChn(&ctx->rgn);
-
+	if (bIfOsdDisplay) {
+		SAMPLE_COMM_RGN_DestroyChn(&ctx->rgn);
+	}
 	// Destroy VENC[0]
 	g_bVencThreadQuit[0] = RK_TRUE;
 	pthread_join(ctx->venc[0].getStreamThread, NULL);
