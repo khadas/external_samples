@@ -12,19 +12,6 @@
 #include "rk_mpi_adec.h"
 #include "rk_mpi_aenc.h"
 #include "rk_mpi_ai.h"
-#include "rk_mpi_ao.h"
-#include "rk_mpi_avs.h"
-#include "rk_mpi_cal.h"
-#include "rk_mpi_ivs.h"
-#include "rk_mpi_mb.h"
-#include "rk_mpi_rgn.h"
-#include "rk_mpi_sys.h"
-#include "rk_mpi_tde.h"
-#include "rk_mpi_vdec.h"
-#include "rk_mpi_venc.h"
-#include "rk_mpi_vi.h"
-#include "rk_mpi_vo.h"
-#include "rk_mpi_vpss.h"
 #include "rk_mpi_amix.h"
 
 static bool quit = false;
@@ -52,7 +39,7 @@ static void *GetMediaBuffer(void *arg) {
 	while (!quit) {
 		result = RK_MPI_AI_GetFrame(0, 0, &frame, RK_NULL, s32MilliSec);
 		if (result == RK_SUCCESS) {
-			void* data = RK_MPI_MB_Handle2VirAddr(frame.pMbBlk);
+			void *data = RK_MPI_MB_Handle2VirAddr(frame.pMbBlk);
 			RK_U32 len = frame.u32Len;
 			RK_LOGI("data = %p, len = %d", data, len);
 			if (save_file) {
@@ -172,7 +159,8 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate,
 		goto __FAILED;
 	}
 
-	result = RK_MPI_AMIX_SetControl(aiDevId, "I2STDM Digital Loopback Mode", (char *)"Mode2");
+	result =
+	    RK_MPI_AMIX_SetControl(aiDevId, "I2STDM Digital Loopback Mode", (char *)"Mode2");
 	if (result != RK_SUCCESS) {
 		RK_LOGE("ai set I2STDM Digital Loopback Mode fail, reason = %x", result);
 		goto __FAILED;
@@ -242,6 +230,7 @@ static void print_usage(const RK_CHAR *name) {
 
 int main(int argc, char *argv[]) {
 	RK_S32 u32SampleRate = 16000;
+	RK_S32 ret = 0;
 	RK_U32 u32FrameCnt = 1024;
 	RK_CHAR *pOutPath = "/tmp/ai.pcm";
 	int c;
@@ -290,6 +279,14 @@ int main(int argc, char *argv[]) {
 
 	pthread_join(read_thread, NULL);
 	RK_MPI_AI_DisableVqe(0, 0);
+
+	ret = RK_MPI_AMIX_SetControl(0, "I2STDM Digital Loopback Mode",
+	                             (char *)"Disabled");
+	if (ret != RK_SUCCESS) {
+		RK_LOGE("ai set I2STDM Digital Loopback Mode fail, reason = %x", ret);
+		return RK_FAILURE;
+	}
+
 	RK_MPI_AI_DisableChn(0, 0);
 	RK_MPI_AI_Disable(0);
 	RK_MPI_SYS_Exit();
