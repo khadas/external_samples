@@ -255,6 +255,7 @@ typedef struct _rkMpiIvsCtx {
 
 #ifdef ROCKIVA
 typedef struct _rkMpiIvaCtx {
+	RK_CHAR *pModelDataPath;
 	RK_U32 u32ImageWidth;
 	RK_U32 u32ImageHeight;
 	RK_U32 u32DetectStartX;
@@ -265,11 +266,12 @@ typedef struct _rkMpiIvaCtx {
 	RockIvaHandle ivahandle;
 	RockIvaImageTransform eImageTransform;
 	RockIvaImageFormat eImageFormat;
-	RockIvaObjectType eModeType;
+	RockIvaDetModel eModeType;
 	RockIvaBaTaskParams baParams;
 	RockIvaFaceTaskParams faceParams;
 	RockIvaInitParam commonParams;
 	ROCKIVA_BA_ResultCallback resultCallback;
+	ROCKIVA_FrameReleaseCallback releaseCallback;
 } SAMPLE_IVA_CTX_S;
 #endif
 

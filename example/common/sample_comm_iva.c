@@ -28,16 +28,14 @@ extern "C" {
 
 #include "sample_comm.h"
 #define ROCKIVA_PATH_LENGTH (128)
-#define MODEL_DATA_PATH "/usr/lib/"
 
 #ifdef ROCKIVA
 RK_S32 SAMPLE_COMM_IVA_Create(SAMPLE_IVA_CTX_S *ctx) {
 	RK_S32 s32Ret = RK_FAILURE;
 
-	snprintf(ctx->commonParams.modelPath, ROCKIVA_PATH_LENGTH, MODEL_DATA_PATH);
+	snprintf(ctx->commonParams.modelPath, ROCKIVA_PATH_LENGTH, ctx->pModelDataPath);
 	ctx->commonParams.coreMask = 0x04;
 	ctx->commonParams.logLevel = ROCKIVA_LOG_ERROR;
-	ctx->eModeType |= ROCKIVA_DET_MODEL_PFP;     /* use small model */
 	ctx->commonParams.detModel = ctx->eModeType; /* Detect type */
 	ctx->commonParams.imageInfo.width = ctx->u32ImageWidth;
 	ctx->commonParams.imageInfo.height = ctx->u32ImageHeight;
@@ -63,6 +61,10 @@ RK_S32 SAMPLE_COMM_IVA_Create(SAMPLE_IVA_CTX_S *ctx) {
 	ctx->baParams.baRules.areaInBreakRule[0].ruleID = 0;
 	ctx->baParams.baRules.areaInBreakRule[0].objType =
 	    ROCKIVA_OBJECT_TYPE_BITMASK(ROCKIVA_OBJECT_TYPE_PERSON);
+	ctx->baParams.baRules.areaInBreakRule[0].objType |=
+	    ROCKIVA_OBJECT_TYPE_BITMASK(ROCKIVA_OBJECT_TYPE_FACE);
+	ctx->baParams.baRules.areaInBreakRule[0].objType |=
+	    ROCKIVA_OBJECT_TYPE_BITMASK(ROCKIVA_OBJECT_TYPE_PET);
 	ctx->baParams.baRules.areaInBreakRule[0].area.pointNum = 4;
 	ctx->baParams.baRules.areaInBreakRule[0].area.points[0].x =
 	    ROCKIVA_PIXEL_RATION_CONVERT(ctx->u32ImageWidth, ctx->u32DetectStartX);
@@ -91,6 +93,13 @@ RK_S32 SAMPLE_COMM_IVA_Create(SAMPLE_IVA_CTX_S *ctx) {
 		RK_LOGE("ROCKIVA_BA_Init failure:%X", s32Ret);
 		return s32Ret;
 	}
+
+	s32Ret = ROCKIVA_SetFrameReleaseCallback(ctx->ivahandle, ctx->releaseCallback);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("ROCKIVA_SetFrameReleaseCallback failure:%#X", s32Ret);
+		return s32Ret;
+	}
+	return s32Ret;
 }
 
 RK_S32 SAMPLE_COMM_IVA_Destroy(SAMPLE_IVA_CTX_S *ctx) {

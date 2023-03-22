@@ -135,6 +135,7 @@ static const struct option long_options[] = {
     {"iva_detect_speed", required_argument, RK_NULL, 'd'},
     {"venc_buff_size", required_argument, RK_NULL, 'v' + 's'},
     {"wrap_lines", required_argument, RK_NULL, 'w' + 'l'},
+    {"iva_model_path", required_argument, RK_NULL, 'i' + 'm'},
     {"help", optional_argument, RK_NULL, '?'},
     {RK_NULL, 0, RK_NULL, 0},
 };
@@ -180,6 +181,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t--venc_buff_size : main stream venc output buffer size. default value is "
 	       "vencWidth*vencHeigth/2(byte)\n");
 	printf("\t--wrap_lines : 0: height/2, 1: height/4, 2: height/8. default: 1\n");
+	printf("\t--iva_model_path : iva model data path, default: /oem/usr/lib\n");
 }
 
 static void vi_venc_thread_error_handle(const char *func, RK_U32 line, MB_BLK mb,
@@ -203,6 +205,7 @@ static void vi_venc_thread_error_handle(const char *func, RK_U32 line, MB_BLK mb
 
 /* vi get stream send tde and tde send venc*/
 static void *vi_venc_thread(void *pArgs) {
+	prctl(PR_SET_NAME, "vi_venc_thread");
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_LOGE("into vi_venc_thread------------------------------------");
 	while (!gModeTest->bIfViThreadQuit) {
@@ -272,8 +275,11 @@ static void *venc_get_stream(void *pArgs) {
 	RK_S32 loopCount = 0;
 	RK_VOID *pData = RK_NULL;
 	RK_CHAR name[BUFFER_SIZE] = {0};
+	sprintf(name, "venc_%d_get_stream", ctx->s32ChnId);
+	prctl(PR_SET_NAME, name);
 
 	if (ctx->dstFilePath) {
+		memset(name, 0, BUFFER_SIZE);
 		if (ctx->s32ChnId == TDE_JPEG_CHNID || ctx->s32ChnId == COMBO_JPEG_CHNID) {
 			snprintf(name, sizeof(name), "/%s/venc_%d.jpeg", ctx->dstFilePath,
 			         ctx->s32ChnId);
@@ -369,31 +375,58 @@ static void rkIvaEvent_callback(const RockIvaBaResult *result,
 	}
 }
 
+static void rkIvaFrame_releaseCallBack(const RockIvaReleaseFrames *releaseFrames,
+                                       void *userdata) {
+	/* when iva handle out of the video frame，this func will be called*/
+	RK_S32 s32Ret = RK_SUCCESS;
+	for (RK_S32 i = 0; i < releaseFrames->count; i++) {
+		if (!releaseFrames->frames[i].extData) {
+			RK_LOGE("---------error release frame is null");
+			program_handle_error(__func__, __LINE__);
+			continue;
+		}
+		s32Ret = RK_MPI_VI_ReleaseChnFrame(0, 2, releaseFrames->frames[i].extData);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VI_ReleaseChnFrame failure:%#X", s32Ret);
+			program_handle_error(__func__, __LINE__);
+		}
+		free(releaseFrames->frames[i].extData);
+	}
+}
+
 static void *vi_iva_thread(void *pArgs) {
+	prctl(PR_SET_NAME, "vi_iva_thread");
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_CHAR *pData = RK_NULL;
 	RK_S32 s32Fd = 0;
 	RockIvaImage ivaImage;
 	RK_U32 u32Loopcount = 0;
 	RK_U32 u32GetOneFrameTime = 1000 / ctx->iva.u32IvaDetectFrameRate;
+	VIDEO_FRAME_INFO_S *stViFrame = NULL;
 
 	while (!gModeTest->bIfViIvaTHreadQuit) {
 		s32Ret = SAMPLE_COMM_VI_GetChnFrame(&ctx->vi[2], &pData);
 		if (s32Ret == RK_SUCCESS) {
-			s32Fd = RK_MPI_MB_Handle2Fd(ctx->vi[2].stViFrame.stVFrame.pMbBlk);
+			stViFrame = (VIDEO_FRAME_INFO_S *)malloc(sizeof(VIDEO_FRAME_INFO_S));
+			if (!stViFrame) {
+				RK_LOGE("-----error malloc fail for stViFrame");
+				SAMPLE_COMM_VI_ReleaseChnFrame(&ctx->vi[2]);
+				continue;
+			}
+			memcpy(stViFrame, &ctx->vi[2].stViFrame, sizeof(VIDEO_FRAME_INFO_S));
+			s32Fd = RK_MPI_MB_Handle2Fd(stViFrame->stVFrame.pMbBlk);
 			memset(&ivaImage, 0, sizeof(RockIvaImage));
 			ivaImage.info.transformMode = ctx->iva.eImageTransform;
-			ivaImage.info.width = ctx->vi[2].stViFrame.stVFrame.u32Width;
-			ivaImage.info.height = ctx->vi[2].stViFrame.stVFrame.u32Height;
+			ivaImage.info.width = stViFrame->stVFrame.u32Width;
+			ivaImage.info.height = stViFrame->stVFrame.u32Height;
 			ivaImage.info.format = ctx->iva.eImageFormat;
 			ivaImage.frameId = u32Loopcount;
 			ivaImage.dataAddr = NULL;
 			ivaImage.dataPhyAddr = NULL;
 			ivaImage.dataFd = s32Fd;
+			ivaImage.extData = stViFrame;
 			s32Ret = ROCKIVA_PushFrame(ctx->iva.ivahandle, &ivaImage, NULL);
 			u32Loopcount++;
-
-			SAMPLE_COMM_VI_ReleaseChnFrame(&ctx->vi[2]);
 		}
 		usleep(u32GetOneFrameTime * 1000);
 	}
@@ -404,6 +437,7 @@ static void *vi_iva_thread(void *pArgs) {
 #endif
 
 static void *ivs_detect_thread(void *pArgs) {
+	prctl(PR_SET_NAME, "ivs_detect_thread");
 	RK_S32 s32Ret = RK_FAILURE;
 	IVS_RESULT_INFO_S stResults;
 	RK_U32 u32IvsDetectCount = 0;
@@ -2184,6 +2218,7 @@ int main(int argc, char *argv[]) {
 	RK_U32 u32WrapLine = 4;
 	RK_CHAR *pOutPathVenc = RK_NULL;
 	RK_CHAR *pIqFileDir = RK_NULL;
+	RK_CHAR *pIvaModelPath = "/oem/usr/lib/";
 	RK_BOOL bMultictx = RK_FALSE;
 	RK_BOOL bIfWrapEnable = RK_FALSE;
 	RK_BOOL bIfSmartpEnable = RK_FALSE;
@@ -2314,6 +2349,9 @@ int main(int argc, char *argv[]) {
 				goto __PARAM_INIT_FAILED;
 			}
 			break;
+		case 'i' + 'm':
+			pIvaModelPath = optarg;
+			break;
 		case '?':
 		default:
 			print_usage(argv[0]);
@@ -2417,6 +2455,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef ROCKIVA
 	/* Init iva */
+	ctx->iva.pModelDataPath = pIvaModelPath;
 	ctx->iva.u32ImageHeight = u32IvsWidth;
 	ctx->iva.u32ImageWidth = u32IvsHeight;
 	ctx->iva.u32DetectStartX = 0;
@@ -2425,9 +2464,10 @@ int main(int argc, char *argv[]) {
 	ctx->iva.u32DetectHight = u32IvsHeight;
 	ctx->iva.eImageTransform = ROCKIVA_IMAGE_TRANSFORM_NONE;
 	ctx->iva.eImageFormat = ROCKIVA_IMAGE_FORMAT_YUV420SP_NV12;
-	ctx->iva.eModeType = ROCKIVA_OBJECT_TYPE_PERSON;
+	ctx->iva.eModeType = ROCKIVA_DET_MODEL_PFP;
 	ctx->iva.u32IvaDetectFrameRate = u32IvaDetectFrameRate;
 	ctx->iva.resultCallback = rkIvaEvent_callback;
+	ctx->iva.releaseCallback = rkIvaFrame_releaseCallBack;
 #endif
 
 	/* Init VENC[0] */
