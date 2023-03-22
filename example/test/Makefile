@@ -38,6 +38,7 @@ endif
 	@mv -f sample_vpss_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_demo_vi_venc_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mkdir -p ../../../../output/out/userdata/
+	@cp -f source/ai_aenc_adec_ao_stresstes.sh ../../../../output/out/userdata/
 	@cp -f source/160x96.bmp ../../../../output/out/userdata/
 	@cp -f source/192x96.bmp ../../../../output/out/userdata/
 	@cp -f source/rv1103_stresstest.sh ../../../../output/out/userdata/

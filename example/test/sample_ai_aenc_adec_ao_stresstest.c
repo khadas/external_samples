@@ -15,7 +15,6 @@
 #include "rk_mpi_aenc.h"
 #include "rk_mpi_ai.h"
 #include "rk_mpi_ao.h"
-#include "rk_mpi_cal.h"
 #include "rk_mpi_mb.h"
 #include "rk_mpi_sys.h"
 
@@ -236,6 +235,21 @@ RK_S32 init_ai_vqe(RK_S32 s32SampleRate) {
 	int s32ChnIndex = 0;
 	const char *pVqeCfgPath = "/oem/usr/share/vqefiles/config_aivqe.json";
 
+#if (CHIP_RV1106 == 1)
+	result =
+	    RK_MPI_AMIX_SetControl(s32DevId, "I2STDM Digital Loopback Mode", (char *)"Mode2");
+	if (result != RK_SUCCESS) {
+		RK_LOGE("ai set I2STDM Digital Loopback Mode fail, reason = %x", result);
+		return RK_FAILURE;
+	}
+
+	result = RK_MPI_AMIX_SetControl(s32DevId, "DAC LINEOUT Volume", (char *)"26");
+	if (result != RK_SUCCESS) {
+		RK_LOGE("ai set alc left voulme fail, reason = %x", result);
+		return RK_FAILURE;
+	}
+#endif
+
 	// Need to config enCfgMode to VQE attr even the VQE is not enabled
 	memset(&stAiVqeConfig, 0, sizeof(AI_VQE_CONFIG_S));
 	if (pVqeCfgPath != RK_NULL) {
@@ -307,7 +321,11 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate, RK_U32 u3
 
 	RK_BOOL needResample = (InputSampleRate != OutputSampleRate) ? RK_TRUE : RK_FALSE;
 
+#if (CHIP_RV1106 == 1)
 	sprintf((char *)aiAttr.u8CardName, "%s", "hw:0,0");
+#else
+	sprintf((char *)aiAttr.u8CardName, "%s", "default");
+#endif
 
 	// s32DeviceSampleRate 和 OutputSampleRate,OutputSampleRate
 	// 可以使用其他采样率，需要调用重采样函数。默认一样采样率。
@@ -745,7 +763,6 @@ int main(int argc, char *argv[]) {
 		init_mpi_aenc(s32SampleRate);
 		init_mpi_adec(s32SampleRate);
 		open_device_ai(s32SampleRate, s32SampleRate, u32FrameCnt, s32AiVqe, s32AiSed);
-		open_device_ao(s32SampleRate, u32FrameCnt);
 
 		// ai bind aenc
 		MPP_CHN_S stChnAI, stChnAENC, stChnADEC, stChnAO;
@@ -780,6 +797,7 @@ int main(int argc, char *argv[]) {
 			return -1;
 		}
 
+		open_device_ao(s32SampleRate, u32FrameCnt);
 		// adec bind ao
 		stChnADEC.enModId = RK_ID_ADEC;
 		stChnADEC.s32DevId = 0;
@@ -829,8 +847,17 @@ int main(int argc, char *argv[]) {
 		RK_MPI_SYS_UnBind(&stChnAENC, &stChnADEC);
 		RK_MPI_SYS_UnBind(&stChnAI, &stChnAENC);
 
-		if (s32AiVqe)
+		if (s32AiVqe) {
 			RK_MPI_AI_DisableVqe(0, 0);
+#if (CHIP_RV1106 == 1)
+			ret = RK_MPI_AMIX_SetControl(params.s32DevId, "I2STDM Digital Loopback Mode",
+			                             (char *)"Disabled");
+			if (ret != RK_SUCCESS) {
+				RK_LOGE("ai set I2STDM Digital Loopback Mode fail, reason = %x", ret);
+				return RK_FAILURE;
+			}
+#endif
+		}
 
 		if (s32AiSed) {
 			ret = RK_MPI_AI_DisableBuz(0, 0);
