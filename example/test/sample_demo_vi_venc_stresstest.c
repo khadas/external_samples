@@ -2514,7 +2514,6 @@ int main(int argc, char *argv[]) {
 	ctx->venc[1].u32Height = u32SubVideoHeight;
 	ctx->venc[1].u32Fps = u32VencFps;
 	ctx->venc[1].u32Gop = 50;
-	ctx->venc[1].u32BitRate = u32BitRate;
 	ctx->venc[1].enCodecType = enCodecType;
 	ctx->venc[1].enRcMode = enRcMode;
 	ctx->venc[1].getStreamCbFunc = venc_get_stream;
@@ -2522,6 +2521,7 @@ int main(int argc, char *argv[]) {
 	ctx->venc[1].dstFilePath = pOutPathVenc;
 	ctx->venc[1].bWrapIfEnable = RK_FALSE;
 	ctx->venc[1].u32BuffSize = u32SubVideoWidth * u32SubVideoHeight / 2;
+	ctx->venc[1].u32BitRate = ctx->venc[1].u32BuffSize * 8 / 1024;
 	/*
 	H264  66：Baseline  77：Main Profile 100：High Profile
 	H265  0：Main Profile  1：Main 10 Profile

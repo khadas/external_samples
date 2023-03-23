@@ -1227,7 +1227,7 @@ int main(int argc, char *argv[]) {
 	ctx->venc[1].s32loopCount = s32LoopCnt;
 	ctx->venc[1].dstFilePath = pOutPathVenc;
 	ctx->venc[1].bWrapIfEnable = RK_FALSE;
-	ctx->venc[1].u32BuffSize = u32SubVideoWidth * u32SubVideoHeight / 2;
+	ctx->venc[1].u32BuffSize = u32SubVideoWidth * u32SubVideoHeight / 3;
 	ctx->venc[1].u32BitRate = ctx->venc[1].u32BuffSize * 8 / 1024;
 	/*
 	H264  66：Baseline  77：Main Profile 100：High Profile

@@ -539,8 +539,8 @@ int main(int argc, char *argv[]) {
 	ctx->venc[0].getStreamCbFunc = venc_get_stream;
 	ctx->venc[0].s32loopCount = s32loopCnt;
 	ctx->venc[0].dstFilePath = pOutPathVenc;
-	ctx->venc[0].u32BuffSize = ctx->venc[0].u32Width * ctx->venc[0].u32Height / 4;
-	ctx->venc[0].u32StreamBufCnt = 4;
+	ctx->venc[0].u32BuffSize = ctx->venc[0].u32Width * ctx->venc[0].u32Height / 3;
+	ctx->venc[0].u32StreamBufCnt = 3;
 	ctx->venc[0].enable_buf_share = RK_TRUE;
 	// H264  66：Baseline  77：Main Profile 100：High Profile
 	// H265  0：Main Profile  1：Main 10 Profile
@@ -565,9 +565,9 @@ int main(int argc, char *argv[]) {
 	ctx->venc[1].getStreamCbFunc = venc_get_stream;
 	ctx->venc[1].s32loopCount = s32loopCnt;
 	ctx->venc[1].dstFilePath = pOutPathVenc;
-	ctx->venc[1].u32BuffSize = ctx->venc[1].u32Width * ctx->venc[1].u32Height / 4;
-	ctx->venc[1].u32BitRate = ctx->venc[1].u32BuffSize * 8 / 1024;
-	ctx->venc[1].u32StreamBufCnt = 4;
+	ctx->venc[1].u32BuffSize = ctx->venc[1].u32Width * ctx->venc[1].u32Height / 3;
+	ctx->venc[1].u32BitRate = 1024;
+	ctx->venc[1].u32StreamBufCnt = 3;
 	ctx->venc[1].enable_buf_share = RK_TRUE;
 	// H264  66：Baseline  77：Main Profile 100：High Profile
 	// H265  0：Main Profile  1：Main 10 Profile
@@ -587,8 +587,8 @@ int main(int argc, char *argv[]) {
 	s32Ret = SAMPLE_COMM_GetBmpResolution(pBmpPath, &u32BmpWidth, &u32BmpHeight);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("SAMPLE_COMM_GetBmpResolution failure");
-		u32BmpWidth = 640;
-		u32BmpHeight = 640;
+		u32BmpWidth = 128;
+		u32BmpHeight = 128;
 	}
 	ctx->rgn.rgnHandle = 0;
 	ctx->rgn.stRgnAttr.enType = OVERLAY_RGN;
