@@ -117,7 +117,7 @@ static const struct option long_options[] = {
  ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
-	printf("\t%s -w 1920 -h 1080 -a /etc/iqfiles/ -f 30 -o /userdata/\n", name);
+	printf("\t%s -w 1920 -h 1080 -a /etc/iqfiles/ --test_frame 30 -o /userdata/\n", name);
 #if (defined RKAIQ) && (defined UAPI2)
 	printf(
 	    "\t-a | --aiq : enable aiq with dirpath provided, eg:-a /etc/iqfiles/, \n"
