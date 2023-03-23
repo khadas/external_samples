@@ -86,11 +86,10 @@ static void sigterm_handler(int sig) {
 	program_normal_exit(__func__, __LINE__);
 }
 
-static RK_CHAR optstr[] = "?::a:w:h:c:o:m:t:l:i:";
+static RK_CHAR optstr[] = "?::a:w:h:c:o:m:t:l:i:v:s:";
 static const struct option long_options[] = {
     {"aiq", optional_argument, NULL, 'a'},
-    {"width", required_argument, NULL, 'w'},
-    {"height", required_argument, NULL, 'h'},
+    {"vi_size", required_argument, NULL, 'v' + 's'},
     {"camNum", required_argument, NULL, 'c'},
     {"viOutputPath", required_argument, NULL, 'o'},
     {"loopCount", required_argument, NULL, 'l'},
@@ -98,17 +97,18 @@ static const struct option long_options[] = {
     {"modeTestLoop", required_argument, NULL, 't' + 'l'},
     {"testFrameCount", required_argument, NULL, 't'},
     {"ispLaunchMode", required_argument, NULL, 'i'},
+    {"vi_chnid", required_argument, NULL, 'v' + 'i'},
+    {"vi_buffcnt", required_argument, NULL, 'v' + 'c'},
     {"help", optional_argument, NULL, '?'},
     {NULL, 0, NULL, 0},
 };
 
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
-	printf("\t%s -a /oem/usr/share/iqfiles -c 2 -w 1920 -h 1080\n", name);
+	printf("\t%s -a /etc/iqfiles/ -c 2 --vi_size 1920x1080\n", name);
 	printf("\t-a | --aiq : enable aiq with dirpath provided, default: "
-	       "/oem/usr/share/iqfiles\n");
-	printf("\t-w | --width: Vi width. Default: 1920\n");
-	printf("\t-h | --height: Vi height. Default: 1080\n");
+	       "/etc/iqfiles/\n");
+	printf("\t--vi_size : set vi resolution WidthxHeight, default: 1920x1080\n");
 	printf("\t-c | --camNum: camera Num. default: 2\n");
 	printf("\t-o | --viOutputPath: save vi output yuv file. default: NULL\n");
 	printf("\t-l | --loopcount: vi get stream loopcount. default: -1\n");
@@ -119,11 +119,13 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t--testFrameCount : set the venc reveive frame count for every test "
 	       "loop, default: 500\n");
 	printf("\t--ispLaunchMode : 0: single cam init, 1: camera group init. default: 0\n");
+	printf("\t--vi_chnid : set vi channel id, default: 1\n");
+	printf("\t--vi_buffcnt : set vi buff cnt, default: 3\n");
 }
 
 static RK_S32 isp_init(void) {
 	RK_S32 s32Ret = RK_FAILURE;
-#if (defined RKAIQ) && (defined UAPI2)
+#ifdef RKAIQ
 	if (gModeTest->bIfIspGroupInit == RK_FALSE) {
 		for (RK_S32 i = 0; i < gModeTest->u32CamNum; i++) {
 			s32Ret = SAMPLE_COMM_ISP_Init(gModeTest->s32CamId[i], gModeTest->eHdrMode,
@@ -157,7 +159,7 @@ static RK_S32 isp_init(void) {
 
 static RK_S32 isp_deinit(void) {
 	RK_S32 s32Ret = RK_SUCCESS;
-#if (defined RKAIQ) && (defined UAPI2)
+#ifdef RKAIQ
 	if (gModeTest->bIfIspGroupInit == RK_FALSE) {
 		for (RK_S32 i = 0; i < gModeTest->u32CamNum; i++) {
 			SAMPLE_COMM_ISP_Stop(i);
@@ -256,7 +258,7 @@ static void pn_mode_switch(RK_S32 test_loop) {
 
 	while (!gModeTest->bModuleTestThreadQuit) {
 
-		if (gModeTest->bIfIspGroupInit == RK_FALSE) {
+		if (ctx->vi[0].bIfIspGroupInit == RK_FALSE) {
 			for (i = 0; i < gModeTest->u32CamNum; i++) {
 				s32Ret = RK_MPI_VI_PauseChn(ctx->vi[i].u32PipeId, ctx->vi[i].s32ChnId);
 				if (s32Ret != RK_SUCCESS) {
@@ -291,7 +293,7 @@ static void pn_mode_switch(RK_S32 test_loop) {
 			program_handle_error(__func__, __LINE__);
 			break;
 		}
-		if (gModeTest->bIfIspGroupInit == RK_FALSE) {
+		if (ctx->vi[0].bIfIspGroupInit == RK_FALSE) {
 			for (i = 0; i < gModeTest->u32CamNum; i++) {
 				s32Ret = RK_MPI_VI_ResumeChn(ctx->vi[i].u32PipeId, ctx->vi[i].s32ChnId);
 				if (s32Ret != RK_SUCCESS) {
@@ -338,7 +340,7 @@ static void hdr_mode_switch_test(RK_S32 test_loop) {
 
 	while (!gModeTest->bModuleTestThreadQuit) {
 
-		if (gModeTest->bIfIspGroupInit == RK_FALSE) {
+		if (ctx->vi[0].bIfIspGroupInit == RK_FALSE) {
 			for (i = 0; i < gModeTest->u32CamNum; i++) {
 				s32Ret = RK_MPI_VI_PauseChn(ctx->vi[i].u32PipeId, ctx->vi[i].s32ChnId);
 				if (s32Ret != RK_SUCCESS) {
@@ -382,7 +384,7 @@ static void hdr_mode_switch_test(RK_S32 test_loop) {
 			break;
 		}
 
-		if (gModeTest->bIfIspGroupInit == RK_FALSE) {
+		if (ctx->vi[0].bIfIspGroupInit == RK_FALSE) {
 			for (i = 0; i < gModeTest->u32CamNum; i++) {
 				s32Ret = RK_MPI_VI_ResumeChn(ctx->vi[i].u32PipeId, ctx->vi[i].s32ChnId);
 				if (s32Ret != RK_SUCCESS) {
@@ -552,15 +554,14 @@ static void isp_deinit_init(RK_S32 s32TestLoop) {
 		}
 
 		/* vi deinit */
-		if (gModeTest->bIfIspGroupInit == RK_TRUE) {
-			for (i = 0; i < gModeTest->u32CamNum; i++) {
-				s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
-				if (s32Ret != RK_SUCCESS) {
-					RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
-					        ctx->vi[i].u32PipeId);
-					program_handle_error(__func__, __LINE__);
-					break;
-				}
+
+		for (i = 0; i < gModeTest->u32CamNum && ctx->vi[i].bIfIspGroupInit; i++) {
+			s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
+				        ctx->vi[i].u32PipeId);
+				program_handle_error(__func__, __LINE__);
+				break;
 			}
 		}
 
@@ -597,15 +598,13 @@ static void isp_deinit_init(RK_S32 s32TestLoop) {
 		}
 
 		/* Start pipe */
-		if (gModeTest->bIfIspGroupInit == RK_TRUE) { /* isp group init */
-			for (i = 0; i < gModeTest->u32CamNum; i++) {
-				s32Ret = RK_MPI_VI_StartPipe(ctx->vi[i].u32PipeId);
-				if (s32Ret != RK_SUCCESS) {
-					RK_LOGE("RK_MPI_VI_StartPipe failure:$#X pipe:%d", s32Ret,
-					        ctx->vi[i].u32PipeId);
-					program_handle_error(__func__, __LINE__);
-					break;
-				}
+		for (i = 0; i < gModeTest->u32CamNum && ctx->vi[i].bIfIspGroupInit; i++) {
+			s32Ret = RK_MPI_VI_StartPipe(ctx->vi[i].u32PipeId);
+			if (s32Ret != RK_SUCCESS) {
+				RK_LOGE("RK_MPI_VI_StartPipe failure:$#X pipe:%d", s32Ret,
+				        ctx->vi[i].u32PipeId);
+				program_handle_error(__func__, __LINE__);
+				break;
 			}
 		}
 
@@ -732,7 +731,9 @@ int main(int argc, char *argv[]) {
 	RK_U32 u32CamNum = 2;
 	RK_S32 s32loopCnt = -1;
 	RK_S32 i;
-	char *iq_file_dir = "/oem/usr/share/iqfiles";
+	RK_S32 s32ViChnid = 1;
+	RK_S32 s32ViBuffCnt = 3;
+	char *iq_file_dir = "/etc/iqfiles/";
 	pthread_t modeTest_thread_id;
 	if (argc < 2) {
 		print_usage(argv[0]);
@@ -748,20 +749,20 @@ int main(int argc, char *argv[]) {
 	signal(SIGINT, sigterm_handler);
 	signal(SIGTERM, sigterm_handler);
 
-#if (defined RKAIQ) && (defined UAPI2)
+#ifdef RKAIQ
 	RK_BOOL bMultictx = RK_TRUE;
 #endif
 	int c;
 	while ((c = getopt_long(argc, argv, optstr, long_options, NULL)) != -1) {
+		const char *tmp_optarg = optarg;
 		switch (c) {
 		case 'a':
 			iq_file_dir = optarg;
 			break;
-		case 'w':
+		case 'v' + 's':
 			u32ViWidth = atoi(optarg);
-			break;
-		case 'h':
-			u32ViHeight = atoi(optarg);
+			tmp_optarg = strstr(optarg, "x");
+			u32ViHeight = atoi(tmp_optarg + 1);
 			break;
 		case 'c':
 			u32CamNum = atoi(optarg);
@@ -785,6 +786,12 @@ int main(int argc, char *argv[]) {
 		case 'i':
 			gModeTest->bIfIspGroupInit = atoi(optarg);
 			break;
+		case 'v' + 'i':
+			s32ViChnid = atoi(optarg);
+			break;
+		case 'v' + 'c':
+			s32ViBuffCnt = atoi(optarg);
+			break;
 		case '?':
 		default:
 			print_usage(argv[0]);
@@ -794,7 +801,7 @@ int main(int argc, char *argv[]) {
 
 	printf("#IQ Path: %s\n", iq_file_dir);
 	if (iq_file_dir) {
-#if (defined RKAIQ) && (defined UAPI2)
+#ifdef RKAIQ
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
 		rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
@@ -831,9 +838,12 @@ int main(int argc, char *argv[]) {
 		ctx->vi[i].u32Height = u32ViHeight;
 		ctx->vi[i].s32DevId = i;
 		ctx->vi[i].u32PipeId = i;
-		ctx->vi[i].s32ChnId = 1;
+		ctx->vi[i].s32ChnId = s32ViChnid;
 		ctx->vi[i].bIfIspGroupInit = gModeTest->bIfIspGroupInit;
-		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 3;
+#ifdef RV1126
+		ctx->vi[i].bIfIspGroupInit = RK_FALSE;
+#endif
+		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = s32ViBuffCnt;
 		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
 		ctx->vi[i].stChnAttr.u32Depth = 2;
 		ctx->vi[i].dstFilePath = pViOutPath;
@@ -845,17 +855,17 @@ int main(int argc, char *argv[]) {
 		SAMPLE_COMM_VI_CreateChn(&ctx->vi[i]);
 	}
 	/* Start pipe */
-	if (gModeTest->bIfIspGroupInit == RK_TRUE) { /* isp group init */
-		for (i = 0; i < u32CamNum; i++) {
-			s32Ret = RK_MPI_VI_StartPipe(ctx->vi[i].u32PipeId);
-			if (s32Ret != RK_SUCCESS) {
-				RK_LOGE("RK_MPI_VI_StartPipe failure:$#X pipe:%d", s32Ret,
-				        ctx->vi[i].u32PipeId);
-				g_exit_result = RK_FALSE;
-				goto __VI_INITFAIL;
-			}
+
+	for (i = 0; i < u32CamNum && ctx->vi[i].bIfIspGroupInit; i++) {
+		s32Ret = RK_MPI_VI_StartPipe(ctx->vi[i].u32PipeId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VI_StartPipe failure:$#X pipe:%d", s32Ret,
+			        ctx->vi[i].u32PipeId);
+			g_exit_result = RK_FALSE;
+			goto __VI_INITFAIL;
 		}
 	}
+
 	for (i = 0; i < u32CamNum; i++) {
 		pthread_create(&gModeTest->vi_get_stream_thread_id[i], RK_NULL, vi_get_stream,
 		               &ctx->vi[i]);
@@ -887,16 +897,16 @@ int main(int argc, char *argv[]) {
 
 __VI_INITFAIL:
 	/* vi deinit */
-	if (gModeTest->bIfIspGroupInit == RK_TRUE) {
-		for (i = 0; i < u32CamNum; i++) {
-			s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
-			if (s32Ret != RK_SUCCESS) {
-				RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
-				        ctx->vi[i].u32PipeId);
-				g_exit_result = RK_FALSE;
-			}
+
+	for (i = 0; i < u32CamNum && ctx->vi[i].bIfIspGroupInit; i++) {
+		s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
+			        ctx->vi[i].u32PipeId);
+			g_exit_result = RK_FALSE;
 		}
 	}
+
 	for (i = 0; i < u32CamNum; i++) {
 		s32Ret = SAMPLE_COMM_VI_DestroyChn(&ctx->vi[i]);
 		if (s32Ret != RK_SUCCESS) {
@@ -908,7 +918,7 @@ __VI_INITFAIL:
 __FAILED:
 	RK_MPI_SYS_Exit();
 	if (iq_file_dir) {
-#if (defined RKAIQ) && (defined UAPI2)
+#ifdef RKAIQ
 		isp_deinit();
 #endif
 	}

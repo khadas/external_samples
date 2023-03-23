@@ -102,6 +102,8 @@ static const struct option long_options[] = {
     {"mode_test_loop", required_argument, NULL, 't' + 'l'},
     {"test_frame_count", required_argument, NULL, 'c'},
     {"ispLaunchMode", required_argument, NULL, 'i'},
+    {"vi_chnid", required_argument, NULL, 'v' + 'i'},
+    {"vi_buffcnt", required_argument, NULL, 'v' + 'c'},
     {"help", optional_argument, NULL, '?'},
     {NULL, 0, NULL, 0},
 };
@@ -144,6 +146,8 @@ static void print_usage(const RK_CHAR *name) {
 	       "loop, default: 10\n");
 	printf("\t-i | --ispLaunchMode : 0: single cam init, 1: camera group init. default: "
 	       "1\n");
+	printf("\t--vi_chnid : set vi channel id, default: 2\n");
+	printf("\t--vi_buffcnt : set vi buff cnt, default: 2\n");
 }
 
 /******************************************************************************
@@ -509,6 +513,8 @@ int main(int argc, char *argv[]) {
 	RK_S32 s32CamNum = 2;
 	RK_S32 s32loopCnt = -1;
 	RK_S32 i;
+	RK_S32 s32ViChnid = 2;
+	RK_S32 s32ViBuffCnt = 2;
 	GET_LDCH_MODE_E eGetLdchMode = RK_GET_LDCH_BY_BUFF;
 	MPP_CHN_S stSrcChn, stDestChn;
 	pthread_t modeTest_thread_id = 0;
@@ -602,6 +608,12 @@ int main(int argc, char *argv[]) {
 		case 'i':
 			bIfIspGroupInit = atoi(optarg);
 			break;
+		case 'v' + 'i':
+			s32ViChnid = atoi(optarg);
+			break;
+		case 'v' + 'c':
+			s32ViBuffCnt = atoi(optarg);
+			break;
 		case '?':
 		default:
 			print_usage(argv[0]);
@@ -694,6 +706,7 @@ int main(int argc, char *argv[]) {
 			} else {
 				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init success");
 			}
+#ifdef RV1106
 			s32Ret = SAMPLE_COMM_ISP_CamGroup_SetFrameRate(s32CamGrpId, u32ViFps);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_SetFrameRate failure");
@@ -701,6 +714,7 @@ int main(int argc, char *argv[]) {
 			} else {
 				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_SetFrameRate success");
 			}
+#endif
 		}
 
 #endif
@@ -712,27 +726,30 @@ int main(int argc, char *argv[]) {
 		ctx->vi[i].u32Height = u32ViHeight;
 		ctx->vi[i].s32DevId = i;
 		ctx->vi[i].u32PipeId = i;
-		ctx->vi[i].s32ChnId = 2;
+		ctx->vi[i].s32ChnId = s32ViChnid;
 		ctx->vi[i].bIfIspGroupInit = bIfIspGroupInit;
-		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 2;
+#ifdef RV1126
+		ctx->vi[i].bIfIspGroupInit = RK_FALSE;
+#endif
+		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = s32ViBuffCnt;
 		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
-		ctx->vi[i].stChnAttr.u32Depth = 2;
+		ctx->vi[i].stChnAttr.u32Depth = 0;
 		ctx->vi[i].stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
 		ctx->vi[i].stChnAttr.enCompressMode = COMPRESS_MODE_NONE;
 		ctx->vi[i].stChnAttr.stFrameRate.s32SrcFrameRate = -1;
 		ctx->vi[i].stChnAttr.stFrameRate.s32DstFrameRate = -1;
 		SAMPLE_COMM_VI_CreateChn(&ctx->vi[i]);
 	}
-	if (bIfIspGroupInit) {
-		for (i = 0; i < s32CamNum; i++) {
-			s32Ret = RK_MPI_VI_StartPipe(ctx->vi[i].u32PipeId);
-			if (s32Ret != RK_SUCCESS) {
-				RK_LOGE("RK_MPI_VI_StartPipe failure:$#X pipe:%d", s32Ret,
-				        ctx->vi[i].u32PipeId);
-				goto __VI_INITFAIL;
-			}
+
+	for (i = 0; i < s32CamNum && ctx->vi[i].bIfIspGroupInit; i++) {
+		s32Ret = RK_MPI_VI_StartPipe(ctx->vi[i].u32PipeId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VI_StartPipe failure:$#X pipe:%d", s32Ret,
+			        ctx->vi[i].u32PipeId);
+			goto __VI_INITFAIL;
 		}
 	}
+
 	/* avs start grp */
 	s32Ret = SAMPLE_COMM_AVS_StartGrp(&ctx->avs);
 	if (s32Ret != RK_SUCCESS) {
@@ -793,15 +810,15 @@ int main(int argc, char *argv[]) {
 	SAMPLE_COMM_AVS_StopGrp(&ctx->avs);
 	SAMPLE_COMM_AVS_DestroyGrp(&ctx->avs);
 	/* Destroy VI[0] */
-	if (bIfIspGroupInit) {
-		for (i = 0; i < s32CamNum; i++) {
-			s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
-			if (s32Ret != RK_SUCCESS) {
-				RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
-				        ctx->vi[i].u32PipeId);
-			}
+
+	for (i = 0; i < s32CamNum && ctx->vi[i].bIfIspGroupInit; i++) {
+		s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
+			        ctx->vi[i].u32PipeId);
 		}
 	}
+
 __VI_INITFAIL:
 	for (i = 0; i < s32CamNum; i++) {
 		SAMPLE_COMM_VI_DestroyChn(&ctx->vi[i]);
