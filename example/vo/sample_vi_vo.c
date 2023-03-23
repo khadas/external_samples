@@ -250,7 +250,6 @@ int main(int argc, char *argv[]) {
 	ctx->vo.stLayerAttr.stImageSize.u32Height = disp_height;
 	ctx->vo.stLayerAttr.u32DispFrmRt = 30;
 	ctx->vo.stLayerAttr.enPixFormat = RK_FMT_RGB888;
-	// ctx->vo.stLayerAttr.bDoubleFrame = RK_FALSE;
 	ctx->vo.stChnAttr.stRect.s32X = 0;
 	ctx->vo.stChnAttr.stRect.s32Y = 0;
 	ctx->vo.stChnAttr.stRect.u32Width = disp_width;
