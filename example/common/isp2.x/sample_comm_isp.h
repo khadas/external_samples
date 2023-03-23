@@ -25,6 +25,7 @@ extern "C" {
 #endif /* End of #ifdef __cplusplus */
 
 #include <fcntl.h>
+#include <rk_aiq_user_api_camgroup.h>
 #include <rk_aiq_user_api_imgproc.h>
 #include <rk_aiq_user_api_sysctl.h>
 #include <signal.h>
@@ -54,6 +55,25 @@ typedef enum {
  //RK_AIQ_WORKING_MODE_SENSOR_HDR = 10, // sensor built-in hdr mode
 } rk_aiq_working_mode_t;
 */
+
+typedef struct _rkIspLdchPath {
+	RK_CHAR *pCLdchPath;
+	RK_CHAR *pCLdchName;
+} rk_isp_ldch_path;
+
+typedef struct _rkIspGroupParamCtx {
+	RK_S32 CamGroupId;
+	RK_S32 fps;
+	rk_aiq_working_mode_t WDRMode;
+	bool MultiCam;
+	rk_aiq_ldch_update_lut_mode_t update_lut_mode;
+	union {
+		rk_isp_ldch_path path[2];
+		void *buffer[2];
+	} mesh_ldch;
+	rk_aiq_camgroup_instance_cfg_t *pCamGroupCfg;
+} rk_isp_group_param_ctx;
+
 RK_S32 SAMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL MultiCam,
                             const char *iq_file_dir);
 RK_S32 SAMPLE_COMM_ISP_UpdateIq(RK_S32 CamId, char *iqfile);
@@ -97,6 +117,13 @@ RK_S32 SAMPLE_COMM_ISP_SET_Correction(RK_S32 CamId, RK_U32 u32Mode, RK_U32 u32Va
 RK_S32 SAMPLE_COMM_ISP_SET_mirror(RK_S32 CamId, RK_U32 u32Value);
 RK_S32 SAMPLE_COMM_ISP_SET_BypassStreamRotation(RK_S32 CamId, RK_S32 S32Rotation);
 RK_S32 SAMPLE_COMM_ISP_SET_Crop(RK_S32 CamId, rk_aiq_rect_t rect);
+XCamReturn SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(int CamGrpId, uint8_t SetLdchMode,
+                                                  uint16_t **LdchMesh);
+RK_S32 SAMPLE_COMM_ISP_CamGroup_Init(RK_S32 CamGroupId, rk_aiq_working_mode_t WDRMode,
+                                     bool MultiCam, int OpenLdch, void *LdchMesh[],
+                                     rk_aiq_camgroup_instance_cfg_t *pCamGroupCfg);
+RK_S32 SAMPLE_COMM_ISP_CamGroup_Stop(RK_S32 CamGroupId);
+RK_S32 SAMPLE_COMM_ISP_CamGroup_SetFrameRate(RK_S32 CamId, RK_U32 uFps);
 
 #ifdef __cplusplus
 #if __cplusplus
