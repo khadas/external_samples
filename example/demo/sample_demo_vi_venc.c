@@ -1103,7 +1103,7 @@ int main(int argc, char *argv[]) {
 		goto __FAILED;
 	}
 
-#ifdef ROCKIVS
+#ifdef ROCKIT_IVS
 	/* Init VI[2] */
 	ctx->vi[2].u32Width = u32IvsWidth;
 	ctx->vi[2].u32Height = u32IvsHeight;
@@ -1130,7 +1130,7 @@ int main(int argc, char *argv[]) {
 	}
 #endif
 
-#ifdef ROCKIVS
+#ifdef ROCKIT_IVS
 	/* Init ivs */
 	ctx->ivs.s32ChnId = 0;
 	ctx->ivs.stIvsAttr.enMode = IVS_MODE_MD_OD;
@@ -1352,7 +1352,7 @@ int main(int argc, char *argv[]) {
 		program_handle_error(__func__, __LINE__);
 	}
 
-#ifdef ROCKIVS
+#ifdef ROCKIT_IVS
 	/* VI[2] bind IVS[0]*/
 	stSrcChn.enModId = RK_ID_VI;
 	stSrcChn.s32DevId = ctx->vi[2].s32DevId;
@@ -1373,7 +1373,7 @@ int main(int argc, char *argv[]) {
 		pthread_create(&vi_venc_thread_id, 0, vi_venc_thread, (void *)ctx);
 	}
 
-#ifdef ROCKIVS
+#ifdef ROCKIT_IVS
 	/* ivs detect thread launch */
 	pthread_create(&ivs_detect_thread_id, 0, ivs_detect_thread, (void *)&ctx->ivs);
 #endif
@@ -1400,7 +1400,7 @@ int main(int argc, char *argv[]) {
 	SAMPLE_COMM_IVA_Destroy(&ctx->iva);
 #endif
 
-#ifdef ROCKIVS
+#ifdef ROCKIT_IVS
 	/* ivs detect thread exit*/
 	gPThreadStatus->bIvsDetectThreadQuit = RK_TRUE;
 	pthread_join(ivs_detect_thread_id, RK_NULL);
@@ -1485,7 +1485,7 @@ int main(int argc, char *argv[]) {
 	/* Destroy VI[0] VI[1] VI[2] */
 	s32Ret = RK_MPI_VI_DisableChn(ctx->vi[0].u32PipeId, ctx->vi[0].s32ChnId);
 	s32Ret |= RK_MPI_VI_DisableChn(ctx->vi[1].u32PipeId, ctx->vi[1].s32ChnId);
-#ifdef ROCKIVS
+#ifdef ROCKIT_IVS
 	s32Ret |= RK_MPI_VI_DisableChn(ctx->vi[2].u32PipeId, ctx->vi[2].s32ChnId);
 #endif
 	if (s32Ret != RK_SUCCESS) {

@@ -1720,7 +1720,7 @@ static RK_S32 media_init(RK_CHAR *pIqFileDir) {
 		return s32Ret;
 	}
 
-#ifdef ROCKIVS
+#ifdef ROCKIT_IVS
 	s32Ret = SAMPLE_COMM_VI_CreateChn(&ctx->vi[2]);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("SAMPLE_COMM_VI_CreateChn failure:%#X", s32Ret);
@@ -1787,7 +1787,7 @@ static RK_S32 media_init(RK_CHAR *pIqFileDir) {
 		return s32Ret;
 	}
 
-#ifdef ROCKIVS
+#ifdef ROCKIT_IVS
 	/* VI[2] bind IVS[0]*/
 	stSrcChn.enModId = RK_ID_VI;
 	stSrcChn.s32DevId = ctx->vi[2].s32DevId;
@@ -1810,7 +1810,7 @@ static RK_S32 media_init(RK_CHAR *pIqFileDir) {
 		               (void *)(&ctx->vi[0]));
 	}
 
-#ifdef ROCKIVS
+#ifdef ROCKIT_IVS
 	/* ivs detect thread launch */
 	gModeTest->bIfIvsDetectThreadQuit = RK_FALSE;
 	pthread_create(&gModeTest->ivs_detect_thread_id, 0, ivs_detect_thread,
@@ -1838,7 +1838,7 @@ static RK_S32 media_deinit(void) {
 	SAMPLE_COMM_IVA_Destroy(&ctx->iva);
 #endif
 
-#ifdef ROCKIVS
+#ifdef ROCKIT_IVS
 	/* ivs detect thread exit*/
 	gModeTest->bIfIvsDetectThreadQuit = RK_TRUE;
 	pthread_join(gModeTest->ivs_detect_thread_id, RK_NULL);
@@ -2413,7 +2413,7 @@ int main(int argc, char *argv[]) {
 	ctx->vi[1].stChnAttr.stFrameRate.s32SrcFrameRate = -1;
 	ctx->vi[1].stChnAttr.stFrameRate.s32DstFrameRate = -1;
 
-#ifdef ROCKIVS
+#ifdef ROCKIT_IVS
 	/* Init VI[2] */
 	ctx->vi[2].u32Width = u32IvsWidth;
 	ctx->vi[2].u32Height = u32IvsHeight;
@@ -2434,7 +2434,7 @@ int main(int argc, char *argv[]) {
 	ctx->vi[2].stChnAttr.stFrameRate.s32DstFrameRate = -1;
 #endif
 
-#ifdef ROCKIVS
+#ifdef ROCKIT_IVS
 	/* Init ivs */
 	ctx->ivs.s32ChnId = 0;
 	ctx->ivs.stIvsAttr.enMode = IVS_MODE_MD_OD;

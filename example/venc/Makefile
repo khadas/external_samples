@@ -1,5 +1,5 @@
 # Rockchip sample Makefile
-LD_FLAGS += -L$(SAMPLE_OUT_DIR)/lib -lsample_comm
+LD_FLAGS += -L$(COMM_DIR)/lib -lsample_comm
 LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -lrockchip_mpp -lrkaiq -lrtsp
 ifeq ($(RK_MEDIA_CHIP), rv1106)
 LD_FLAGS += -lrockit_full
