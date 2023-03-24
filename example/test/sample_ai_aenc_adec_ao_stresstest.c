@@ -235,7 +235,7 @@ RK_S32 init_ai_vqe(RK_S32 s32SampleRate) {
 	int s32ChnIndex = 0;
 	const char *pVqeCfgPath = "/oem/usr/share/vqefiles/config_aivqe.json";
 
-#if (CHIP_RV1106 == 1)
+#if defined(RV1106)
 	result =
 	    RK_MPI_AMIX_SetControl(s32DevId, "I2STDM Digital Loopback Mode", (char *)"Mode2");
 	if (result != RK_SUCCESS) {
@@ -321,7 +321,7 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate, RK_U32 u3
 
 	RK_BOOL needResample = (InputSampleRate != OutputSampleRate) ? RK_TRUE : RK_FALSE;
 
-#if (CHIP_RV1106 == 1)
+#if defined(RV1106)
 	sprintf((char *)aiAttr.u8CardName, "%s", "hw:0,0");
 #else
 	sprintf((char *)aiAttr.u8CardName, "%s", "default");
@@ -849,7 +849,7 @@ int main(int argc, char *argv[]) {
 
 		if (s32AiVqe) {
 			RK_MPI_AI_DisableVqe(0, 0);
-#if (CHIP_RV1106 == 1)
+#if defined(RV1106)
 			ret = RK_MPI_AMIX_SetControl(params.s32DevId, "I2STDM Digital Loopback Mode",
 			                             (char *)"Disabled");
 			if (ret != RK_SUCCESS) {

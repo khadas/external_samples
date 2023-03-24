@@ -258,7 +258,7 @@ static void hdr_mode_switch_test(RK_S32 test_loop) {
 	RK_S32 s32Ret = RK_FAILURE;
 
 	while (!gModeTest->bModuleTestThreadQuit) {
-#if (CHIP_RV1106 == 1)
+#if defined(RV1106)
 		RK_MPI_VI_PauseChn(ctx->vi.u32PipeId, ctx->vi.s32ChnId);
 		SAMPLE_COMM_ISP_Stop(gModeTest->s32CamId);
 
@@ -279,7 +279,7 @@ static void hdr_mode_switch_test(RK_S32 test_loop) {
 		}
 
 		RK_MPI_VI_ResumeChn(ctx->vi.u32PipeId, ctx->vi.s32ChnId);
-#elif (CHIP_RV1126 == 1)
+#elif defined(RV1126)
 		if (gModeTest->eHdrMode == RK_AIQ_WORKING_MODE_NORMAL) {
 			gModeTest->eHdrMode = RK_AIQ_WORKING_MODE_ISP_HDR2;
 		} else if (gModeTest->eHdrMode == RK_AIQ_WORKING_MODE_ISP_HDR2) {
@@ -406,7 +406,7 @@ static void ldch_mode_test(RK_S32 test_loop) {
 	RK_LOGE("ldch_mode_test exit");
 	return;
 }
-#if (CHIP_RV1126 == 1)
+#if defined(RV1126)
 static void iqfile_switch_test(RK_S32 test_loop) {
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_S32 test_count = 0;
@@ -524,7 +524,7 @@ static void *sample_isp_stress_test(void *pArgs) {
 		ldch_mode_test(gModeTest->s32ModuleTestLoop);
 		break;
 	case 5:
-#if (CHIP_RV1126 == 1)
+#if defined(RV1126)
 		iqfile_switch_test(gModeTest->s32ModuleTestLoop);
 		break;
 #endif
@@ -644,7 +644,7 @@ int main(int argc, char *argv[]) {
 			} else if (!strcmp(optarg, "uyvy")) {
 				ePixelFormat = RK_FMT_YUV422_UYVY;
 			}
-#if (CHIP_RV1106 == 1)
+#if defined(RV1106)
 			else if (!strcmp(optarg, "rgb565")) {
 				ePixelFormat = RK_FMT_RGB565;
 				s32ChnId = 1;

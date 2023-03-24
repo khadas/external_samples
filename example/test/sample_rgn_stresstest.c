@@ -256,7 +256,7 @@ static RK_S32 rgn_init(void) {
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_U32 u32Width = 0;
 	RK_U32 u32Height = 0;
-#if (CHIP_RV1106 == 1)
+#if defined(RV1106)
 	/* cover for vi*/
 	ctx->rgn[0].rgnHandle = 0;
 	ctx->rgn[0].stRgnAttr.enType = COVER_RGN;
@@ -340,7 +340,7 @@ static RK_S32 rgn_init(void) {
 		        ctx->rgn[3].rgnHandle);
 		return s32Ret;
 	}
-#elif (CHIP_RV1126 == 1)
+#elif defined(RV1126)
 	RK_U32 u32Color = 0xFFFFFF;
 	for (RK_S32 i = 0; i < RGN_COVER_NUM_FOR_1126; i++) {
 		// cover for venc
