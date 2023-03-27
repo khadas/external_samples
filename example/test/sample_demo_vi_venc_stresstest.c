@@ -1977,6 +1977,7 @@ static void wait_module_test_switch_success(void) {
 
 static void *sample_demo_stresstest(void *pArgs) {
 	prctl(PR_SET_NAME, "sample_demo_stress");
+	RK_CHAR *pCTestModel = RK_NULL;
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_U32 u32TestCount = 0;
 	RK_S32 s32SrcWidth = ctx->vi[0].u32Width;
@@ -1997,6 +1998,7 @@ static void *sample_demo_stresstest(void *pArgs) {
 				program_handle_error(__func__, __LINE__);
 				return RK_NULL;
 			}
+			pCTestModel = "pnMode_stressTest";
 			break;
 		case 2:
 			s32Ret = hdrMode_stressTest(gModeTest->s32CamId, gModeTest->eHdrMode,
@@ -2006,6 +2008,7 @@ static void *sample_demo_stresstest(void *pArgs) {
 				program_handle_error(__func__, __LINE__);
 				return RK_NULL;
 			}
+			pCTestModel = "hdrMode_stressTest";
 			break;
 		case 3:
 			s32Ret = frameRate_switchTest(&ctx->vi[0]);
@@ -2014,6 +2017,7 @@ static void *sample_demo_stresstest(void *pArgs) {
 				program_handle_error(__func__, __LINE__);
 				return RK_NULL;
 			}
+			pCTestModel = "frameRate_switchTest";
 			break;
 		case 4:
 			s32Ret = ldchMode_test(gModeTest->s32CamId);
@@ -2022,6 +2026,7 @@ static void *sample_demo_stresstest(void *pArgs) {
 				program_handle_error(__func__, __LINE__);
 				return RK_NULL;
 			}
+			pCTestModel = "ldchMode_test";
 			break;
 		case 5:
 			s32Ret = vencResolution_switchTest(&ctx->tde, &ctx->venc[0], &ctx->vi[0],
@@ -2031,6 +2036,7 @@ static void *sample_demo_stresstest(void *pArgs) {
 				program_handle_error(__func__, __LINE__);
 				return RK_NULL;
 			}
+			pCTestModel = "vencResolution_switchTest";
 			break;
 		case 6:
 			g_rtsp_ifenbale = RK_FALSE;
@@ -2041,6 +2047,7 @@ static void *sample_demo_stresstest(void *pArgs) {
 				program_handle_error(__func__, __LINE__);
 				return RK_NULL;
 			}
+			pCTestModel = "encode_typeSwitch";
 			break;
 		case 7:
 			s32Ret = smartP_switchTest(&gModeTest->bIfVencThreadQuit[0], &ctx->venc[0],
@@ -2050,6 +2057,7 @@ static void *sample_demo_stresstest(void *pArgs) {
 				program_handle_error(__func__, __LINE__);
 				return RK_NULL;
 			}
+			pCTestModel = "smartP_switchTest";
 			break;
 		case 8:
 			s32Ret = smartEncode_switchTest(&gModeTest->bIfVencThreadQuit[0],
@@ -2059,6 +2067,7 @@ static void *sample_demo_stresstest(void *pArgs) {
 				program_handle_error(__func__, __LINE__);
 				return RK_NULL;
 			}
+			pCTestModel = "smartEncode_switchTest";
 			break;
 		case 9:
 			s32Ret = motionDeblur_test(&gModeTest->bIfVencThreadQuit[0], &ctx->venc[0],
@@ -2068,6 +2077,7 @@ static void *sample_demo_stresstest(void *pArgs) {
 				program_handle_error(__func__, __LINE__);
 				return RK_NULL;
 			}
+			pCTestModel = "motionDeblur_test";
 			break;
 		case 10:
 			s32Ret = vencForceIdr_test(&ctx->venc[0]);
@@ -2076,6 +2086,7 @@ static void *sample_demo_stresstest(void *pArgs) {
 				program_handle_error(__func__, __LINE__);
 				return RK_NULL;
 			}
+			pCTestModel = "vencForceIdr_test";
 			break;
 		case 11:
 			s32Ret = vencSetRotation_test(&ctx->venc[0]);
@@ -2084,6 +2095,7 @@ static void *sample_demo_stresstest(void *pArgs) {
 				program_handle_error(__func__, __LINE__);
 				return RK_NULL;
 			}
+			pCTestModel = "vencSetRotation_test";
 			break;
 		case 12:
 			s32Ret = rgn_attachAndDetach(RGN_CHN_MAX);
@@ -2092,6 +2104,7 @@ static void *sample_demo_stresstest(void *pArgs) {
 				program_handle_error(__func__, __LINE__);
 				return RK_NULL;
 			}
+			pCTestModel = "rgn_attachAndDetach";
 			break;
 		case 13:
 			if (ctx->vi[0].stChnAttr.stSize.u32Width == s32SrcWidth) {
@@ -2112,6 +2125,7 @@ static void *sample_demo_stresstest(void *pArgs) {
 				program_handle_error(__func__, __LINE__);
 				return RK_NULL;
 			}
+			pCTestModel = "encode_resolution_switch_for_rv1126";
 			break;
 		case 14:
 			s32Ret = media_deinit_init();
@@ -2120,6 +2134,7 @@ static void *sample_demo_stresstest(void *pArgs) {
 				program_handle_error(__func__, __LINE__);
 				return RK_NULL;
 			}
+			pCTestModel = "media_deinit_init";
 			break;
 		default:
 			RK_LOGE("this test type is not support");
@@ -2127,11 +2142,11 @@ static void *sample_demo_stresstest(void *pArgs) {
 
 		wait_module_test_switch_success();
 		u32TestCount++;
-		RK_LOGE("-----------------moduleTest switch success total:%d  now_count:%d",
-		        gModeTest->u32ModuleTestLoop, u32TestCount);
+		RK_LOGE("-----------------moduleTest:%s switch success total:%d  now_count:%d",
+		        pCTestModel, gModeTest->u32ModuleTestLoop, u32TestCount);
 		if (gModeTest->u32ModuleTestLoop > 0 &&
 		    u32TestCount >= gModeTest->u32ModuleTestLoop) {
-			RK_LOGE("------------------moduleTest: end", gModeTest->s32ModuleTestType);
+			RK_LOGE("------------------moduleTest: %s end(pass)", pCTestModel);
 			gModeTest->bIfModuleTestopen = RK_FALSE;
 			program_normal_exit(__func__, __LINE__);
 			break;
