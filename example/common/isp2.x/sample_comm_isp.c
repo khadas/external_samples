@@ -18,8 +18,9 @@
 
 #define MAX_AIQ_CTX 4
 static rk_aiq_sys_ctx_t *g_aiq_ctx[MAX_AIQ_CTX];
+#ifdef RKAIQ_GRP
 static rk_aiq_camgroup_ctx_t *g_aiq_camgroup_ctx[MAX_AIQ_CTX];
-
+#endif
 static pthread_mutex_t aiq_ctx_mutex[MAX_AIQ_CTX] = {
     PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER,
     PTHREAD_MUTEX_INITIALIZER};
@@ -855,7 +856,7 @@ RK_S32 SAMPLE_COMM_ISP_SET_Crop(RK_S32 CamId, rk_aiq_rect_t rect) {
 	pthread_mutex_unlock(&aiq_ctx_mutex[CamId]);
 	return ret;
 }
-
+#ifdef RKAIQ_GRP
 static int isp_get_ldch_mesh_size(uint16_t *meshdata) {
 	int file_size = 0;
 	if (!meshdata) {
@@ -1071,5 +1072,5 @@ RK_S32 SAMPLE_COMM_ISP_CamGroup_SetLDCH(RK_U32 CamId, RK_U32 u32Level,
 
 	return ret;
 }
-
+#endif
 //#endif

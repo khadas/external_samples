@@ -61,7 +61,9 @@ typedef struct _rkModeTest {
 	                                 mesh by buffer */
 	CODEC_TYPE_E enCodecType;
 	rk_aiq_working_mode_t hdr_mode;
+#ifdef RKAIQ_GRP
 	rk_aiq_camgroup_instance_cfg_t camgroup_cfg;
+#endif
 	RK_VOID *pLdchMeshData[VI_NUM_MAX];
 } g_mode_test;
 
@@ -298,6 +300,7 @@ static RK_S32 media_init(g_mode_test *gModeTest) {
 
 	/* isp init */
 	if (gModeTest->bIfIspGroupInit) {
+#ifdef RKAIQ_GRP
 		s32Ret = SAMPLE_COMM_ISP_CamGroup_Init(
 		    gModeTest->s32CamGrpId, gModeTest->hdr_mode, RK_TRUE, gModeTest->eGetLdchMode,
 		    gModeTest->pLdchMeshData, &gModeTest->camgroup_cfg);
@@ -316,10 +319,11 @@ static RK_S32 media_init(g_mode_test *gModeTest) {
 			return s32Ret;
 		}
 #endif
+#endif
 	} else {
 		for (RK_S32 i = 0; i < gModeTest->s32CamNum; i++) {
-			s32Ret = SAMPLE_COMM_ISP_Init(i, gModeTest->hdr_mode, RK_FALSE,
-			                              gModeTest->camgroup_cfg.config_file_dir);
+			s32Ret =
+			    SAMPLE_COMM_ISP_Init(i, gModeTest->hdr_mode, RK_FALSE, "/etc/iqfiles/");
 			s32Ret |= SAMPLE_COMM_ISP_Run(i);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("ISP init failure camid:%d", i);
@@ -496,11 +500,13 @@ static RK_S32 media_deinit(g_mode_test *gModeTest) {
 			}
 		}
 	} else {
+#ifdef RKAIQ_GRP
 		s32Ret = SAMPLE_COMM_ISP_CamGroup_Stop(gModeTest->s32CamGrpId);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Stop failure:%#X", s32Ret);
 			return s32Ret;
 		}
+#endif
 	}
 
 	RK_LOGE("----------------media_deinit finish  !!!");
@@ -949,11 +955,11 @@ int main(int argc, char *argv[]) {
 #ifdef RKAIQ
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
-
+#ifdef RKAIQ_GRP
 		gModeTest->camgroup_cfg.sns_num = s32CamNum;
 		gModeTest->camgroup_cfg.config_file_dir = iq_file_dir;
 		gModeTest->hdr_mode = hdr_mode;
-
+#endif
 #endif
 	}
 	gModeTest->s32CamNum = s32CamNum;

@@ -25,7 +25,9 @@ extern "C" {
 #endif /* End of #ifdef __cplusplus */
 
 #include <fcntl.h>
+#ifdef RKAIQ_GRP
 #include <rk_aiq_user_api_camgroup.h>
+#endif
 #include <rk_aiq_user_api_imgproc.h>
 #include <rk_aiq_user_api_sysctl.h>
 #include <signal.h>
@@ -61,6 +63,7 @@ typedef struct _rkIspLdchPath {
 	RK_CHAR *pCLdchName;
 } rk_isp_ldch_path;
 
+#ifdef RKAIQ_GRP
 typedef struct _rkIspGroupParamCtx {
 	RK_S32 CamGroupId;
 	RK_S32 fps;
@@ -73,6 +76,7 @@ typedef struct _rkIspGroupParamCtx {
 	} mesh_ldch;
 	rk_aiq_camgroup_instance_cfg_t *pCamGroupCfg;
 } rk_isp_group_param_ctx;
+#endif
 
 RK_S32 SAMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL MultiCam,
                             const char *iq_file_dir);
@@ -117,6 +121,7 @@ RK_S32 SAMPLE_COMM_ISP_SET_Correction(RK_S32 CamId, RK_U32 u32Mode, RK_U32 u32Va
 RK_S32 SAMPLE_COMM_ISP_SET_mirror(RK_S32 CamId, RK_U32 u32Value);
 RK_S32 SAMPLE_COMM_ISP_SET_BypassStreamRotation(RK_S32 CamId, RK_S32 S32Rotation);
 RK_S32 SAMPLE_COMM_ISP_SET_Crop(RK_S32 CamId, rk_aiq_rect_t rect);
+#ifdef RKAIQ_GRP
 XCamReturn SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(int CamGrpId, uint8_t SetLdchMode,
                                                   uint16_t **LdchMesh);
 RK_S32 SAMPLE_COMM_ISP_CamGroup_Init(RK_S32 CamGroupId, rk_aiq_working_mode_t WDRMode,
@@ -124,6 +129,7 @@ RK_S32 SAMPLE_COMM_ISP_CamGroup_Init(RK_S32 CamGroupId, rk_aiq_working_mode_t WD
                                      rk_aiq_camgroup_instance_cfg_t *pCamGroupCfg);
 RK_S32 SAMPLE_COMM_ISP_CamGroup_Stop(RK_S32 CamGroupId);
 RK_S32 SAMPLE_COMM_ISP_CamGroup_SetFrameRate(RK_S32 CamId, RK_U32 uFps);
+#endif
 
 #ifdef __cplusplus
 #if __cplusplus

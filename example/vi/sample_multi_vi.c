@@ -277,6 +277,7 @@ int main(int argc, char *argv[]) {
 				}
 			}
 		} else {
+#ifdef RKAIQ_GRP
 			rk_aiq_camgroup_instance_cfg_t camgroup_cfg;
 			memset(&camgroup_cfg, 0, sizeof(camgroup_cfg));
 			camgroup_cfg.sns_num = s32CamNum;
@@ -287,6 +288,7 @@ int main(int argc, char *argv[]) {
 				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init failure:%#X", s32Ret);
 				return RK_FAILURE;
 			}
+#endif
 		}
 #endif
 	}
@@ -368,11 +370,13 @@ __FAILED:
 				}
 			}
 		} else {
+#ifdef RKAIQ_GRP
 			s32Ret = SAMPLE_COMM_ISP_CamGroup_Stop(s32CamGroupId);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Stop failure:%#X", s32Ret);
 				return s32Ret;
 			}
+#endif
 		}
 #endif
 	}

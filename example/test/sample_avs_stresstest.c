@@ -691,6 +691,7 @@ int main(int argc, char *argv[]) {
 				}
 			}
 		} else {
+#ifdef RKAIQ_GRP
 			rk_aiq_camgroup_instance_cfg_t camgroup_cfg;
 
 			memset(&camgroup_cfg, 0, sizeof(camgroup_cfg));
@@ -714,6 +715,7 @@ int main(int argc, char *argv[]) {
 			} else {
 				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_SetFrameRate success");
 			}
+#endif
 #endif
 		}
 
@@ -837,11 +839,13 @@ __FAILED:
 				}
 			}
 		} else {
+#ifdef RKAIQ_GRP
 			s32Ret = SAMPLE_COMM_ISP_CamGroup_Stop(s32CamGrpId);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Stop failure:%#X", s32Ret);
 				return s32Ret;
 			}
+#endif
 		}
 #endif
 	}

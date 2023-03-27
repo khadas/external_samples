@@ -137,6 +137,7 @@ static RK_S32 isp_init(void) {
 			}
 		}
 	} else if (gModeTest->bIfIspGroupInit == RK_TRUE) {
+#ifdef RKAIQ_GRP
 		rk_aiq_camgroup_instance_cfg_t camgroup_cfg;
 		memset(&camgroup_cfg, 0, sizeof(rk_aiq_camgroup_instance_cfg_t));
 		camgroup_cfg.sns_num = gModeTest->u32CamNum;
@@ -148,6 +149,7 @@ static RK_S32 isp_init(void) {
 			printf("%s : isp cam group init\n", __func__);
 			return RK_FAILURE;
 		}
+#endif
 	} else {
 		RK_LOGE("ISP dosen't support this launch mode %d", gModeTest->bIfIspGroupInit);
 		return RK_FAILURE;
@@ -165,11 +167,13 @@ static RK_S32 isp_deinit(void) {
 			SAMPLE_COMM_ISP_Stop(i);
 		}
 	} else if (gModeTest->bIfIspGroupInit == RK_TRUE) {
+#ifdef RKAIQ_GRP
 		s32Ret = SAMPLE_COMM_ISP_CamGroup_Stop(gModeTest->s32CamGroupId);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Stop failure:%#X", s32Ret);
 			return s32Ret;
 		}
+#endif
 	} else {
 		RK_LOGE("ISP deinit dosen't support this mode %d", gModeTest->bIfIspGroupInit);
 		return RK_FAILURE;
@@ -504,6 +508,7 @@ static void ldch_mode_test(RK_S32 test_loop) {
 				}
 			}
 		} else {
+#ifdef RKAIQ_GRP
 			s32Ret = SAMPLE_COMM_ISP_CamGroup_SetLDCH(gModeTest->s32CamGroupId,
 			                                          u32LdchLevel, bIfLDCHEnable);
 			if (s32Ret != RK_SUCCESS) {
@@ -512,6 +517,7 @@ static void ldch_mode_test(RK_S32 test_loop) {
 				program_handle_error(__func__, __LINE__);
 				break;
 			}
+#endif
 		}
 
 		if (bIfLDCHEnable) {
