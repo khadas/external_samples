@@ -68,7 +68,7 @@ static const struct option long_options[] = {
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s -w 1920 -h 1080 -a /etc/iqfiles/ -n 2 -l 10 -o /data/\n", name);
-#if (defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ)
 	printf("\t-a | --aiq: enable aiq with dirpath provided, eg:-a /etc/iqfiles/, "
 	       "set dirpath empty to using path by default, without this option aiq "
 	       "should run in other application\n");
@@ -178,7 +178,7 @@ int main(int argc, char *argv[]) {
 
 	signal(SIGINT, sigterm_handler);
 
-#if (defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ)
 	RK_BOOL bMultictx = RK_FALSE;
 #endif
 	int c;
@@ -264,7 +264,7 @@ int main(int argc, char *argv[]) {
 	printf("#Output Path: %s\n", pOutPath);
 	printf("#IQ Path: %s\n", iq_file_dir);
 	if (iq_file_dir) {
-#if (defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ)
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
 		if (!bIfIspGroupInit) {
@@ -303,6 +303,9 @@ int main(int argc, char *argv[]) {
 		ctx->vi[i].u32PipeId = ctx->vi[i].s32DevId;
 		ctx->vi[i].s32ChnId = s32ChnId;
 		ctx->vi[i].bIfIspGroupInit = bIfIspGroupInit;
+#ifdef RV1126
+		ctx->vi[i].bIfIspGroupInit = RK_FALSE;
+#endif
 		ctx->vi[i].stChnAttr.stIspOpt.u32BufCount = 2;
 		ctx->vi[i].stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
 		ctx->vi[i].stChnAttr.u32Depth = 1;
@@ -315,14 +318,12 @@ int main(int argc, char *argv[]) {
 		SAMPLE_COMM_VI_CreateChn(&ctx->vi[i]);
 	}
 
-	if (bIfIspGroupInit == RK_TRUE) { /* isp group init */
-		for (i = 0; i < s32CamNum; i++) {
-			s32Ret = RK_MPI_VI_StartPipe(ctx->vi[i].u32PipeId);
-			if (s32Ret != RK_SUCCESS) {
-				RK_LOGE("RK_MPI_VI_StartPipe failure:$#X pipe:%d", s32Ret,
-				        ctx->vi[i].u32PipeId);
-				goto __FAILED;
-			}
+	for (i = 0; i < s32CamNum && ctx->vi[i].bIfIspGroupInit; i++) {
+		s32Ret = RK_MPI_VI_StartPipe(ctx->vi[i].u32PipeId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VI_StartPipe failure:$#X pipe:%d", s32Ret,
+			        ctx->vi[i].u32PipeId);
+			goto __FAILED;
 		}
 	}
 
@@ -342,13 +343,11 @@ int main(int argc, char *argv[]) {
 		pthread_join(vi_thread_id[i], NULL);
 	}
 
-	if (bIfIspGroupInit == RK_TRUE) {
-		for (i = 0; i < s32CamNum; i++) {
-			s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
-			if (s32Ret != RK_SUCCESS) {
-				RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
-				        ctx->vi[i].u32PipeId);
-			}
+	for (i = 0; i < s32CamNum && ctx->vi[i].bIfIspGroupInit; i++) {
+		s32Ret = RK_MPI_VI_StopPipe(ctx->vi[i].u32PipeId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("RK_MPI_VI_StopPipe failure:$#X pipe:%d", s32Ret,
+			        ctx->vi[i].u32PipeId);
 		}
 	}
 
@@ -359,7 +358,7 @@ int main(int argc, char *argv[]) {
 __FAILED:
 	RK_MPI_SYS_Exit();
 	if (iq_file_dir) {
-#if (defined RKAIQ) && (defined UAPI2)
+#if (defined RKAIQ)
 		if (bIfIspGroupInit == RK_FALSE) {
 			for (RK_S32 i = 0; i < s32CamNum; i++) {
 				s32Ret = SAMPLE_COMM_ISP_Stop(i);

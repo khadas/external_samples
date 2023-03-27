@@ -510,7 +510,7 @@ static RK_S32 pnMode_stressTest(RK_S32 s32CamId, rk_aiq_working_mode_t WDRMode,
 	s32Ret = SAMPLE_COMM_ISP_Init(s32CamId, WDRMode, MultiCam, iq_file_dir);
 	s32Ret |= SAMPLE_COMM_ISP_Run(s32CamId);
 	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init failure\n");
+		RK_LOGE("SAMPLE_COMM_ISP_Init_Run failure\n");
 		return s32Ret;
 	}
 

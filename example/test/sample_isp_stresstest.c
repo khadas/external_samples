@@ -227,7 +227,7 @@ static void pn_mode_switch(RK_S32 test_loop) {
 		                              gModeTest->bMultictx, gModeTest->pIqFileDir);
 		s32Ret |= SAMPLE_COMM_ISP_Run(gModeTest->s32CamId);
 		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init failure\n");
+			RK_LOGE("SAMPLE_COMM_ISP_Init failure\n");
 			program_handle_error(__func__, __LINE__);
 			break;
 		}
@@ -475,7 +475,7 @@ static void isp_deinit_init(RK_S32 test_loop) {
 		                              gModeTest->bMultictx, gModeTest->pIqFileDir);
 		s32Ret |= SAMPLE_COMM_ISP_Run(gModeTest->s32CamId);
 		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init failure\n");
+			RK_LOGE("SAMPLE_COMM_ISP_Init failure\n");
 			program_handle_error(__func__, __LINE__);
 			break;
 		}
