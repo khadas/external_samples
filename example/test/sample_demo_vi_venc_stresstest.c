@@ -136,6 +136,7 @@ static const struct option long_options[] = {
     {"venc_buff_size", required_argument, RK_NULL, 'v' + 's'},
     {"wrap_lines", required_argument, RK_NULL, 'w' + 'l'},
     {"iva_model_path", required_argument, RK_NULL, 'i' + 'm'},
+    {"vi_chnid", required_argument, RK_NULL, 'v' + 'i'},
     {"help", optional_argument, RK_NULL, '?'},
     {RK_NULL, 0, RK_NULL, 0},
 };
@@ -182,6 +183,9 @@ static void print_usage(const RK_CHAR *name) {
 	       "vencWidth*vencHeigth/2(byte)\n");
 	printf("\t--wrap_lines : 0: height/2, 1: height/4, 2: height/8. default: 1\n");
 	printf("\t--iva_model_path : iva model data path, default: /oem/usr/lib\n");
+#ifdef RV1126
+	printf("\t--vi_chnid : vi_0 channel id, default: 1\n");
+#endif
 }
 
 static void vi_venc_thread_error_handle(const char *func, RK_U32 line, MB_BLK mb,
@@ -2253,6 +2257,7 @@ int main(int argc, char *argv[]) {
 	RK_U32 u32ViBuffCnt = 2;
 	RK_U32 u32VencBuffSize = 0;
 	RK_U32 u32WrapLine = 4;
+	RK_U32 u32Chnid = 1;
 	RK_CHAR *pOutPathVenc = RK_NULL;
 	RK_CHAR *pIqFileDir = RK_NULL;
 	RK_CHAR *pIvaModelPath = "/oem/usr/lib/";
@@ -2389,6 +2394,9 @@ int main(int argc, char *argv[]) {
 		case 'i' + 'm':
 			pIvaModelPath = optarg;
 			break;
+		case 'v' + 'i':
+			u32Chnid = atoi(optarg);
+			break;
 		case '?':
 		default:
 			print_usage(argv[0]);
@@ -2416,6 +2424,9 @@ int main(int argc, char *argv[]) {
 	ctx->vi[0].s32DevId = 0;
 	ctx->vi[0].u32PipeId = ctx->vi[0].s32DevId;
 	ctx->vi[0].s32ChnId = 0;
+#ifdef RV1126
+	ctx->vi[0].s32ChnId = u32Chnid;
+#endif
 	ctx->vi[0].stChnAttr.stIspOpt.stMaxSize.u32Width = u32VideoWidth;
 	ctx->vi[0].stChnAttr.stIspOpt.stMaxSize.u32Height = u32VideoHeight;
 	ctx->vi[0].stChnAttr.stIspOpt.u32BufCount = u32ViBuffCnt;
