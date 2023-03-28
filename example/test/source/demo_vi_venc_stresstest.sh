@@ -277,7 +277,7 @@ test_case()
         #venc resolution switch for_RV1126 test
         echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test start -------------------------------------------\n"
         echo -e "<sample_demo_vi_venc_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 13>\n"
-        sample_demo_vi_venc_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 13
+        sample_demo_vi_venc_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 13 --vi_chnid 0
         if [ $? -eq 0 ]; then
             echo "-------------------------<sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test success" >> $test_result_path
             echo -e "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test success -------------------------------------------\n\n\n"

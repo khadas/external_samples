@@ -184,7 +184,7 @@ test_mod="RESTART=on RESOLUTION=on"
 vpss_stresstest "$test_mod"
 
 #5.demo vi venc stresstest
-test_mod="PN_MODE=on HDR=on FRAMERATE=on LDCH=on ENCODE_TYPE=on SMART_P=on IDR=on DETACH_ATTACH=on ORDINARY=on RESOLUTION_RV1126=on"
+test_mod="PN_MODE=on HDR=on FRAMERATE=on LDCH=on ENCODE_TYPE=on SMART_P=on IDR=on DETACH_ATTACH=on ORDINARY=on RESOLUTION_RV1126=on RESTART=on"
 demo_vi_venc_stresstest "$test_mod"
 
 #print test result
