@@ -572,7 +572,7 @@ int main(int argc, char *argv[]) {
 	ctx->vi.s32ChnId = 1;
 	ctx->vi.stChnAttr.stIspOpt.u32BufCount = 2;
 	ctx->vi.stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
-	ctx->vi.stChnAttr.u32Depth = 2;
+	ctx->vi.stChnAttr.u32Depth = 0;
 	ctx->vi.stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
 	ctx->vi.stChnAttr.enCompressMode = COMPRESS_MODE_NONE;
 	ctx->vi.stChnAttr.stFrameRate.s32SrcFrameRate = -1;
@@ -596,6 +596,7 @@ int main(int argc, char *argv[]) {
 	ctx->vpss.stVpssChnAttr[0].stFrameRate.s32DstFrameRate = -1;
 	ctx->vpss.stVpssChnAttr[0].u32Width = u32VpssWidth;
 	ctx->vpss.stVpssChnAttr[0].u32Height = u32VpssHeight;
+	ctx->vpss.stVpssChnAttr[0].u32Depth = 1;
 	s32Ret = SAMPLE_COMM_VPSS_CreateChn(&ctx->vpss);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("SAMPLE_COMM_VPSS_CreateChn failure:%#X", s32Ret);
