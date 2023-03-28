@@ -413,6 +413,9 @@ int main(int argc, char *argv[]) {
 	ctx->avs.stAvsChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
 	ctx->avs.stAvsChnAttr[0].stFrameRate.s32DstFrameRate = -1;
 	ctx->avs.stAvsChnAttr[0].u32FrameBufCnt = 2;
+#ifdef RV1126
+	ctx->avs.stAvsChnAttr[0].u32FrameBufCnt = 4;
+#endif
 	ctx->avs.stAvsChnAttr[0].u32Depth = 1;
 	ctx->avs.stAvsChnAttr[0].u32Width = u32AvsChn0Width;
 	ctx->avs.stAvsChnAttr[0].u32Height = u32AvsChn0Height;
@@ -422,6 +425,9 @@ int main(int argc, char *argv[]) {
 	ctx->avs.stAvsChnAttr[1].stFrameRate.s32SrcFrameRate = -1;
 	ctx->avs.stAvsChnAttr[1].stFrameRate.s32DstFrameRate = -1;
 	ctx->avs.stAvsChnAttr[1].u32FrameBufCnt = 2;
+#ifdef RV1126
+	ctx->avs.stAvsChnAttr[1].u32FrameBufCnt = 4;
+#endif
 	ctx->avs.stAvsChnAttr[1].u32Depth = 1;
 	ctx->avs.stAvsChnAttr[1].u32Width = u32AvsChn1Width;
 	ctx->avs.stAvsChnAttr[1].u32Height = u32AvsChn1Height;
@@ -543,6 +549,9 @@ int main(int argc, char *argv[]) {
 	ctx->venc[0].dstFilePath = pOutPathVenc;
 	ctx->venc[0].u32BuffSize = ctx->venc[0].u32Width * ctx->venc[0].u32Height / 3;
 	ctx->venc[0].u32StreamBufCnt = 3;
+#ifdef RV1126
+	ctx->venc[0].u32StreamBufCnt = 4;
+#endif
 	ctx->venc[0].enable_buf_share = RK_TRUE;
 	// H264  66：Baseline  77：Main Profile 100：High Profile
 	// H265  0：Main Profile  1：Main 10 Profile
@@ -570,6 +579,9 @@ int main(int argc, char *argv[]) {
 	ctx->venc[1].u32BuffSize = ctx->venc[1].u32Width * ctx->venc[1].u32Height / 3;
 	ctx->venc[1].u32BitRate = 1024;
 	ctx->venc[1].u32StreamBufCnt = 3;
+#ifdef RV1126
+	ctx->venc[1].u32StreamBufCnt = 4;
+#endif
 	ctx->venc[1].enable_buf_share = RK_TRUE;
 	// H264  66：Baseline  77：Main Profile 100：High Profile
 	// H265  0：Main Profile  1：Main 10 Profile
