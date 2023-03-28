@@ -726,14 +726,23 @@ static RK_S32 rgn_change_posit(SAMPLE_MPI_CTX_S *ctx) {
 		        s32Ret);
 		return s32Ret;
 	}
-
-	stChnAttr.unChnAttr.stCoverChn.stRect.s32Y =
-	    RK_ALIGN_16(stChnAttr.unChnAttr.stCoverChn.stRect.s32Y + 10);
-	if (stChnAttr.unChnAttr.stCoverChn.stRect.s32Y >
+#if defined(RV1106)
+	stChnAttr.unChnAttr.stMosaicChn.stRect.s32Y =
+	    RK_ALIGN_2(stChnAttr.unChnAttr.stMosaicChn.stRect.s32Y + 10);
+	if (stChnAttr.unChnAttr.stMosaicChn.stRect.s32Y >
 	    ctx->vi[0].u32Height - ctx->rgn[2].stRegion.u32Height) {
+		stChnAttr.unChnAttr.stMosaicChn.stRect.s32Y =
+		    RK_ALIGN_16(ctx->rgn[2].stRegion.s32Y);
+	}
+#elif defined(RV1126)
+	stChnAttr.unChnAttr.stCoverChn.stRect.s32Y =
+	    RK_ALIGN_16(stChnAttr.unChnAttr.stCoverChn.stRect.s32Y + 20);
+	if (stChnAttr.unChnAttr.stCoverChn.stRect.s32Y >
+	    ctx->venc[0].u32Height - ctx->rgn[2].stRegion.u32Height) {
 		stChnAttr.unChnAttr.stCoverChn.stRect.s32Y =
 		    RK_ALIGN_16(ctx->rgn[2].stRegion.s32Y);
 	}
+#endif
 	s32Ret = RK_MPI_RGN_SetDisplayAttr(ctx->rgn[2].rgnHandle, &ctx->rgn[2].stMppChn,
 	                                   &stChnAttr);
 	if (s32Ret != RK_SUCCESS) {
@@ -750,14 +759,21 @@ static RK_S32 rgn_change_posit(SAMPLE_MPI_CTX_S *ctx) {
 		        s32Ret);
 		return s32Ret;
 	}
-
+#if defined(RV1106)
 	stChnAttr.unChnAttr.stMosaicChn.stRect.s32X =
-	    RK_ALIGN_16(stChnAttr.unChnAttr.stMosaicChn.stRect.s32X - 20);
+	    RK_ALIGN_2(stChnAttr.unChnAttr.stMosaicChn.stRect.s32X - 10);
 	if (stChnAttr.unChnAttr.stMosaicChn.stRect.s32X < 0) {
 		stChnAttr.unChnAttr.stMosaicChn.stRect.s32X =
 		    RK_ALIGN_16(ctx->rgn[3].stRegion.s32X);
 	}
-
+#elif defined(RV1126)
+	stChnAttr.unChnAttr.stCoverChn.stRect.s32X =
+	    RK_ALIGN_16(stChnAttr.unChnAttr.stCoverChn.stRect.s32X - 20);
+	if (stChnAttr.unChnAttr.stCoverChn.stRect.s32X < 0) {
+		stChnAttr.unChnAttr.stCoverChn.stRect.s32X =
+		    RK_ALIGN_16(ctx->rgn[3].stRegion.s32X);
+	}
+#endif
 	s32Ret = RK_MPI_RGN_SetDisplayAttr(ctx->rgn[3].rgnHandle, &ctx->rgn[3].stMppChn,
 	                                   &stChnAttr);
 	if (s32Ret != RK_SUCCESS) {
@@ -907,6 +923,7 @@ int main(int argc, char *argv[]) {
 		RK_LOGE("ctx is null, malloc failure");
 		return RK_FAILURE;
 	}
+	memset(ctx, 0, sizeof(SAMPLE_MPI_CTX_S));
 
 	s32Ret = global_param_init();
 	if (s32Ret != RK_SUCCESS) {
@@ -1057,9 +1074,6 @@ int main(int argc, char *argv[]) {
 	ctx->vi[0].s32DevId = 0;
 	ctx->vi[0].u32PipeId = ctx->vi[0].s32DevId;
 	ctx->vi[0].s32ChnId = 0;
-#ifdef RV1126
-	ctx->vi[0].s32ChnId = 1;
-#endif
 	ctx->vi[0].stChnAttr.stIspOpt.stMaxSize.u32Width = u32VideoWidth;
 	ctx->vi[0].stChnAttr.stIspOpt.stMaxSize.u32Height = u32VideoHeight;
 	ctx->vi[0].stChnAttr.stIspOpt.u32BufCount = u32ViBuffCnt;
@@ -1103,7 +1117,7 @@ int main(int argc, char *argv[]) {
 		goto __FAILED;
 	}
 
-#ifdef ROCKIT_IVS
+#if (defined ROCKIT_IVS) || (defined ROCKIVA)
 	/* Init VI[2] */
 	ctx->vi[2].u32Width = u32IvsWidth;
 	ctx->vi[2].u32Height = u32IvsHeight;
@@ -1485,7 +1499,7 @@ int main(int argc, char *argv[]) {
 	/* Destroy VI[0] VI[1] VI[2] */
 	s32Ret = RK_MPI_VI_DisableChn(ctx->vi[0].u32PipeId, ctx->vi[0].s32ChnId);
 	s32Ret |= RK_MPI_VI_DisableChn(ctx->vi[1].u32PipeId, ctx->vi[1].s32ChnId);
-#ifdef ROCKIT_IVS
+#if defined(ROCKIT_IVS) || defined(ROCKIVA)
 	s32Ret |= RK_MPI_VI_DisableChn(ctx->vi[2].u32PipeId, ctx->vi[2].s32ChnId);
 #endif
 	if (s32Ret != RK_SUCCESS) {

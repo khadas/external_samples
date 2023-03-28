@@ -1543,8 +1543,8 @@ static RK_S32 rgn_change_posit(void) {
 		stChnAttr.unChnAttr.stCoverChn.stRect.s32X =
 		    RK_ALIGN_16(ctx->rgn[0].stRegion.s32X);
 	}
-	// s32Ret = RK_MPI_RGN_SetDisplayAttr(ctx->rgn[0].rgnHandle, &ctx->rgn[0].stMppChn,
-	//                                    &stChnAttr);
+	s32Ret = RK_MPI_RGN_SetDisplayAttr(ctx->rgn[0].rgnHandle, &ctx->rgn[0].stMppChn,
+	                                   &stChnAttr);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("Change RGN[0] position ----RK_MPI_RGN_SetDisplayAttr Failure:%X",
 		        s32Ret);
@@ -1567,8 +1567,8 @@ static RK_S32 rgn_change_posit(void) {
 		stChnAttr.unChnAttr.stCoverChn.stRect.s32X =
 		    RK_ALIGN_16(ctx->rgn[1].stRegion.s32X);
 	}
-	// s32Ret = RK_MPI_RGN_SetDisplayAttr(ctx->rgn[1].rgnHandle, &ctx->rgn[1].stMppChn,
-	//                                    &stChnAttr);
+	s32Ret = RK_MPI_RGN_SetDisplayAttr(ctx->rgn[1].rgnHandle, &ctx->rgn[1].stMppChn,
+	                                   &stChnAttr);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("Change RGN[1] position ----RK_MPI_RGN_SetDisplayAttr Failure:%X",
 		        s32Ret);
@@ -1584,15 +1584,25 @@ static RK_S32 rgn_change_posit(void) {
 		return s32Ret;
 	}
 
+#if defined(RV1106)
 	stChnAttr.unChnAttr.stMosaicChn.stRect.s32Y =
-	    RK_ALIGN_16(stChnAttr.unChnAttr.stMosaicChn.stRect.s32Y + 10);
+	    RK_ALIGN_2(stChnAttr.unChnAttr.stMosaicChn.stRect.s32Y + 10);
 	if (stChnAttr.unChnAttr.stMosaicChn.stRect.s32Y >
 	    ctx->vi[0].u32Height - ctx->rgn[2].stRegion.u32Height) {
 		stChnAttr.unChnAttr.stMosaicChn.stRect.s32Y =
 		    RK_ALIGN_16(ctx->rgn[2].stRegion.s32Y);
 	}
-	// s32Ret = RK_MPI_RGN_SetDisplayAttr(ctx->rgn[2].rgnHandle, &ctx->rgn[2].stMppChn,
-	//                                    &stChnAttr);
+#elif defined(RV1126)
+	stChnAttr.unChnAttr.stCoverChn.stRect.s32Y =
+	    RK_ALIGN_16(stChnAttr.unChnAttr.stCoverChn.stRect.s32Y + 20);
+	if (stChnAttr.unChnAttr.stCoverChn.stRect.s32Y >
+	    ctx->venc[0].u32Height - ctx->rgn[2].stRegion.u32Height) {
+		stChnAttr.unChnAttr.stCoverChn.stRect.s32Y =
+		    RK_ALIGN_16(ctx->rgn[2].stRegion.s32Y);
+	}
+#endif
+	s32Ret = RK_MPI_RGN_SetDisplayAttr(ctx->rgn[2].rgnHandle, &ctx->rgn[2].stMppChn,
+	                                   &stChnAttr);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("Change RGN[2] position ----RK_MPI_RGN_SetDisplayAttr Failure:%X",
 		        s32Ret);
@@ -1608,12 +1618,21 @@ static RK_S32 rgn_change_posit(void) {
 		return s32Ret;
 	}
 
+#if defined(RV1106)
 	stChnAttr.unChnAttr.stMosaicChn.stRect.s32X =
-	    RK_ALIGN_16(stChnAttr.unChnAttr.stMosaicChn.stRect.s32X - 20);
+	    RK_ALIGN_2(stChnAttr.unChnAttr.stMosaicChn.stRect.s32X - 10);
 	if (stChnAttr.unChnAttr.stMosaicChn.stRect.s32X < 0) {
 		stChnAttr.unChnAttr.stMosaicChn.stRect.s32X =
 		    RK_ALIGN_16(ctx->rgn[3].stRegion.s32X);
 	}
+#elif defined(RV1126)
+	stChnAttr.unChnAttr.stCoverChn.stRect.s32X =
+	    RK_ALIGN_16(stChnAttr.unChnAttr.stCoverChn.stRect.s32X - 20);
+	if (stChnAttr.unChnAttr.stCoverChn.stRect.s32X < 0) {
+		stChnAttr.unChnAttr.stCoverChn.stRect.s32X =
+		    RK_ALIGN_16(ctx->rgn[3].stRegion.s32X);
+	}
+#endif
 
 	s32Ret = RK_MPI_RGN_SetDisplayAttr(ctx->rgn[3].rgnHandle, &ctx->rgn[3].stMppChn,
 	                                   &stChnAttr);
@@ -1639,8 +1658,8 @@ static RK_S32 rgn_change_posit(void) {
 		stChnAttr.unChnAttr.stOverlayChn.stPoint.s32Y =
 		    RK_ALIGN_16(ctx->rgn[4].stRegion.s32Y);
 	}
-	// s32Ret = RK_MPI_RGN_SetDisplayAttr(ctx->rgn[4].rgnHandle, &ctx->rgn[4].stMppChn,
-	//                                    &stChnAttr);
+	s32Ret = RK_MPI_RGN_SetDisplayAttr(ctx->rgn[4].rgnHandle, &ctx->rgn[4].stMppChn,
+	                                   &stChnAttr);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("Change RGN[4] position ----RK_MPI_RGN_SetDisplayAttr Failure:%X",
 		        s32Ret);
@@ -1720,19 +1739,20 @@ static RK_S32 media_init(RK_CHAR *pIqFileDir) {
 		return s32Ret;
 	}
 
-#ifdef ROCKIT_IVS
+#if defined(ROCKIT_IVS) || defined(ROCKIVA)
 	s32Ret = SAMPLE_COMM_VI_CreateChn(&ctx->vi[2]);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("SAMPLE_COMM_VI_CreateChn failure:%#X", s32Ret);
 		return s32Ret;
 	}
-
+#if defined(ROCKIT_IVS)
 	s32Ret = SAMPLE_COMM_IVS_Create(&ctx->ivs);
 	if (s32Ret != RK_SUCCESS) {
 		RK_FALSE;
 		RK_LOGE("SAMPLE_COMM_IVS_Create failure:%#X", s32Ret);
 		return s32Ret;
 	}
+#endif
 #endif
 
 #ifdef ROCKIVA
@@ -1912,7 +1932,9 @@ static RK_S32 media_deinit(void) {
 	/* Destroy VI[0] VI[1] VI[2] */
 	s32Ret = RK_MPI_VI_DisableChn(ctx->vi[0].u32PipeId, ctx->vi[0].s32ChnId);
 	s32Ret |= RK_MPI_VI_DisableChn(ctx->vi[1].u32PipeId, ctx->vi[1].s32ChnId);
+#if defined(ROCKIT_IVS) || defined(ROCKIVA)
 	s32Ret |= RK_MPI_VI_DisableChn(ctx->vi[2].u32PipeId, ctx->vi[2].s32ChnId);
+#endif
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_VI_DisableChn failure:%X", s32Ret);
 		return s32Ret;
@@ -2394,9 +2416,6 @@ int main(int argc, char *argv[]) {
 	ctx->vi[0].s32DevId = 0;
 	ctx->vi[0].u32PipeId = ctx->vi[0].s32DevId;
 	ctx->vi[0].s32ChnId = 0;
-#ifdef RV1126
-	ctx->vi[0].s32ChnId = 1;
-#endif
 	ctx->vi[0].stChnAttr.stIspOpt.stMaxSize.u32Width = u32VideoWidth;
 	ctx->vi[0].stChnAttr.stIspOpt.stMaxSize.u32Height = u32VideoHeight;
 	ctx->vi[0].stChnAttr.stIspOpt.u32BufCount = u32ViBuffCnt;
@@ -2428,7 +2447,7 @@ int main(int argc, char *argv[]) {
 	ctx->vi[1].stChnAttr.stFrameRate.s32SrcFrameRate = -1;
 	ctx->vi[1].stChnAttr.stFrameRate.s32DstFrameRate = -1;
 
-#ifdef ROCKIT_IVS
+#if defined(ROCKIT_IVS) || defined(ROCKIVA)
 	/* Init VI[2] */
 	ctx->vi[2].u32Width = u32IvsWidth;
 	ctx->vi[2].u32Height = u32IvsHeight;
