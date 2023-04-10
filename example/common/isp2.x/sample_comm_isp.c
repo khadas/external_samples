@@ -985,12 +985,10 @@ RK_S32 SAMPLE_COMM_ISP_CamGroup_Init(RK_S32 CamGroupId, rk_aiq_working_mode_t WD
 	/* set LDCH must before <camgroup prepare>*/
 	if (OpenLdch) {
 		SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(CamGroupId, OpenLdch, LdchMesh);
+	} else {
+		// rv1126 must enable Ldch if you want to dymamic open and close.
+		SAMPLE_COMM_ISP_CamGroup_SetLDCH(CamGroupId, 1, true);
 	}
-
-	/* set FrameRate must before <camgroup prepare>*/
-	char *fps = getenv("dual_cam_fps");
-	if (fps)
-		SAMPLE_COMM_ISP_CamGroup_SetFrameRate(CamGroupId, atoi(fps));
 
 	ret = rk_aiq_uapi_camgroup_prepare(g_aiq_camgroup_ctx[CamGroupId], WDRMode);
 
@@ -1020,57 +1018,50 @@ RK_S32 SAMPLE_COMM_ISP_CamGroup_Stop(RK_S32 CamGroupId) {
 }
 
 RK_S32 SAMPLE_COMM_ISP_CamGroup_SetFrameRate(RK_S32 CamId, RK_U32 uFps) {
-	int ret;
 	if (CamId >= MAX_AIQ_CTX || !g_aiq_camgroup_ctx[CamId]) {
 		printf("%s : CamId is over 3 or not init\n", __FUNCTION__);
 		return -1;
 	}
-	rk_aiq_camgroup_camInfos_t camInfos;
-	memset(&camInfos, 0, sizeof(camInfos));
-	if (rk_aiq_uapi_camgroup_getCamInfos(g_aiq_camgroup_ctx[CamId], &camInfos) ==
-	    XCAM_RETURN_NO_ERROR) {
-		for (int i = 0; i < camInfos.valid_sns_num; i++) {
-			rk_aiq_sys_ctx_t *aiq_ctx = NULL;
-			aiq_ctx = rk_aiq_uapi_camgroup_getAiqCtxBySnsNm(g_aiq_camgroup_ctx[CamId],
-			                                                camInfos.sns_ent_nm[i]);
-			if (!aiq_ctx) {
-				printf("rk_aiq_uapi_camgroup_getAiqCtxBySnsNm get ctx failed %d %s",
-				       CamId, camInfos.sns_ent_nm[i]);
-				continue;
-			}
-			printf("aiq_ctx sns name: %s, camPhyId %d\n", camInfos.sns_ent_nm[i],
-			       camInfos.sns_camPhyId[i]);
-			Uapi_ExpSwAttr_t expSwAttr;
-			ret = rk_aiq_user_api_ae_getExpSwAttr(aiq_ctx, &expSwAttr);
-			if (ret) {
-				printf("get ae exp failed error %s", camInfos.sns_ent_nm[i]);
-				return -1;
-			}
-			expSwAttr.stAuto.stFrmRate.isFpsFix = true;
-			expSwAttr.stAuto.stFrmRate.FpsValue = uFps;
-			ret = rk_aiq_user_api_ae_setExpSwAttr(aiq_ctx, expSwAttr);
-			if (ret) {
-				printf("set ae exp failed error %s", camInfos.sns_ent_nm[i]);
-				return -1;
-			}
-		}
+	int ret;
+	Uapi_ExpSwAttr_t expSwAttr;
+	ret = rk_aiq_user_api_ae_getExpSwAttr((rk_aiq_sys_ctx_t *)g_aiq_camgroup_ctx[CamId],
+	                                      &expSwAttr);
+	if (uFps == 0) {
+		expSwAttr.stAuto.stFrmRate.isFpsFix = false;
+	} else {
+		expSwAttr.stAuto.stFrmRate.isFpsFix = true;
+		expSwAttr.stAuto.stFrmRate.FpsValue = uFps;
 	}
+
+	ret = rk_aiq_user_api_ae_setExpSwAttr((rk_aiq_sys_ctx_t *)g_aiq_camgroup_ctx[CamId],
+	                                      expSwAttr);
 	return ret;
 }
 
 RK_S32 SAMPLE_COMM_ISP_CamGroup_SetLDCH(RK_U32 CamId, RK_U32 u32Level,
                                         RK_BOOL bIfEnable) {
-	if (!bIfEnable) {
-		return 0;
+	RK_S32 s32Ret = RK_FAILURE;
+	rk_aiq_ldch_attrib_t ldchAttr;
+	memset(&ldchAttr, 0, sizeof(rk_aiq_ldch_attrib_t));
+	if (CamId >= MAX_AIQ_CTX || !g_aiq_camgroup_ctx[CamId]) {
+		printf("%s : CamId is over %d or not init\n", __FUNCTION__, MAX_AIQ_CTX);
+		return RK_FAILURE;
 	}
-	RK_S32 ret = 0;
-	ret = rk_aiq_uapi_setLdchEn((rk_aiq_sys_ctx_t *)g_aiq_camgroup_ctx[CamId],
-	                            u32Level > 0);
-	if (u32Level > 0 && u32Level <= 255)
-		ret |= rk_aiq_uapi_setLdchCorrectLevel(
-		    (rk_aiq_sys_ctx_t *)g_aiq_camgroup_ctx[CamId], u32Level);
-
-	return ret;
+	s32Ret = rk_aiq_user_api_aldch_GetAttrib(
+	    (rk_aiq_sys_ctx_t *)g_aiq_camgroup_ctx[CamId], &ldchAttr);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("rk_aiq_user_api_aldch_GetAttrib FAILURE:%X", s32Ret);
+		return s32Ret;
+	}
+	ldchAttr.en = bIfEnable;
+	ldchAttr.correct_level = u32Level;
+	s32Ret = rk_aiq_user_api_aldch_SetAttrib(
+	    (rk_aiq_sys_ctx_t *)g_aiq_camgroup_ctx[CamId], ldchAttr);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("rk_aiq_user_api_aldch_SetAttrib FAILURE:%d", s32Ret);
+		return s32Ret;
+	}
+	return RK_SUCCESS;
 }
 #endif
 //#endif

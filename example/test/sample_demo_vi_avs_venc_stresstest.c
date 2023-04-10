@@ -309,7 +309,6 @@ static RK_S32 media_init(g_mode_test *gModeTest) {
 			program_handle_error(__func__, __LINE__);
 			return s32Ret;
 		}
-#ifdef RV1106
 		/* set isp framerate */
 		s32Ret = SAMPLE_COMM_ISP_CamGroup_SetFrameRate(gModeTest->s32CamGrpId,
 		                                               gModeTest->s32IspFps);
@@ -318,7 +317,6 @@ static RK_S32 media_init(g_mode_test *gModeTest) {
 			program_handle_error(__func__, __LINE__);
 			return s32Ret;
 		}
-#endif
 #endif
 	} else {
 		for (RK_S32 i = 0; i < gModeTest->s32CamNum; i++) {
