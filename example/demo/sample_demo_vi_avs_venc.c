@@ -81,6 +81,7 @@ static const struct option long_options[] = {
     {"osd_display", required_argument, RK_NULL, 'o' + 'd'},
     {"vi_chnid", required_argument, NULL, 'v' + 'i'},
     {"vi_buffcnt", required_argument, NULL, 'v' + 'c'},
+    {"avs_mode_blend", required_argument, NULL, 'a' + 'm' + 'b'},
     {"help", optional_argument, NULL, '?'},
     {NULL, 0, NULL, 0},
 };
@@ -129,6 +130,8 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t--osd_display : osd if display, 0: no-display, 1: display. default: 1\n");
 	printf("\t--vi_chnid : set vi channel id, default: 1\n");
 	printf("\t--vi_buffcnt : set vi buff cnt, default: 2\n");
+	printf("\t--avs_mode_blend : set avs blend mode, 0: blend, 1 no-blend-ver, 2 "
+	       "no-blend-hor. default: 0\n");
 }
 
 /******************************************************************************
@@ -221,6 +224,7 @@ int main(int argc, char *argv[]) {
 	RK_S32 s32CamGrpId = 0;
 	RK_S32 s32ViChnid = 1;
 	RK_S32 s32ViBuffCnt = 2;
+	RK_S32 s32AvsModeBlend = 0;
 	GET_LDCH_MODE_E eGetLdchMode = RK_GET_LDCH_BY_BUFF;
 	RK_FLOAT fStitchDistance = 5;
 	RK_VOID *pLdchMeshData[VI_NUM_MAX] = {NULL};
@@ -358,6 +362,9 @@ int main(int argc, char *argv[]) {
 		case 'v' + 'c':
 			s32ViBuffCnt = atoi(optarg);
 			break;
+		case 'a' + 'm' + 'b':
+			s32AvsModeBlend = atoi(optarg);
+			break;
 		case '?':
 		default:
 			print_usage(argv[0]);
@@ -375,6 +382,7 @@ int main(int argc, char *argv[]) {
 	printf("#fStitchDistance: %f\n", fStitchDistance);
 	printf("#pCam0LdchMeshPath: %s\n", pCam0LdchMeshPath);
 	printf("#pCam1LdchMeshPath: %s\n", pCam1LdchMeshPath);
+	printf("#AvsModeBlend: %d\n", s32AvsModeBlend);
 
 	if (eGetLdchMode == RK_GET_LDCH_BY_FILE && pCam0LdchMeshPath && pCam1LdchMeshPath) {
 		pLdchMeshData[0] = pCam0LdchMeshPath;
@@ -394,7 +402,7 @@ int main(int argc, char *argv[]) {
 	ctx->avs.fDistance = fStitchDistance;
 	ctx->avs.pLdchMeshData = (RK_U16 **)pLdchMeshData;
 	/* GrpAttr setting */
-	ctx->avs.stAvsGrpAttr.enMode = 0; /* 0: blend 1: no blend */
+	ctx->avs.stAvsGrpAttr.enMode = s32AvsModeBlend; /* 0: blend 1: no blend */
 	ctx->avs.stAvsGrpAttr.u32PipeNum = s32CamNum;
 	ctx->avs.stAvsGrpAttr.stGainAttr.enMode = AVS_GAIN_MODE_AUTO;
 	ctx->avs.stAvsGrpAttr.stOutAttr.enPrjMode = AVS_PROJECTION_EQUIRECTANGULAR;
