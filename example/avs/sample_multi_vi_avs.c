@@ -96,7 +96,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-f | --fps: vi framerate. Default: 15\n");
 	printf("\t-i | --ispLaunchMode : 0: single cam init, 1: camera group init. default: "
 	       "1\n");
-	printf("\t--ldch: set ldch, 0: disable, 1: read_file_set_ldch, 2: "
+	printf("\t--ldch: set ldch, -1: disable, 1: read_file_set_ldch, 2: "
 	       "read_buff_set_ldch. Default: 2\n");
 	printf("\t--vi_size: set vi resolution WidthxHeight, default: 1920x1080\n");
 	printf("\t--avs_size: set avs resolution WidthxHeight, default: 3840x1080\n");

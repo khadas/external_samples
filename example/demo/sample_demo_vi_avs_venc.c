@@ -124,7 +124,7 @@ static void print_usage(const RK_CHAR *name) {
 	       "/oem/usr/share/iqfiles/cam0_ldch_mesh.bin\n");
 	printf("\t--cam1_ldch_path: cam1 ldch mesh path, default: "
 	       "/oem/usr/share/iqfiles/cam1_ldch_mesh.bin\n");
-	printf("\t--set_ldch: set ldch, 0: disable, 1: read_file_set_ldch, 2: "
+	printf("\t--set_ldch: set ldch, -1: disable, 1: read_file_set_ldch, 2: "
 	       "read_buff_set_ldch. Default: 2\n");
 	printf("\t--input_bmp_path : set bmp path for osd, default: NULL\n");
 	printf("\t--osd_display : osd if display, 0: no-display, 1: display. default: 1\n");
