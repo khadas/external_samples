@@ -1713,6 +1713,11 @@ static RK_S32 media_init(RK_CHAR *pIqFileDir) {
 	if (pIqFileDir) {
 		s32Ret = SAMPLE_COMM_ISP_Init(gModeTest->s32CamId, gModeTest->eHdrMode,
 		                              gModeTest->bMultictx, gModeTest->pIqFileDir);
+#ifdef RV1126
+		if (gModeTest->s32ModuleTestType == 4) {
+			SAMPLE_COMM_ISP_SetLDCH(gModeTest->s32CamId, 1, 1);
+		}
+#endif
 		s32Ret |= SAMPLE_COMM_ISP_Run(gModeTest->s32CamId);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("ISP init failure");

@@ -373,7 +373,6 @@ static void ldch_mode_test(RK_S32 test_loop) {
 	RK_S32 test_count = 0;
 
 	while (!gModeTest->bModuleTestThreadQuit) {
-
 		s32Ret =
 		    SAMPLE_COMM_ISP_SetLDCH(gModeTest->s32CamId, u32LdchLevel, bIfLDCHEnable);
 		if (s32Ret != RK_SUCCESS) {
@@ -722,6 +721,11 @@ int main(int argc, char *argv[]) {
 		gModeTest->pIqFileDir = pIqFileDir;
 		RK_LOGE("eHdrMode: %d", eHdrMode);
 		s32Ret = SAMPLE_COMM_ISP_Init(s32CamId, eHdrMode, bMultictx, pIqFileDir);
+#ifdef RV1126
+		if (gModeTest->s32ModuleTestType == 4) {
+			SAMPLE_COMM_ISP_SetLDCH(gModeTest->s32CamId, 1, 1);
+		}
+#endif
 		s32Ret |= SAMPLE_COMM_ISP_Run(s32CamId);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("ISP init failure");
