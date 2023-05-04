@@ -66,6 +66,7 @@ static const struct option long_options[] = {
  * function : show usage
  ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
+	printf("Support platform: rv1109/rv1126, rk3588/rk356x\n");
 	printf("usage example:\n");
 	printf("\t%s -w 1920 -h 1080 -a /etc/iqfiles/ -I 0 -D 0 -L 0\n", name);
 #ifdef RKAIQ
