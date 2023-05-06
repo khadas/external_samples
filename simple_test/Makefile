@@ -45,6 +45,9 @@ SIMPLE_LD_FLAGS += $(SIMPLE_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -lpthread -lrockit \
 					-lm -lrga -lstdc++
 SIMPLE_LD_FLAGS += -Wl,--gc-sections -Wl,--as-needed
 
+SIMPLE_VO_LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bdynamic -lrockit_full \
+						-lrockchip_mpp -lrga -ldrm
+
 SOURCES_C     = $(wildcard *.c)
 ifneq ($(RK_MEDIA_CHIP), rv1106)
 SOURCES_C     = $(filter-out simple_vi_rockiva.c , $(wildcard *.c))
@@ -78,6 +81,9 @@ simple_venc_osd: simple_venc_osd.c
 
 simple_vi_get_frame: simple_vi_get_frame.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+
+simple_vi_get_frame_send_vo: simple_vi_get_frame_send_vo.c
+	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_VO_LD_FLAGS)
 
 simple_vi_ivs: simple_vi_ivs.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
