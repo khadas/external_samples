@@ -15,6 +15,8 @@
 #include "rk_mpi_aenc.h"
 #include "rk_mpi_ai.h"
 #include "rk_mpi_amix.h"
+#include "rk_mpi_mb.h"
+#include "rk_mpi_sys.h"
 
 static bool quit = false;
 static void sigterm_handler(int sig) {
@@ -126,8 +128,8 @@ RK_S32 ai_set_other(RK_S32 s32SetVolume) {
 	return 0;
 }
 
-RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate,
-                      RK_S32 u32FrameCnt) {
+RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate, RK_S32 u32FrameCnt,
+                      RK_S32 vqeEnable) {
 	printf("\n=======%s=======\n", __func__);
 	AIO_ATTR_S aiAttr;
 	AI_CHN_PARAM_S pstParams;
@@ -137,9 +139,15 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate,
 	memset(&aiAttr, 0, sizeof(AIO_ATTR_S));
 
 	RK_BOOL needResample = (InputSampleRate != OutputSampleRate) ? RK_TRUE : RK_FALSE;
+#ifdef RV1126_PLATFORM
+	//这是RV1126 声卡打开设置，RV1106设置无效，可以不设置
+	result = RK_MPI_AMIX_SetControl(aiDevId, "Capture MIC Path", (char *)"Main Mic");
+	if (result != RK_SUCCESS) {
+		RK_LOGE("ai set Capture MIC Path fail, reason = %x", result);
+		goto __FAILED;
+	}
+#endif
 
-	// snprintf(reinterpret_cast<char *>(aiAttr.u8CardName),
-	// sizeof(aiAttr.u8CardName), "%s", "hw:0,0");
 	sprintf((char *)aiAttr.u8CardName, "%s", "hw:0,0");
 
 	// s32DeviceSampleRate和s32SampleRate,s32SampleRate可以使用其他采样率，需要调用重采样函数。默认一样采样率。
@@ -161,6 +169,8 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate,
 		goto __FAILED;
 	}
 
+	//这是RV1106 回采设置，适用于左mic，右回采
+	// RV1126设置无效，可以不设置，RV1126需要配置asound.conf文件或者内核驱动配置软件回采
 	result =
 	    RK_MPI_AMIX_SetControl(aiDevId, "I2STDM Digital Loopback Mode", (char *)"Mode2");
 	if (result != RK_SUCCESS) {
@@ -168,6 +178,7 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate,
 		goto __FAILED;
 	}
 
+	//这是RV1106 ALC设置，而RV1126设置无效，可以不设置
 	result = RK_MPI_AMIX_SetControl(aiDevId, "ADC ALC Left Volume", (char *)"22");
 	if (result != RK_SUCCESS) {
 		RK_LOGE("ai set alc left voulme fail, reason = %x", result);
@@ -195,7 +206,8 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate,
 	}
 
 	//使用声音增强功能，默认开启
-	test_init_ai_vqe(OutputSampleRate);
+	if (vqeEnable)
+		test_init_ai_vqe(OutputSampleRate);
 
 	result = RK_MPI_AI_EnableChn(aiDevId, aiChn);
 	if (result != 0) {
@@ -221,19 +233,21 @@ __FAILED:
 	return RK_FAILURE;
 }
 
-static RK_CHAR optstr[] = "?::d:r:o:m:";
+static RK_CHAR optstr[] = "?::d:r:o:v:m:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s [-r 8000] -o /tmp/ai.pcm\n", name);
 	printf("\t-r: sample rate, Default:16000\n");
 	printf("\t-o: output path, Default:\"/tmp/ai.pcm\"\n");
+	printf("\t-v: vqe enable, Default:1\n");
 }
 
 int main(int argc, char *argv[]) {
 	RK_S32 u32SampleRate = 16000;
 	RK_S32 ret = 0;
+	RK_S32 vqeEnable = 1;
 	RK_U32 u32FrameCnt = 1024;
-	RK_CHAR *pOutPath = "/tmp/ai.pcm";
+	RK_CHAR *pOutPath = (RK_CHAR *)"/tmp/ai.pcm";
 	int c;
 
 	while ((c = getopt(argc, argv, optstr)) != -1) {
@@ -243,6 +257,9 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'o':
 			pOutPath = optarg;
+			break;
+		case 'v':
+			vqeEnable = atoi(optarg);
 			break;
 		case '?':
 		default:
@@ -254,6 +271,7 @@ int main(int argc, char *argv[]) {
 	printf("#SampleRate: %d\n", u32SampleRate);
 	printf("#Frame Count: %d\n", u32FrameCnt);
 	printf("#Output Path: %s\n", pOutPath);
+	printf("#Vqe enable: %d\n", vqeEnable);
 
 	if (pOutPath) {
 		save_file = fopen(pOutPath, "w");
@@ -267,7 +285,7 @@ int main(int argc, char *argv[]) {
 
 	RK_MPI_SYS_Init();
 
-	open_device_ai(u32SampleRate, u32SampleRate, u32FrameCnt);
+	open_device_ai(u32SampleRate, u32SampleRate, u32FrameCnt, vqeEnable);
 
 	pthread_t read_thread;
 	pthread_create(&read_thread, NULL, GetMediaBuffer, NULL);
@@ -279,13 +297,17 @@ int main(int argc, char *argv[]) {
 	}
 
 	pthread_join(read_thread, NULL);
-	RK_MPI_AI_DisableVqe(0, 0);
 
-	ret = RK_MPI_AMIX_SetControl(0, "I2STDM Digital Loopback Mode",
-	                             (char *)"Disabled");
-	if (ret != RK_SUCCESS) {
-		RK_LOGE("ai set I2STDM Digital Loopback Mode fail, reason = %x", ret);
-		return RK_FAILURE;
+	if (vqeEnable) {
+		RK_MPI_AI_DisableVqe(0, 0);
+
+		//这是RV1106 回采设置关闭，而RV1126设置无效，可以不配置
+		ret =
+		    RK_MPI_AMIX_SetControl(0, "I2STDM Digital Loopback Mode", (char *)"Disabled");
+		if (ret != RK_SUCCESS) {
+			RK_LOGE("ai set I2STDM Digital Loopback Mode fail, reason = %x", ret);
+			return RK_FAILURE;
+		}
 	}
 
 	RK_MPI_AI_DisableChn(0, 0);

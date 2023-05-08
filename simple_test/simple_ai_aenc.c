@@ -13,6 +13,7 @@
 #include "rk_defines.h"
 #include "rk_mpi_aenc.h"
 #include "rk_mpi_ai.h"
+#include "rk_mpi_amix.h"
 #include "rk_mpi_mb.h"
 #include "rk_mpi_sys.h"
 
@@ -105,7 +106,14 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate,
 	memset(&aiAttr, 0, sizeof(AIO_ATTR_S));
 
 	RK_BOOL needResample = (InputSampleRate != OutputSampleRate) ? RK_TRUE : RK_FALSE;
-
+#ifdef RV1126_PLATFORM
+	//这是RV1126 声卡打开设置，RV1106设置无效，可以不设置
+	result = RK_MPI_AMIX_SetControl(aiDevId, "Capture MIC Path", (char *)"Main Mic");
+	if (result != RK_SUCCESS) {
+		RK_LOGE("ai set Capture MIC Path fail, reason = %x", result);
+		goto __FAILED;
+	}
+#endif
 	sprintf((char *)aiAttr.u8CardName, "%s", "hw:0,0");
 
 	// s32DeviceSampleRate 和 OutputSampleRate,OutputSampleRate
@@ -201,7 +209,7 @@ static RK_CHAR optstr[] = "?::r:o:t:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s [-r 8000] [-t g726] -o /tmp/aenc.g726\n", name);
-	printf("\t-r: sample rate, Default:16000\n");
+	printf("\t-r: sample rate, Default:8000\n");
 	printf("\t-t: --encode: encode type, Default:g726, Value:g711a, g711u, g726\n");
 	printf("\t-o: output path, Default:\"/tmp/aenc.g726\"\n");
 }

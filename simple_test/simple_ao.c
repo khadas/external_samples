@@ -12,6 +12,7 @@
 
 #include "rk_debug.h"
 #include "rk_defines.h"
+#include "rk_mpi_amix.h"
 #include "rk_mpi_ao.h"
 #include "rk_mpi_mb.h"
 #include "rk_mpi_sys.h"
@@ -54,7 +55,15 @@ RK_S32 open_device_ao(RK_S32 s32ReSmpSampleRate, RK_S32 s32SampleRate,
 
 	memset(&pstParams, 0, sizeof(AO_CHN_PARAM_S));
 	memset(&aoAttr, 0, sizeof(AIO_ATTR_S));
+#ifdef RV1126_PLATFORM
 	/*==============================================================================*/
+	//这是RV1126 声卡打开设置，RV1106设置无效，可以不设置
+	result = RK_MPI_AMIX_SetControl(aoDevId, "Playback Path", (char *)"SPK");
+	if (result != RK_SUCCESS) {
+		RK_LOGE("ao set Playback Path fail, reason = %x", result);
+		return RK_FAILURE;
+	}
+#endif
 	sprintf((char *)aoAttr.u8CardName, "%s", "hw:0,0");
 
 	aoAttr.soundCard.channels = 2;               // 2
@@ -88,14 +97,12 @@ RK_S32 open_device_ao(RK_S32 s32ReSmpSampleRate, RK_S32 s32SampleRate,
 	}
 	/*==============================================================================*/
 	// set sample rate of input data
-	if (s32ReSmpSampleRate != s32SampleRate) {
-		printf("********RK_MPI_AO_EnableReSmp*********\n");
-		result = RK_MPI_AO_EnableReSmp(aoDevId, aoChn,
-		                               (AUDIO_SAMPLE_RATE_E)s32ReSmpSampleRate);
-		if (result != 0) {
-			RK_LOGE("ao enable channel fail, reason = %x, aoChn = %d", result, aoChn);
-			return RK_FAILURE;
-		}
+	printf("********RK_MPI_AO_EnableReSmp*********\n");
+	result =
+	    RK_MPI_AO_EnableReSmp(aoDevId, aoChn, (AUDIO_SAMPLE_RATE_E)s32ReSmpSampleRate);
+	if (result != 0) {
+		RK_LOGE("ao enable channel fail, reason = %x, aoChn = %d", result, aoChn);
+		return RK_FAILURE;
 	}
 
 	ao_set_other(100);

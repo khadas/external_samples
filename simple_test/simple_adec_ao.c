@@ -12,6 +12,7 @@
 #include "rk_debug.h"
 #include "rk_defines.h"
 #include "rk_mpi_adec.h"
+#include "rk_mpi_amix.h"
 #include "rk_mpi_ao.h"
 #include "rk_mpi_mb.h"
 #include "rk_mpi_sys.h"
@@ -54,7 +55,15 @@ RK_S32 open_device_ao(RK_S32 s32SampleRate, RK_S32 u32FrameCnt) {
 
 	memset(&pstParams, 0, sizeof(AO_CHN_PARAM_S));
 	memset(&aoAttr, 0, sizeof(AIO_ATTR_S));
+#ifdef RV1126_PLATFORM
 	/*==============================================================================*/
+	//这是RV1126 声卡打开设置，RV1106设置无效，可以不设置
+	result = RK_MPI_AMIX_SetControl(aoDevId, "Playback Path", (char *)"SPK");
+	if (result != RK_SUCCESS) {
+		RK_LOGE("ao set Playback Path fail, reason = %x", result);
+		return RK_FAILURE;
+	}
+#endif
 	sprintf((char *)aoAttr.u8CardName, "%s", "hw:0,0");
 
 	aoAttr.soundCard.channels = 2;       // 2
