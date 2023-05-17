@@ -191,6 +191,11 @@ static void *venc_get_stream(void *pArgs) {
 	return RK_NULL;
 }
 
+static void handle_pipe(int sig) {
+	fprintf("sigaction will ignore signal %d\n", sig);
+	return;
+}
+
 /******************************************************************************
  * function    : main()
  * Description : main
@@ -248,6 +253,11 @@ int main(int argc, char *argv[]) {
 	}
 
 	signal(SIGINT, sigterm_handler);
+	struct sigaction action;
+	action.sa_handler = handle_pipe;
+	sigemptyset(&action.sa_mask);
+	action.sa_flags = 0;
+	sigaction(SIGPIPE, &action, NULL);
 
 #ifdef RKAIQ
 	RK_BOOL bMultictx = RK_FALSE;
@@ -392,6 +402,7 @@ int main(int argc, char *argv[]) {
 	if (RK_MPI_SYS_Init() != RK_SUCCESS) {
 		goto __FAILED;
 	}
+
 
 	/* Init avs[0] */
 	ctx->avs.s32GrpId = 0;
