@@ -526,6 +526,8 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 
+	SAMPLE_COMM_CheckFd(RK_TRUE);
+
 	s32Ret = global_param_init();
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("global_param_init %#X", s32Ret);
@@ -849,6 +851,8 @@ __FAILED:
 	}
 
 	global_param_deinit();
+	SAMPLE_COMM_CheckFd(RK_FALSE);
+
 	return g_exit_result;
 }
 

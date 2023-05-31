@@ -752,6 +752,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	signal(SIGINT, sigterm_handler);
+	SAMPLE_COMM_CheckFd(RK_TRUE);
 	RK_MPI_SYS_Init();
 
 	for (int i = 0; i < loopCount; i++) {
@@ -895,5 +896,6 @@ int main(int argc, char *argv[]) {
 	}
 
 	RK_MPI_SYS_Exit();
+	SAMPLE_COMM_CheckFd(RK_FALSE);
 	return 0;
 }

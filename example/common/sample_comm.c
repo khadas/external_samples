@@ -23,7 +23,9 @@ extern "C" {
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/poll.h>
+#include <sys/prctl.h>
 #include <sys/time.h>
 #include <time.h>
 #include <ucontext.h>
@@ -180,6 +182,54 @@ READ_FILE_FAIL:
 		fpCam1 = RK_NULL;
 	}
 	return RK_FAILURE;
+}
+
+RK_VOID SAMPLE_COMM_CheckFd(RK_BOOL bStart) {
+	static RK_BOOL bQuiltCheckFd = RK_FALSE;
+	static pthread_t checkFd_thread_id;
+	if (bStart) {
+		if (bQuiltCheckFd)
+			return NULL;
+		else
+			bQuiltCheckFd = RK_TRUE;
+	} else {
+		if (bQuiltCheckFd) {
+			bQuiltCheckFd = RK_FALSE;
+			if (pthread_join(checkFd_thread_id, NULL) != 0) {
+				printf("Failed to join thread!\n");
+			}
+		}
+		return NULL;
+	}
+
+	void *checkFd(void *arg) {
+		int fd[3];
+		prctl(PR_SET_NAME, "vi_venc_thread");
+		srand(time(NULL));
+		while (bQuiltCheckFd) {
+			for (int i = 0; i < 3; i++) {
+				fd[i] = open("/dev/null", O_RDONLY);
+				if (fd[i] == -1) {
+					printf("Error opening file descriptor!\n");
+				}
+			}
+			unsigned int delay = rand() % 100;
+			usleep(delay * 1000);
+			for (int i = 0; i < 3; i++) {
+				if (close(fd[i]) == -1) {
+					printf("Error closing file descriptor!\n");
+					abort();
+				}
+			}
+			usleep(delay * 1000);
+		}
+		return NULL;
+	}
+
+	if (pthread_create(&checkFd_thread_id, NULL, checkFd, NULL) != 0) {
+		printf("Failed to create thread!\n");
+		return NULL;
+	}
 }
 
 #ifdef __cplusplus

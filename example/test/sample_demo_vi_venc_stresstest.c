@@ -2282,6 +2282,7 @@ int main(int argc, char *argv[]) {
 		goto __PARAM_INIT_FAILED;
 	}
 
+	SAMPLE_COMM_CheckFd(RK_TRUE);
 	s32Ret = global_param_init();
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("global_param_init failure");
@@ -2691,6 +2692,7 @@ int main(int argc, char *argv[]) {
 
 __FAILED2:
 	global_param_deinit();
+	SAMPLE_COMM_CheckFd(RK_FALSE);
 
 __PARAM_INIT_FAILED:
 	return g_exit_result;

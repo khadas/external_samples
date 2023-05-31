@@ -345,6 +345,8 @@ RK_S32 SAMPLE_COMM_FillImage(RK_U8 *buf, RK_U32 width, RK_U32 height, RK_U32 hor
 RK_S32 SAMPLE_COMM_GetLdchMesh(RK_CHAR *cam0LdchPath, RK_CHAR *cam1LdchPath,
                                RK_S32 s32MeshDataSize, RK_U16 **pLdchMesh);
 
+RK_VOID SAMPLE_COMM_CheckFd(RK_BOOL bStart);
+
 #ifdef __cplusplus
 #if __cplusplus
 }
