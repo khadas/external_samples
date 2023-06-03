@@ -99,7 +99,8 @@ RK_S32 SAMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL
 
 	rk_aiq_sys_ctx_t *aiq_ctx;
 	rk_aiq_static_info_t aiq_static_info;
-	rk_aiq_uapi_sysctl_enumStaticMetas(CamId, &aiq_static_info);
+	// rk_aiq_uapi_sysctl_enumStaticMetas(CamId, &aiq_static_info);
+	rk_aiq_uapi_sysctl_enumStaticMetasByPhyId(CamId, &aiq_static_info);
 
 	printf("ID: %d, sensor_name is %s, iqfiles is %s\n", CamId,
 	       aiq_static_info.sensor_info.sensor_name, iq_file_dir);
