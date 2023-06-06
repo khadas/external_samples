@@ -80,6 +80,8 @@ typedef struct _rkIspGroupParamCtx {
 
 RK_S32 SAMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL MultiCam,
                             const char *iq_file_dir);
+
+RK_S32 SAMPLE_COMM_ISP_RegMemsSensorIntf(RK_S32 CamId, rk_aiq_mems_sensor_intf_t *api);
 RK_S32 SAMPLE_COMM_ISP_UpdateIq(RK_S32 CamId, char *iqfile);
 RK_S32 SAMPLE_COMM_ISP_Stop(RK_S32 CamId);
 RK_S32 SAMPLE_COMM_ISP_SetFecEn(RK_S32 CamId, RK_BOOL bFECEnable);

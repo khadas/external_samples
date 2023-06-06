@@ -99,6 +99,10 @@ ifeq ($(HAVE_AVS), y)
 SAMPLE_CFLAGS += -DAVS_ENABLE
 endif
 
+ifeq ($(CONFIG_RK_LIBEASYIIO),y)
+SAMPLE_CFLAGS += -DEIS_ENABLE
+endif
+
 export SAMPLE_OUT_DIR=$(CURRENT_DIR)/out
 export PKG_CONF_OPTS
 export COMM_OBJ COMM_SRC COMM_DIR
@@ -116,6 +120,9 @@ ifeq ($(RK_MEDIA_CHIP), rv1126)
 sample-build: librkaiq librockit
 ifeq ($(CONFIG_RK_IVA), y)
 sample-build: librockiva
+endif
+ifeq ($(CONFIG_RK_LIBEASYIIO),y)
+sample-build: libeasyiio
 endif
 endif
 	@mkdir -p $(SAMPLE_OUT_DIR)/bin
@@ -157,6 +164,9 @@ librockiva:
 
 librksysutils:
 	@test ! -d $(RK_MEDIA_TOP_DIR)/sysutils || make -C $(RK_MEDIA_TOP_DIR)/sysutils
+
+libeasyiio:
+	@test ! -d $(RK_MEDIA_TOP_DIR)/iio || make -C $(RK_MEDIA_TOP_DIR)/iio
 
 clean:
 	@make -C $(CURRENT_DIR)/common clean

@@ -14,8 +14,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "rk_aiq_mems_sensor.h"
 #include "sample_comm.h"
-
 #define MAX_AIQ_CTX 4
 static rk_aiq_sys_ctx_t *g_aiq_ctx[MAX_AIQ_CTX];
 #ifdef RKAIQ_GRP
@@ -111,6 +111,21 @@ RK_S32 SAMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL
 		rk_aiq_uapi_sysctl_setMulCamConc(aiq_ctx, true);
 
 	g_aiq_ctx[CamId] = aiq_ctx;
+	return 0;
+}
+
+// register mems_sensor_intf api to aiq_ctx when EIS on
+RK_S32 SAMPLE_COMM_ISP_RegMemsSensorIntf(RK_S32 CamId, rk_aiq_mems_sensor_intf_t *api) {
+	if (CamId >= MAX_AIQ_CTX || !g_aiq_ctx[CamId]) {
+		printf("%s : CamId is over 3 or not init\n", __FUNCTION__);
+		return -1;
+	}
+	if (rk_aiq_uapi_sysctl_regMemsSensorIntf(g_aiq_ctx[CamId], api)) {
+		printf("rk_aiq_uapi_sysctl_regMemsSensorIntf failed !\n");
+		g_aiq_ctx[CamId] = NULL;
+		return -1;
+	}
+	printf("rk_aiq_uapi_sysctl_regMemsSensorIntf succeed\n");
 	return 0;
 }
 
