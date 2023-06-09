@@ -47,14 +47,28 @@ static void *GetMediaBuffer0(void *arg) {
 		memset(&stResults, 0, sizeof(IVS_RESULT_INFO_S));
 		s32Ret = RK_MPI_IVS_GetResults(0, &stResults, -1);
 		if (s32Ret == RK_SUCCESS) {
-			if (stResults.s32ResultNum == 1) {
-				printf("MD u32RectNum: %u\n", stResults.pstResults->stMdInfo.u32RectNum);
-				for (int i = 0; i < stResults.pstResults->stMdInfo.u32RectNum; i++) {
-					printf("%d: [%d, %d, %d, %d]\n", i,
-					       stResults.pstResults->stMdInfo.stRect[i].s32X,
-					       stResults.pstResults->stMdInfo.stRect[i].s32Y,
-					       stResults.pstResults->stMdInfo.stRect[i].u32Width,
-					       stResults.pstResults->stMdInfo.stRect[i].u32Height);
+			if (loopCount % 10 == 0 && stResults.s32ResultNum == 1) {
+				int x = width / 8 / 8;
+				int y = stResults.pstResults->stMdInfo.u32Size / 64;
+				if (stResults.pstResults->stMdInfo.pData) {
+					for (int n = 0; n < x * 8; n++)
+						printf("-");
+					printf("\n");
+					for (int j = 0; j < y; j++) {
+						for (int i = 0; i < x; i++) {
+							for (int k = 0; k < 8; k++) {
+								if (stResults.pstResults->stMdInfo.pData[j * 64 + i] &
+								    (1 << k))
+									printf("1");
+								else
+									printf("0");
+							}
+						}
+						printf("\n");
+					}
+					for (int n = 0; n < x * 8; n++)
+						printf("-");
+					printf("\n");
 				}
 			}
 			RK_MPI_IVS_ReleaseResults(0, &stResults);
@@ -139,7 +153,6 @@ int vi_chn_init(int channelId, int width, int height) {
 }
 
 static RK_S32 create_ivs(int width, int height) {
-	RK_S32 s32Ret;
 	IVS_CHN_ATTR_S attr;
 	memset(&attr, 0, sizeof(attr));
 	attr.enMode = IVS_MODE_MD_OD;
@@ -150,37 +163,13 @@ static RK_S32 create_ivs(int width, int height) {
 	attr.bSmearEnable = RK_FALSE;
 	attr.bWeightpEnable = RK_FALSE;
 	attr.bMDEnable = RK_TRUE;
-	attr.s32MDInterval = 5;
+	attr.s32MDInterval = 1;
 	attr.bMDNightMode = RK_FALSE;
 	attr.bODEnable = RK_TRUE;
 	attr.s32ODInterval = 1;
 	attr.s32ODPercent = 7;
 
-	s32Ret = RK_MPI_IVS_CreateChn(0, &attr);
-	if (s32Ret) {
-		RK_LOGE("ivs create failed:%x", s32Ret);
-		goto __FAILED;
-	}
-
-	IVS_MD_ATTR_S stMdAttr;
-	memset(&stMdAttr, 0, sizeof(stMdAttr));
-	s32Ret = RK_MPI_IVS_GetMdAttr(0, &stMdAttr);
-	if (s32Ret) {
-		RK_LOGE("ivs get mdattr failed:%x", s32Ret);
-		goto __FAILED;
-	}
-	stMdAttr.s32ThreshSad = 40;
-	stMdAttr.s32ThreshMove = 2;
-	stMdAttr.s32SwitchSad = 0;
-	s32Ret = RK_MPI_IVS_SetMdAttr(0, &stMdAttr);
-	if (s32Ret) {
-		RK_LOGE("ivs set mdattr failed:%x", s32Ret);
-		goto __FAILED;
-	}
-
-	return 0;
-__FAILED:
-	return -1;
+	return RK_MPI_IVS_CreateChn(0, &attr);
 }
 
 int main() {
