@@ -386,7 +386,7 @@ RK_S32 SAMPLE_comm_ISP_SWITCH_SCENE(int CamId, const char *main_scene,
 	return rk_aiq_uapi2_sysctl_switch_scene(g_aiq_ctx[CamId], main_scene, sub_scene);
 }
 
-RK_S32 SAMPLE_COMM_ISP_SetLDCH(RK_U32 CamId, RK_U32 u32Level, RK_BOOL bIfEnable) {
+XCamReturn SAMPLE_COMM_ISP_SetLDCH(RK_U32 CamId, RK_U32 u32Level, RK_BOOL bIfEnable) {
 	RK_S32 s32Ret = RK_FAILURE;
 	rk_aiq_ldch_v21_attrib_t ldchAttr;
 	memset(&ldchAttr, 0, sizeof(rk_aiq_ldch_v21_attrib_t));
@@ -395,19 +395,19 @@ RK_S32 SAMPLE_COMM_ISP_SetLDCH(RK_U32 CamId, RK_U32 u32Level, RK_BOOL bIfEnable)
 		return RK_FAILURE;
 	}
 	s32Ret = rk_aiq_user_api2_aldch_v21_GetAttrib(g_aiq_ctx[CamId], &ldchAttr);
-	if (s32Ret != RK_SUCCESS) {
+	if (s32Ret != XCAM_RETURN_NO_ERROR && s32Ret != XCAM_RETURN_BYPASS) {
 		RK_LOGE("rk_aiq_user_api2_aldch_v21_GetAttrib FAILURE:%X", s32Ret);
 		return s32Ret;
 	}
 	ldchAttr.en = bIfEnable;
 	ldchAttr.correct_level = u32Level;
 	s32Ret = rk_aiq_user_api2_aldch_v21_SetAttrib(g_aiq_ctx[CamId], &ldchAttr);
-	if (s32Ret != RK_SUCCESS) {
+	if (s32Ret != XCAM_RETURN_NO_ERROR && s32Ret != XCAM_RETURN_BYPASS) {
 		RK_LOGE("rk_aiq_user_api2_aldch_v21_SetAttrib FAILURE:%X", s32Ret);
 		return s32Ret;
 	}
 
-	return RK_SUCCESS;
+	return XCAM_RETURN_NO_ERROR;
 }
 
 RK_S32 SAMPLE_COMM_ISP_CamGroup_SetLDCH(RK_U32 CamId, RK_U32 u32Level,
