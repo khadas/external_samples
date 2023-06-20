@@ -329,15 +329,9 @@ static void frameRate_switch_test(RK_S32 test_loop) {
 			break;
 		}
 
-		if (pstChnAttr.stFrameRate.s32SrcFrameRate == -1) {
-			pstChnAttr.stFrameRate.s32SrcFrameRate = 1;
-		}
-
-		pstChnAttr.stFrameRate.s32SrcFrameRate += 1;
-		if (pstChnAttr.stFrameRate.s32SrcFrameRate > 25) {
-			pstChnAttr.stFrameRate.s32SrcFrameRate = 1;
-		}
-		pstChnAttr.stFrameRate.s32DstFrameRate = pstChnAttr.stFrameRate.s32SrcFrameRate;
+		srand(time(NULL));
+		pstChnAttr.stFrameRate.s32DstFrameRate = rand() % 25 + 1;
+		pstChnAttr.stFrameRate.s32SrcFrameRate = 25;
 
 		s32Ret = RK_MPI_VI_SetChnAttr(ctx->vi.u32PipeId, ctx->vi.s32ChnId, &pstChnAttr);
 		if (s32Ret != RK_SUCCESS) {

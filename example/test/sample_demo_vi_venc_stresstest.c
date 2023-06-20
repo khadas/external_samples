@@ -567,16 +567,9 @@ static RK_S32 frameRate_switchTest(SAMPLE_VI_CTX_S *ctx) {
 		return s32Ret;
 	}
 
-	if (pstChnAttr.stFrameRate.s32SrcFrameRate == -1) {
-		pstChnAttr.stFrameRate.s32SrcFrameRate = 1;
-	}
-
-	pstChnAttr.stFrameRate.s32SrcFrameRate += 1;
-	if (pstChnAttr.stFrameRate.s32SrcFrameRate > 25) {
-		pstChnAttr.stFrameRate.s32SrcFrameRate = 1;
-	}
-	pstChnAttr.stFrameRate.s32DstFrameRate = pstChnAttr.stFrameRate.s32SrcFrameRate;
-
+	srand(time(NULL));
+	pstChnAttr.stFrameRate.s32DstFrameRate = rand() % 25 + 1;
+	pstChnAttr.stFrameRate.s32SrcFrameRate = 25;
 	s32Ret = RK_MPI_VI_SetChnAttr(ctx->u32PipeId, ctx->s32ChnId, &pstChnAttr);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_VI_GetChnAttr failure:%X", s32Ret);
