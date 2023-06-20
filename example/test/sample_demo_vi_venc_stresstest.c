@@ -463,7 +463,6 @@ static void *ivs_detect_thread(void *pArgs) {
 			u32IvsDetectCount++;
 			// RK_LOGD("s32ReNum: %d", stResults.s32ResultNum);
 			if (stResults.s32ResultNum == 1) {
-				printf("MD u32RectNum: %u\n", stResults.pstResults->stMdInfo.u32RectNum);
 				for (int i = 0; i < stResults.pstResults->stMdInfo.u32RectNum; i++) {
 					printf("%d: [%d, %d, %d, %d]\n", i,
 					       stResults.pstResults->stMdInfo.stRect[i].s32X,

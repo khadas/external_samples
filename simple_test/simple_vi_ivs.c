@@ -48,7 +48,6 @@ static void *GetMediaBuffer0(void *arg) {
 		s32Ret = RK_MPI_IVS_GetResults(0, &stResults, -1);
 		if (s32Ret == RK_SUCCESS) {
 			if (stResults.s32ResultNum == 1) {
-				printf("MD u32RectNum: %u\n", stResults.pstResults->stMdInfo.u32RectNum);
 				for (int i = 0; i < stResults.pstResults->stMdInfo.u32RectNum; i++) {
 					printf("%d: [%d, %d, %d, %d]\n", i,
 					       stResults.pstResults->stMdInfo.stRect[i].s32X,
