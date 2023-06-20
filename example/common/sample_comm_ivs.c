@@ -36,7 +36,22 @@ RK_S32 SAMPLE_COMM_IVS_Create(SAMPLE_IVS_CTX_S *ctx) {
 		RK_LOGE("RK_MPI_IVS_CreateChn failure:%X", s32Ret);
 		return s32Ret;
 	}
-	return s32Ret;
+	IVS_MD_ATTR_S stMdAttr;
+	memset(&stMdAttr, 0, sizeof(stMdAttr));
+	s32Ret = RK_MPI_IVS_GetMdAttr(0, &stMdAttr);
+	if (s32Ret) {
+		RK_LOGE("ivs get mdattr failed:%x", s32Ret);
+		return -1;
+	}
+	stMdAttr.s32ThreshSad = 40;
+	stMdAttr.s32ThreshMove = 2;
+	// stMdAttr.s32SwitchSad = 0;
+	s32Ret = RK_MPI_IVS_SetMdAttr(0, &stMdAttr);
+	if (s32Ret) {
+		RK_LOGE("ivs set mdattr failed:%x", s32Ret);
+		return -1;
+	}
+	return 0;
 }
 
 RK_S32 SAMPLE_COMM_IVS_Destroy(RK_S32 s32IvsChnid) {

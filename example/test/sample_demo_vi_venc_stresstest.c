@@ -461,26 +461,16 @@ static void *ivs_detect_thread(void *pArgs) {
 		s32Ret = RK_MPI_IVS_GetResults(0, &stResults, GET_STREAM_TIMEOUT);
 		if (s32Ret == RK_SUCCESS) {
 			u32IvsDetectCount++;
-			RK_LOGD("s32ReNum: %d", stResults.s32ResultNum);
-			if (u32IvsDetectCount % 10 == 0 && stResults.s32ResultNum == 1) {
-				x = width / 64;
-				y = stResults.pstResults->stMdInfo.u32Size / 64;
-				if (stResults.pstResults->stMdInfo.pData) {
-					u32Count = 0;
-					for (int j = 0; j < y; j++) {
-						for (int i = 0; i < x; i++) {
-							for (int k = 0; k < 8; k++) {
-								if (stResults.pstResults->stMdInfo.pData[j * 64 + i] &
-								    (1 << k))
-									u32Count++;
-							}
-						}
-					}
+			// RK_LOGD("s32ReNum: %d", stResults.s32ResultNum);
+			if (stResults.s32ResultNum == 1) {
+				printf("MD u32RectNum: %u\n", stResults.pstResults->stMdInfo.u32RectNum);
+				for (int i = 0; i < stResults.pstResults->stMdInfo.u32RectNum; i++) {
+					printf("%d: [%d, %d, %d, %d]\n", i,
+					       stResults.pstResults->stMdInfo.stRect[i].s32X,
+					       stResults.pstResults->stMdInfo.stRect[i].s32Y,
+					       stResults.pstResults->stMdInfo.stRect[i].u32Width,
+					       stResults.pstResults->stMdInfo.stRect[i].u32Height);
 				}
-				if (u32Count > (x * y * 8 / 5)) {
-					RK_LOGE("Detect movement\n");
-				}
-				u32IvsDetectCount = 0;
 			}
 			if (stResults.s32ResultNum > 0) {
 				if (stResults.pstResults->stOdInfo.u32Flag) {
@@ -2496,7 +2486,7 @@ int main(int argc, char *argv[]) {
 	ctx->ivs.stIvsAttr.bSmearEnable = RK_FALSE;
 	ctx->ivs.stIvsAttr.bWeightpEnable = RK_FALSE;
 	ctx->ivs.stIvsAttr.bMDEnable = RK_TRUE;
-	ctx->ivs.stIvsAttr.s32MDInterval = 1;
+	ctx->ivs.stIvsAttr.s32MDInterval = 5;
 	ctx->ivs.stIvsAttr.bMDNightMode = RK_TRUE;
 	ctx->ivs.stIvsAttr.u32MDSensibility = 3;
 	ctx->ivs.stIvsAttr.bODEnable = RK_TRUE;
