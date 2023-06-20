@@ -36,6 +36,7 @@ RK_S32 SAMPLE_COMM_IVS_Create(SAMPLE_IVS_CTX_S *ctx) {
 		RK_LOGE("RK_MPI_IVS_CreateChn failure:%X", s32Ret);
 		return s32Ret;
 	}
+#if defined(RV1106)
 	IVS_MD_ATTR_S stMdAttr;
 	memset(&stMdAttr, 0, sizeof(stMdAttr));
 	s32Ret = RK_MPI_IVS_GetMdAttr(0, &stMdAttr);
@@ -51,6 +52,7 @@ RK_S32 SAMPLE_COMM_IVS_Create(SAMPLE_IVS_CTX_S *ctx) {
 		RK_LOGE("ivs set mdattr failed:%x", s32Ret);
 		return -1;
 	}
+#endif
 	return 0;
 }
 
