@@ -185,7 +185,6 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate,
 	}
 
 	memset(&pstParams, 0, sizeof(AI_CHN_PARAM_S));
-	pstParams.enLoopbackMode = AUDIO_LOOPBACK_NONE;
 	pstParams.s32UsrFrmDepth = 4;
 	result = RK_MPI_AI_SetChnParam(aiDevId, aiChn, &pstParams);
 	if (result != RK_SUCCESS) {
