@@ -204,7 +204,7 @@ RK_VOID SAMPLE_COMM_CheckFd(RK_BOOL bStart) {
 
 	void *checkFd(void *arg) {
 		int fd[3];
-		prctl(PR_SET_NAME, "vi_venc_thread");
+		prctl(PR_SET_NAME, "check_fd_thread");
 		srand(time(NULL));
 		while (bQuiltCheckFd) {
 			for (int i = 0; i < 3; i++) {
