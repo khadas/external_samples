@@ -65,8 +65,8 @@ static void *venc0_get_stream(void *pArgs) {
 	printf("#Start %s , arg:%p\n", __func__, pArgs);
 	SAMPLE_VENC_CTX_S *ctx = (SAMPLE_VENC_CTX_S *)(pArgs);
 	RK_S32 s32Ret = RK_FAILURE;
-	char name[256] = {0};
-	FILE *fp = RK_NULL;
+	// char name[256] = {0};
+	// FILE *fp = RK_NULL;
 	void *pData = RK_NULL;
 	RK_S32 loopCount = 0;
 
@@ -104,8 +104,8 @@ static void *venc1_get_stream(void *pArgs) {
 	printf("#Start %s , arg:%p\n", __func__, pArgs);
 	SAMPLE_VENC_CTX_S *ctx = (SAMPLE_VENC_CTX_S *)(pArgs);
 	RK_S32 s32Ret = RK_FAILURE;
-	char name[256] = {0};
-	FILE *fp = RK_NULL;
+	// char name[256] = {0};
+	// FILE *fp = RK_NULL;
 	void *pData = RK_NULL;
 	RK_S32 loopCount = 0;
 
@@ -143,8 +143,8 @@ static void *venc2_get_stream(void *pArgs) {
 	printf("#Start %s , arg:%p\n", __func__, pArgs);
 	SAMPLE_VENC_CTX_S *ctx = (SAMPLE_VENC_CTX_S *)(pArgs);
 	RK_S32 s32Ret = RK_FAILURE;
-	char name[256] = {0};
-	FILE *fp = RK_NULL;
+	// char name[256] = {0};
+	// FILE *fp = RK_NULL;
 	void *pData = RK_NULL;
 	RK_S32 loopCount = 0;
 
@@ -182,8 +182,8 @@ static void *venc3_get_stream(void *pArgs) {
 	printf("#Start %s , arg:%p\n", __func__, pArgs);
 	SAMPLE_VENC_CTX_S *ctx = (SAMPLE_VENC_CTX_S *)(pArgs);
 	RK_S32 s32Ret = RK_FAILURE;
-	char name[256] = {0};
-	FILE *fp = RK_NULL;
+	// char name[256] = {0};
+	// FILE *fp = RK_NULL;
 	void *pData = RK_NULL;
 	RK_S32 loopCount = 0;
 
@@ -239,7 +239,7 @@ void rkba_callback(const RockIvaBaResult *result, const RockIvaExecuteStatus sta
 
 int rockiva_init() {
 	RockIvaRetCode ret;
-	const char *model_type;
+	// const char *model_type;
 
 	memset(&initParams, 0, sizeof(initParams));
 	memset(&globalParams, 0, sizeof(globalParams));
@@ -397,7 +397,7 @@ static void print_usage(const RK_CHAR *name) {
 void handle_pipe(int sig) { printf("%s sig = %d\n", __func__, sig); }
 
 int main(int argc, char *argv[]) {
-	RK_S32 s32Ret = RK_FAILURE;
+	// RK_S32 s32Ret = RK_FAILURE;
 	SAMPLE_MPI_CTX_S *ctx;
 	int cam_0_fps = 30;
 	int cam_0_enable_hdr = 0;
@@ -405,8 +405,8 @@ int main(int argc, char *argv[]) {
 	int cam_0_video_0_height = 1080;
 	int cam_0_video_1_width = 720;
 	int cam_0_video_1_height = 576;
-	int cam_0_video_2_width = 896;
-	int cam_0_video_2_height = 512;
+	// int cam_0_video_2_width = 896;
+	// int cam_0_video_2_height = 512;
 
 	int cam_1_fps = 30;
 	int cam_1_enable_hdr = 0;

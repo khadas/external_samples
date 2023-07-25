@@ -29,9 +29,7 @@ PKG_BUILD ?= build
 
 ifeq ($(CONFIG_RK_SAMPLE),y)
 PKG_TARGET := example-build
-ifeq ($(RK_MEDIA_CHIP), rv1106)
-	PKG_TARGET += simple_test-build
-endif
+PKG_TARGET += simple_test-build
 else
 PKG_TARGET :=
 $(warning Not config source RK_SAMPLE, Skip...)

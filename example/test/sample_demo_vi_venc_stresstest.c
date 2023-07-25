@@ -445,9 +445,6 @@ static void *ivs_detect_thread(void *pArgs) {
 	RK_S32 s32Ret = RK_FAILURE;
 	IVS_RESULT_INFO_S stResults;
 	RK_U32 u32IvsDetectCount = 0;
-	RK_U32 width = ctx->ivs.stIvsAttr.u32PicWidth;
-	RK_U32 u32Count = 0;
-	RK_U32 x, y;
 	IVS_CHN_ATTR_S pstAttr;
 
 	memset(&pstAttr, 0, sizeof(IVS_CHN_ATTR_S));
@@ -2253,10 +2250,15 @@ int main(int argc, char *argv[]) {
 	RK_BOOL bIfSmartpEnable = RK_FALSE;
 	CODEC_TYPE_E enCodecType = RK_CODEC_TYPE_H264;
 	VENC_RC_MODE_E enRcMode = VENC_RC_MODE_H264CBR;
-	MPP_CHN_S stSrcChn, stDestChn;
 	rk_aiq_working_mode_t eHdrMode = RK_AIQ_WORKING_MODE_NORMAL;
 
-	pthread_t modeTest_thread_id, ivs_detect_thread_id, vi_iva_thread_id;
+	pthread_t modeTest_thread_id;
+#ifdef ROCKIT_IVS
+	pthread_t ivs_detect_thread_id;
+#endif
+#ifdef ROCKIVA
+	pthread_t vi_iva_thread_id;
+#endif
 
 	if (argc < 2) {
 		print_usage(argv[0]);
@@ -2644,7 +2646,7 @@ int main(int argc, char *argv[]) {
 	s32Ret = media_init(pIqFileDir);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("media_init failure");
-		return RK_FAILURE;
+		goto __FAILED2;
 	}
 
 	if (gModeTest->s32ModuleTestType) {
@@ -2669,7 +2671,6 @@ int main(int argc, char *argv[]) {
 	s32Ret = media_deinit();
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("media_init failure");
-		return RK_FAILURE;
 	}
 
 __FAILED2:

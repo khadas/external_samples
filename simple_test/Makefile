@@ -27,9 +27,11 @@ INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq
 ifeq ($(RK_MEDIA_CHIP), rv1126)
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/uAPI
 SIMPLE_LD_FLAGS += -DUAPI
+SIMPLE_LD_FLAGS += -DRV1126_PLATFORM
 else
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/uAPI2
 SIMPLE_LD_FLAGS += -DUAPI2
+SIMPLE_LD_FLAGS += -DRV1106_PLATFORM
 endif
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/common
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/xcore
@@ -40,13 +42,19 @@ INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/smartIr
 
 SIMPLE_CFLAGS += -g -Wall $(INC_FLAGS) $(SIMPLE_PKG_CONF_OPTS) $(RK_MEDIA_CROSS_CFLAGS)
 
-SIMPLE_LD_FLAGS += $(SIMPLE_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -lpthread -lrockit \
+SIMPLE_LD_FLAGS += $(SIMPLE_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -L$(RK_MEDIA_OUTPUT)/root/usr/lib \
+					-lpthread -lm -lrockit \
 					-lrockchip_mpp  -lrkaudio_detect -laec_bf_process \
-					-lm -lrga -lstdc++
+					-lrga -lstdc++ -lasound
 SIMPLE_LD_FLAGS += -Wl,--gc-sections -Wl,--as-needed
 
-SIMPLE_VO_LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -Wl,-Bdynamic -lrockit_full \
-						-lrockchip_mpp -lrga -ldrm
+SIMPLE_VO_LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -L$(RK_MEDIA_OUTPUT)/root/usr/lib -Wl,-Bdynamic \
+						-lrockchip_mpp -lrga -ldrm -lpthread  -lstdc++ -lasound
+ifneq ($(RK_MEDIA_CHIP), rv1106)
+SIMPLE_VO_LD_FLAGS += -lrockit
+else
+SIMPLE_VO_LD_FLAGS += -lrockit_full
+endif
 
 SOURCES_C     = $(wildcard *.c)
 ifneq ($(RK_MEDIA_CHIP), rv1106)

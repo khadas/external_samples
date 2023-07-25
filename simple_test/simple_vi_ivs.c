@@ -3,11 +3,13 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/poll.h>
 #include <time.h>
 #include <unistd.h>
 
+#include "rk_comm_ivs.h"
 #include "rk_debug.h"
 #include "rk_defines.h"
 #include "rk_mpi_adec.h"
@@ -40,7 +42,7 @@ static void *GetMediaBuffer0(void *arg) {
 	int loopCount = 0;
 	int s32Ret;
 	IVS_RESULT_INFO_S stResults;
-	int width = 1920;
+	// int width = 1920;
 	// int height = 1080;
 
 	while (!quit) {
@@ -161,6 +163,7 @@ static RK_S32 create_ivs(int width, int height) {
 		goto __FAILED;
 	}
 
+#ifdef RV1106_PLATFORM
 	IVS_MD_ATTR_S stMdAttr;
 	memset(&stMdAttr, 0, sizeof(stMdAttr));
 	s32Ret = RK_MPI_IVS_GetMdAttr(0, &stMdAttr);
@@ -176,6 +179,7 @@ static RK_S32 create_ivs(int width, int height) {
 		RK_LOGE("ivs set mdattr failed:%x", s32Ret);
 		goto __FAILED;
 	}
+#endif
 
 	return 0;
 __FAILED:

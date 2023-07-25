@@ -363,7 +363,7 @@ static void *vi_iva_thread(void *pArgs) {
 	VIDEO_FRAME_INFO_S *stViFrame = NULL;
 
 	while (!gPThreadStatus->bIfViIvaTHreadQuit) {
-		s32Ret = SAMPLE_COMM_VI_GetChnFrame(&ctx->vi[2], &pData);
+		s32Ret = SAMPLE_COMM_VI_GetChnFrame(&ctx->vi[2], (void*)&pData);
 		if (s32Ret == RK_SUCCESS) {
 			stViFrame = (VIDEO_FRAME_INFO_S *)malloc(sizeof(VIDEO_FRAME_INFO_S));
 			if (!stViFrame) {
@@ -394,15 +394,13 @@ static void *vi_iva_thread(void *pArgs) {
 }
 #endif
 
+#ifdef ROCKIT_IVS
 static void *ivs_detect_thread(void *pArgs) {
 	prctl(PR_SET_NAME, "ivs_detect_thread");
 	SAMPLE_IVS_CTX_S *ctx = (SAMPLE_IVS_CTX_S *)pArgs;
 	RK_S32 s32Ret = RK_FAILURE;
 	IVS_RESULT_INFO_S stResults;
 	RK_U32 u32IvsDetectCount = 0;
-	RK_U32 width = ctx->stIvsAttr.u32PicWidth;
-	RK_U32 u32Count = 0;
-	RK_U32 x, y;
 	IVS_CHN_ATTR_S pstAttr;
 
 	memset(&pstAttr, 0, sizeof(IVS_CHN_ATTR_S));
@@ -437,6 +435,7 @@ static void *ivs_detect_thread(void *pArgs) {
 	RK_LOGE("ivs_detect_thread exit");
 	return RK_NULL;
 }
+#endif
 
 static RK_S32 rgn_init(RK_CHAR *inputBmp1Path, RK_CHAR *inputBmp2Path,
                        SAMPLE_MPI_CTX_S *ctx) {
@@ -899,7 +898,14 @@ int main(int argc, char *argv[]) {
 	MPP_CHN_S stSrcChn, stDestChn;
 	rk_aiq_working_mode_t eHdrMode = RK_AIQ_WORKING_MODE_NORMAL;
 
-	pthread_t ivs_detect_thread_id, vi_iva_thread_id, vi_venc_thread_id;
+	pthread_t vi_venc_thread_id;
+#ifdef ROCKIVA
+	pthread_t vi_iva_thread_id;
+#endif
+
+#ifdef ROCKIT_IVS
+	pthread_t ivs_detect_thread_id;
+#endif
 
 	if (argc < 2) {
 		print_usage(argv[0]);

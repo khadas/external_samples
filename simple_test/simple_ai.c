@@ -3,12 +3,14 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/poll.h>
 #include <unistd.h>
 
 #include "rk_debug.h"
 #include "rk_defines.h"
+#include "rk_mpi_sys.h"
 #include "rk_mpi_adec.h"
 #include "rk_mpi_aenc.h"
 #include "rk_mpi_ai.h"
