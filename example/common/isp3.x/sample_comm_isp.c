@@ -34,6 +34,7 @@ rk_aiq_cpsl_cfg_t g_cpsl_cfg[MAX_AIQ_CTX];
 rk_aiq_wb_gain_t gs_wb_auto_gain = {2.083900, 1.000000, 1.000000, 2.018500};
 RK_U32 g_2dnr_default_level = 50;
 RK_U32 g_3dnr_default_level = 50;
+RK_S32 g_devBufCnt[MAX_AIQ_CTX] = {2, 2, 2, 2, 2, 2, 2, 2};
 rk_aiq_working_mode_t g_WDRMode[MAX_AIQ_CTX];
 
 typedef enum _SHUTTERSPEED_TYPE_E {
@@ -100,6 +101,15 @@ static XCamReturn SAMPLE_COMM_ISP_ErrCb(rk_aiq_err_msg_t *msg) {
 
 RK_BOOL SAMPLE_COMM_ISP_ShouldQuit() { return g_should_quit; }
 
+RK_S32 SAMPLE_COMM_PreInit_devBufCnt(RK_S32 CamId, RK_S32 Bufcnt) {
+	if (Bufcnt < 0) {
+		printf("Invlaid ISP read Buffer, please check!\n");
+		return RK_FAILURE;
+	}
+	g_devBufCnt[CamId] = Bufcnt;
+	return 0;
+}
+
 RK_S32 SAMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL MultiCam,
                             const char *iq_file_dir) {
 	if (CamId >= MAX_AIQ_CTX) {
@@ -127,7 +137,7 @@ RK_S32 SAMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL
 	printf("ID: %d, sensor_name is %s, iqfiles is %s\n", CamId,
 	       aiq_static_info.sensor_info.sensor_name, iq_file_dir);
 	rk_aiq_uapi2_sysctl_preInit_devBufCnt(aiq_static_info.sensor_info.sensor_name,
-	                                      "rkraw_rx", 2);
+	                                      "rkraw_rx", g_devBufCnt[CamId]);
 	aiq_ctx =
 	    rk_aiq_uapi2_sysctl_init(aiq_static_info.sensor_info.sensor_name, iq_file_dir,
 	                             SAMPLE_COMM_ISP_ErrCb, SAMPLE_COMM_ISP_SofCb);

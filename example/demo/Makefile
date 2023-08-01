@@ -11,6 +11,9 @@ endif
 
 all:
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_multi_camera_eptz.c -o sample_demo_multi_camera_eptz $(LD_FLAGS)
+ifeq ($(RK_MEDIA_CHIP), rv1106)
+	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_rv1103_dual_memory_opt.c -o sample_rv1103_dual_memory_opt $(LD_FLAGS)
+endif
 ifeq ($(HAVE_AVS), y)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_vi_avs_venc.c -o sample_demo_vi_avs_venc $(LD_FLAGS)
 endif
@@ -24,6 +27,9 @@ endif
 install:
 	@mv -f sample_demo_vi_venc $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_demo_multi_camera_eptz $(SAMPLE_OUT_DIR)/bin
+ifeq ($(RK_MEDIA_CHIP), rv1106)
+	@mv -f sample_rv1103_dual_memory_opt $(SAMPLE_OUT_DIR)/bin
+endif
 ifeq ($(HAVE_AVS),y)
 	@mv -f sample_demo_vi_avs_venc $(SAMPLE_OUT_DIR)/bin
 endif
