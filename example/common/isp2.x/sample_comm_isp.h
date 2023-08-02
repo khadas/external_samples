@@ -77,7 +77,7 @@ typedef struct _rkIspGroupParamCtx {
 	rk_aiq_camgroup_instance_cfg_t *pCamGroupCfg;
 } rk_isp_group_param_ctx;
 #endif
-
+RK_S32 SAMPLE_COMM_PreInit_devBufCnt(RK_S32 CamId, RK_S32 Bufcnt);
 RK_S32 SAMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL MultiCam,
                             const char *iq_file_dir);
 
