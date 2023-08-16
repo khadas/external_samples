@@ -128,7 +128,7 @@ int vi_chn_init(int channelId, int width, int height) {
 	vi_chn_attr.stSize.u32Height = height;
 	vi_chn_attr.enPixelFormat = RK_FMT_YUV420SP;
 	vi_chn_attr.enCompressMode = COMPRESS_MODE_NONE; // COMPRESS_AFBC_16x16;
-	vi_chn_attr.u32Depth = 2;
+	vi_chn_attr.u32Depth = 0; //0, get fail, 1 - u32BufCount, can get, if bind to other device, must be < u32BufCount
 	ret = RK_MPI_VI_SetChnAttr(0, channelId, &vi_chn_attr);
 	ret |= RK_MPI_VI_EnableChn(0, channelId);
 	if (ret) {
@@ -186,25 +186,69 @@ __FAILED:
 	return -1;
 }
 
-int main() {
-	int width = 1920;
-	int height = 1080;
+static RK_CHAR optstr[] = "?::w:h:I:";
+static void print_usage(const RK_CHAR *name) {
+	printf("usage example:\n");
+	printf("\t%s -I 0 -w 1920 -h 1080\n", name);
+	printf("\t-w | --width: VI width, Default:1920\n");
+	printf("\t-h | --heght: VI height, Default:1080\n");
+	printf("\t-I | --camid: camera ctx id, Default 0. "
+	       "0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
+}
+
+int main(int argc, char *argv[]) {
+	RK_S32 s32Ret = RK_FAILURE;
+	RK_U32 u32Width = 1920;
+	RK_U32 u32Height = 1080;
 	MPP_CHN_S stSrcChn, stIvsChn;
+	RK_S32 s32chnlId = 0;
+	int c;
+
+	while ((c = getopt(argc, argv, optstr)) != -1) {
+		switch (c) {
+		case 'w':
+			u32Width = atoi(optarg);
+			break;
+		case 'h':
+			u32Height = atoi(optarg);
+			break;
+		case 'I':
+			s32chnlId = atoi(optarg);
+			break;
+		case '?':
+		default:
+			print_usage(argv[0]);
+			return 0;
+		}
+	}
+
+	printf("#Resolution: %dx%d\n", u32Width, u32Height);
+	printf("#CameraIdx: %d\n\n", s32chnlId);
 
 	signal(SIGINT, sigterm_handler);
-	RK_MPI_SYS_Init();
+
+	if (RK_MPI_SYS_Init() != RK_SUCCESS) {
+		RK_LOGE("rk mpi sys init fail!");
+		goto __FAILED;
+	}
+
 	vi_dev_init();
-	vi_chn_init(0, width, height);
-	create_ivs(width, height);
+	vi_chn_init(s32chnlId, u32Width, u32Height);
+	create_ivs(u32Width, u32Height);
 
 	stSrcChn.enModId = RK_ID_VI;
 	stSrcChn.s32DevId = 0;
-	stSrcChn.s32ChnId = 0;
+	stSrcChn.s32ChnId = s32chnlId;
 
 	stIvsChn.enModId = RK_ID_IVS;
 	stIvsChn.s32DevId = 0;
 	stIvsChn.s32ChnId = 0;
-	RK_MPI_SYS_Bind(&stSrcChn, &stIvsChn);
+	printf("====RK_MPI_SYS_Bind vi0 to venc0====\n");
+	s32Ret = RK_MPI_SYS_Bind(&stSrcChn, &stIvsChn);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("bind 0 ch venc failed");
+		goto __FAILED;
+	}
 
 	pthread_t main_thread;
 	pthread_create(&main_thread, NULL, GetMediaBuffer0, NULL);
@@ -213,10 +257,26 @@ int main() {
 		usleep(5000);
 	}
 	pthread_join(main_thread, NULL);
-	RK_MPI_SYS_UnBind(&stSrcChn, &stIvsChn);
-	RK_MPI_IVS_DestroyChn(0);
-	RK_MPI_VI_DisableChn(0, 0);
-	RK_MPI_VI_DisableDev(0);
+
+	s32Ret = RK_MPI_SYS_UnBind(&stSrcChn, &stIvsChn);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("RK_MPI_SYS_UnBind fail %x", s32Ret);
+	}
+
+	s32Ret = RK_MPI_IVS_DestroyChn(0);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("RK_MPI_IVS_DestroyChn fail %x", s32Ret);
+	}
+
+	s32Ret = RK_MPI_VI_DisableChn(0, s32chnlId);
+	RK_LOGE("RK_MPI_VI_DisableChn %x", s32Ret);
+
+	s32Ret = RK_MPI_VI_DisableDev(0);
+	RK_LOGE("RK_MPI_VI_DisableDev %x", s32Ret);
+
+__FAILED:
+	RK_LOGE("test running exit:%d", s32Ret);
 	RK_MPI_SYS_Exit();
+
 	return 0;
 }

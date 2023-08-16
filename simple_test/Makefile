@@ -63,7 +63,7 @@ endif
 
 SOURCES_C     = $(wildcard *.c)
 ifneq ($(RK_MEDIA_CHIP), rv1106)
-SOURCES_C     = $(filter-out simple_vi_rockiva.c , $(wildcard *.c))
+SOURCES_C     = $(filter-out simple_vi_get_frame_send_venc_rockiva.c , $(wildcard *.c))
 endif
 
 OBJECTS       = $(basename $(SOURCES_C))
@@ -74,69 +74,66 @@ all: $(OBJECTS)
 	@mv -f $(OBJECTS) $(SIMPLE_OUT_DIR)/bin
 	$(call MAROC_COPY_PKG_TO_MEDIA_OUTPUT, $(RK_MEDIA_OUTPUT)/bin, $(SIMPLE_OUT_DIR)/bin)
 
-simple_adec_ao: simple_adec_ao.c
+simple_adec_bind_ao: simple_adec_bind_ao.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
-simple_ai_aenc: simple_ai_aenc.c
+simple_ai_bind_aenc: simple_ai_bind_aenc.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
-simple_ai: simple_ai.c
+simple_ai_get_frame: simple_ai_get_frame.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
-simple_ao: simple_ao.c
+simple_ao_send_frame: simple_ao_send_frame.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
-simple_venc_jpeg: simple_venc_jpeg.c
+simple_vi_bind_venc_jpeg: simple_vi_bind_venc_jpeg.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
-simple_venc_osd: simple_venc_osd.c
+simple_vi_bind_venc_osd: simple_vi_bind_venc_osd.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
 simple_vi_get_frame: simple_vi_get_frame.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
-simple_vi_get_frame_send_vo: simple_vi_get_frame_send_vo.c
+simple_vi_get_frame_send_vo_rv1106: simple_vi_get_frame_send_vo_rv1106.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_VO_LD_FLAGS)
 
-simple_vi_ivs: simple_vi_ivs.c
+simple_vi_bind_ivs: simple_vi_bind_ivs.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
-simple_vi_rockiva: simple_vi_rockiva.c
+simple_vi_get_frame_send_venc_rockiva: simple_vi_get_frame_send_venc_rockiva.c
 	@make -C $(RK_MEDIA_TOP_DIR)/iva
 	$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -DROCKIVA -lrockiva -lrknnmrt -I$(RK_MEDIA_OUTPUT)/include/rockiva
 
-simple_vi_venc: simple_vi_venc.c
+simple_vi_bind_venc: simple_vi_bind_venc.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
-simple_vi_venc_change_resolution: simple_vi_venc_change_resolution.c
+simple_vi_bind_venc_change_resolution_rv1106: simple_vi_bind_venc_change_resolution_rv1106.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
-simple_vi_venc_rtsp: simple_vi_venc_rtsp.c
+simple_vi_bind_venc_rtsp: simple_vi_bind_venc_rtsp.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
 
-simple_vi_venc_svc_rtsp: simple_vi_venc_svc_rtsp.c
+simple_vi_bind_venc_svc_rtsp: simple_vi_bind_venc_svc_rtsp.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
 
-simple_vi_venc_wrap: simple_vi_venc_wrap.c
+simple_vi_bind_venc_wrap_rv1106: simple_vi_bind_venc_wrap_rv1106.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
-simple_vi_vpss_venc: simple_vi_vpss_venc.c
+simple_vi_bind_vpss_bind_venc: simple_vi_bind_vpss_bind_venc.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
-simple_vi_rkaiq: simple_vi_rkaiq.c
+simple_vi_get_frame_rkaiq: simple_vi_get_frame_rkaiq.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq
 
-simple_vi_tde: simple_vi_tde.c
+simple_vi_get_frame_tde: simple_vi_get_frame_tde.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq
 
-simple_vi_venc_combo: simple_vi_venc_combo.c
+simple_vi_bind_venc_combo_rv1106: simple_vi_bind_venc_combo_rv1106.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq
 
-simple_vi_eptz_test: simple_vi_eptz_test.c
+simple_vi_bind_venc_rtsp_eptz: simple_vi_bind_venc_rtsp_eptz.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
-
-simple_vi_venc_offline: simple_vi_venc_offline.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq
 
 clean:
 	@echo "clean simple"

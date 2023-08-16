@@ -66,8 +66,9 @@ RK_U64 TEST_COMM_GetNowUs() {
 }
 
 static void *GetMediaBuffer0(void *arg) {
-	(void)arg;
 	printf("========%s========\n", __func__);
+	RK_CODEC_ID_E *p_enCodecType = (RK_CODEC_ID_E *)arg;
+	RK_CODEC_ID_E enCodecType = *p_enCodecType;
 	int loopCount = 0;
 	int s32Ret;
 	RK_U32 idx = 0;
@@ -117,6 +118,10 @@ static void *GetMediaBuffer0(void *arg) {
 			}
 
 			// 2, set venc
+			stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H264CBR;
+			stAttr.stRcAttr.stH264Cbr.u32BitRate = 10 * 1024;
+			stAttr.stRcAttr.stH264Cbr.u32Gop = 60;
+			stAttr.stVencAttr.enType = enCodecType;
 			stAttr.stVencAttr.u32PicWidth = test_res[idx].size.u32Width;
 			stAttr.stVencAttr.u32PicHeight = test_res[idx].size.u32Height;
 			stAttr.stVencAttr.u32VirWidth = test_res[idx].size.u32Width;
@@ -251,15 +256,14 @@ int vi_chn_init(int channelId, int width, int height) {
 	memset(&vi_chn_attr, 0, sizeof(vi_chn_attr));
 	vi_chn_attr.stIspOpt.u32BufCount = buf_cnt;
 	vi_chn_attr.stIspOpt.enMemoryType =
-	    VI_V4L2_MEMORY_TYPE_MMAP; // VI_V4L2_MEMORY_TYPE_MMAP;
+	    VI_V4L2_MEMORY_TYPE_DMABUF; // VI_V4L2_MEMORY_TYPE_MMAP;
 	vi_chn_attr.stIspOpt.stMaxSize.u32Width = MAXWIDTH;
 	vi_chn_attr.stIspOpt.stMaxSize.u32Height = MAXHEIGHT;
-	vi_chn_attr.stIspOpt.bNoUseLibV4L2 = RK_TRUE;
 	vi_chn_attr.stSize.u32Width = width;
 	vi_chn_attr.stSize.u32Height = height;
 	vi_chn_attr.enPixelFormat = RK_FMT_YUV420SP;
 	vi_chn_attr.enCompressMode = COMPRESS_MODE_NONE; // COMPRESS_AFBC_16x16;
-	vi_chn_attr.u32Depth = 2;
+	vi_chn_attr.u32Depth = 0; //0, get fail, 1 - u32BufCount, can get, if bind to other device, must be < u32BufCount
 	vi_chn_attr.stFrameRate.s32SrcFrameRate = -1;
 	vi_chn_attr.stFrameRate.s32DstFrameRate = -1;
 
@@ -366,7 +370,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	pthread_t main_thread;
-	pthread_create(&main_thread, NULL, GetMediaBuffer0, NULL);
+	pthread_create(&main_thread, NULL, GetMediaBuffer0, (void *)&enCodecType);
 
 	while (!quit) {
 		usleep(50000);

@@ -295,7 +295,7 @@ static RK_S32 vi_chn_init(RK_U32 channelId, RK_U32 width, RK_U32 height) {
 	vi_chn_attr.stSize.u32Height = height;
 	vi_chn_attr.enPixelFormat = RK_FMT_YUV420SP;
 	vi_chn_attr.enCompressMode = COMPRESS_MODE_NONE; // COMPRESS_AFBC_16x16;
-	vi_chn_attr.u32Depth = 2;
+	vi_chn_attr.u32Depth = 0; //0, get fail, 1 - u32BufCount, can get, if bind to other device, must be < u32BufCount
 	s32Ret = RK_MPI_VI_SetChnAttr(0, channelId, &vi_chn_attr);
 	s32Ret |= RK_MPI_VI_EnableChn(0, channelId);
 	if (s32Ret) {

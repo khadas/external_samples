@@ -198,7 +198,7 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate, RK_S32 u3
 	}
 
 	memset(&pstParams, 0, sizeof(AI_CHN_PARAM_S));
-	pstParams.s32UsrFrmDepth = 4;
+	pstParams.s32UsrFrmDepth = 4; //0, get fail, 1 - u32ChnCnt, can get, if bind to other device, must be < u32ChnCnt
 	result = RK_MPI_AI_SetChnParam(aiDevId, aiChn, &pstParams);
 	if (result != RK_SUCCESS) {
 		RK_LOGE("ai set channel params, aiChn = %d", aiChn);

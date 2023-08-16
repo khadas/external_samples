@@ -132,7 +132,7 @@ static int vi_chn_init(int channelId, int width, int height, int maxWidth,
 
 	g_vi_chn_attr.stIspOpt.stMaxSize.u32Width = RK_MAX(maxWidth, width);
 	g_vi_chn_attr.stIspOpt.stMaxSize.u32Height = RK_MAX(maxHeight, height);
-	g_vi_chn_attr.u32Depth = 1;
+	g_vi_chn_attr.u32Depth = 0; //0, get fail, 1 - u32BufCount, can get, if bind to other device, must be < u32BufCount
 
 	ret = RK_MPI_VI_SetChnAttr(0, channelId, &g_vi_chn_attr);
 	if (ret) {
@@ -268,6 +268,7 @@ static void *vi_venc_wrap(void *arg) {
 static RK_CHAR optstr[] = "?::d:n:w:h:W:H:c:I:o:r:L:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
+	printf("\tNOTE: Only RV1106 and RV1103 support this demo.\n");
 	printf("\t%s -I 0 -w 1920 -h 1080 -W 2560 -H 1440 -o 1 -r 1 -L 720\n", name);
 	printf("\t-w | --width: VI width, Default:2560\n");
 	printf("\t-h | --height: VI height, Default:1440\n");

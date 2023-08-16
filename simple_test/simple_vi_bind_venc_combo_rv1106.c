@@ -117,6 +117,7 @@ static const struct option long_options[] = {
  ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
+	printf("\tNOTE: Only RV1106 and RV1103 support this demo.\n");
 	printf("\t%s -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 -o /userdata/\n", name);
 #ifdef RKAIQ
 	printf("\t-a | --aiq: enable aiq with dirpath provided, eg:-a /etc/iqfiles/, "
@@ -333,7 +334,7 @@ static RK_S32 vi_init(RK_S32 s32DevId, RK_S32 s32ChnId, RK_U32 u32Width,
 	stChnAttr.stIspOpt.stMaxSize.u32Height = u32Height;
 	stChnAttr.stIspOpt.u32BufCount = 3;
 	stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
-	stChnAttr.u32Depth = 1;
+	stChnAttr.u32Depth = 0; //0, get fail, 1 - u32BufCount, can get, if bind to other device, must be < u32BufCount
 	stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
 	stChnAttr.enCompressMode = COMPRESS_MODE_NONE;
 	stChnAttr.stFrameRate.s32SrcFrameRate = -1;
