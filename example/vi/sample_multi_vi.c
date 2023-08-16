@@ -265,6 +265,7 @@ int main(int argc, char *argv[]) {
 	printf("#IQ Path: %s\n", iq_file_dir);
 	if (iq_file_dir) {
 #if (defined RKAIQ)
+		bMultictx = (s32CamNum > 1) ? RK_TRUE : RK_FALSE;
 		printf("#Rkaiq XML DirPath: %s\n", iq_file_dir);
 		printf("#bMultictx: %d\n\n", bMultictx);
 		if (!bIfIspGroupInit) {
