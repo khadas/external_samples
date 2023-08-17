@@ -435,7 +435,7 @@ int main(int argc, char *argv[]) {
 #ifdef RV1126
 	ctx->avs.stAvsChnAttr[0].u32FrameBufCnt = 4;
 #endif
-	ctx->avs.stAvsChnAttr[0].u32Depth = 1;
+	ctx->avs.stAvsChnAttr[0].u32Depth = 0;
 	ctx->avs.stAvsChnAttr[0].u32Width = u32AvsChn0Width;
 	ctx->avs.stAvsChnAttr[0].u32Height = u32AvsChn0Height;
 	ctx->avs.stAvsChnAttr[0].enDynamicRange = DYNAMIC_RANGE_SDR8;
@@ -447,7 +447,7 @@ int main(int argc, char *argv[]) {
 #ifdef RV1126
 	ctx->avs.stAvsChnAttr[1].u32FrameBufCnt = 4;
 #endif
-	ctx->avs.stAvsChnAttr[1].u32Depth = 1;
+	ctx->avs.stAvsChnAttr[1].u32Depth = 0;
 	ctx->avs.stAvsChnAttr[1].u32Width = u32AvsChn1Width;
 	ctx->avs.stAvsChnAttr[1].u32Height = u32AvsChn1Height;
 	ctx->avs.stAvsChnAttr[1].enDynamicRange = DYNAMIC_RANGE_SDR8;
