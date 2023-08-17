@@ -35,7 +35,7 @@ extern "C" {
 #include <time.h>
 #include <unistd.h>
 
-#ifdef RV1126_PLATFORM
+#ifdef RV1126_RV1109
 #include <rk_aiq_user_api_camgroup.h>
 #include <rk_aiq_user_api_imgproc.h>
 #include <rk_aiq_user_api_sysctl.h>
@@ -135,7 +135,7 @@ RK_S32 SIMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL
 
 	rk_aiq_sys_ctx_t *aiq_ctx;
 	rk_aiq_static_info_t aiq_static_info;
-#ifdef RV1126_PLATFORM
+#ifdef RV1126_RV1109
 	rk_aiq_uapi_sysctl_enumStaticMetas(CamId, &aiq_static_info);
 
 	printf("ID: %d, sensor_name is %s, iqfiles is %s\n", CamId,
@@ -169,7 +169,7 @@ RK_S32 SIMPLE_COMM_ISP_Run(RK_S32 CamId) {
 		printf("%s : CamId is over 3 or not init\n", __FUNCTION__);
 		return -1;
 	}
-#ifdef RV1126_PLATFORM
+#ifdef RV1126_RV1109
 	if (rk_aiq_uapi_sysctl_prepare(g_aiq_ctx[CamId], 0, 0, g_WDRMode[CamId])) {
 		printf("rkaiq engine prepare failed !\n");
 		g_aiq_ctx[CamId] = NULL;
@@ -203,7 +203,7 @@ RK_S32 SIMPLE_COMM_ISP_Stop(RK_S32 CamId) {
 		       CamId, g_aiq_ctx[CamId]);
 		return -1;
 	}
-#ifdef RV1126_PLATFORM
+#ifdef RV1126_RV1109
 	printf("rk_aiq_uapi_sysctl_stop enter\n");
 	rk_aiq_uapi_sysctl_stop(g_aiq_ctx[CamId], false);
 	printf("rk_aiq_uapi_sysctl_deinit enter\n");

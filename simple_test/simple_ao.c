@@ -55,7 +55,7 @@ RK_S32 open_device_ao(RK_S32 s32ReSmpSampleRate, RK_S32 s32SampleRate,
 
 	memset(&pstParams, 0, sizeof(AO_CHN_PARAM_S));
 	memset(&aoAttr, 0, sizeof(AIO_ATTR_S));
-#ifdef RV1126_PLATFORM
+#ifdef RV1126_RV1109
 	/*==============================================================================*/
 	//这是RV1126 声卡打开设置，RV1106设置无效，可以不设置
 	result = RK_MPI_AMIX_SetControl(aoDevId, "Playback Path", (char *)"SPK");

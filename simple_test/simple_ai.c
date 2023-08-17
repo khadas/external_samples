@@ -139,7 +139,7 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate, RK_S32 u3
 	memset(&aiAttr, 0, sizeof(AIO_ATTR_S));
 
 	RK_BOOL needResample = (InputSampleRate != OutputSampleRate) ? RK_TRUE : RK_FALSE;
-#ifdef RV1126_PLATFORM
+#ifdef RV1126_RV1109
 	//这是RV1126 声卡打开设置，RV1106设置无效，可以不设置
 	result = RK_MPI_AMIX_SetControl(aiDevId, "Capture MIC Path", (char *)"Main Mic");
 	if (result != RK_SUCCESS) {
