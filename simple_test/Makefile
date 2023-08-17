@@ -45,15 +45,20 @@ SIMPLE_CFLAGS += -g -Wall $(INC_FLAGS) $(SIMPLE_PKG_CONF_OPTS) $(RK_MEDIA_CROSS_
 SIMPLE_LD_FLAGS += $(SIMPLE_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -L$(RK_MEDIA_OUTPUT)/root/usr/lib \
 					-lpthread -lm -lrockit \
 					-lrockchip_mpp  -lrkaudio_detect -laec_bf_process \
-					-lrga -lstdc++ -lasound
+					-lrga -lstdc++
 SIMPLE_LD_FLAGS += -Wl,--gc-sections -Wl,--as-needed
 
 SIMPLE_VO_LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -L$(RK_MEDIA_OUTPUT)/root/usr/lib -Wl,-Bdynamic \
-						-lrockchip_mpp -lrga -ldrm -lpthread  -lstdc++ -lasound
+						-lrockchip_mpp -lrga -ldrm -lpthread  -lstdc++
 ifneq ($(RK_MEDIA_CHIP), rv1106)
 SIMPLE_VO_LD_FLAGS += -lrockit
 else
 SIMPLE_VO_LD_FLAGS += -lrockit_full
+endif
+
+ifeq ($(RK_MEDIA_CHIP), rv1126)
+SIMPLE_LD_FLAGS += -lasound
+SIMPLE_VO_LD_FLAGS += -lasound
 endif
 
 SOURCES_C     = $(wildcard *.c)
