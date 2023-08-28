@@ -44,7 +44,7 @@ SIMPLE_CFLAGS += -g -Wall $(INC_FLAGS) $(SIMPLE_PKG_CONF_OPTS) $(RK_MEDIA_CROSS_
 
 SIMPLE_LD_FLAGS += $(SIMPLE_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -L$(RK_MEDIA_OUTPUT)/root/usr/lib \
 					-lpthread -lm -lrockit \
-					-lrockchip_mpp  -lrkaudio_detect -laec_bf_process \
+					-lrockchip_mpp -DRKAIQ \
 					-lrga -lstdc++
 SIMPLE_LD_FLAGS += -Wl,--gc-sections -Wl,--as-needed
 
