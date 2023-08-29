@@ -123,6 +123,8 @@ RK_S32 SAMPLE_COMM_ISP_SET_Correction(RK_S32 CamId, RK_U32 u32Mode, RK_U32 u32Va
 RK_S32 SAMPLE_COMM_ISP_SET_mirror(RK_S32 CamId, RK_U32 u32Value);
 RK_S32 SAMPLE_COMM_ISP_SET_BypassStreamRotation(RK_S32 CamId, RK_S32 S32Rotation);
 RK_S32 SAMPLE_COMM_ISP_SET_Crop(RK_S32 CamId, rk_aiq_rect_t rect);
+
+RK_S32 SAMPLE_COMM_ISP_GetAINrParams(RK_S32 CamId, rk_ainr_param *param);
 #ifdef RKAIQ_GRP
 XCamReturn SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(int CamGrpId, uint8_t SetLdchMode,
                                                   uint16_t **LdchMesh);

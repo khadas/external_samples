@@ -882,6 +882,17 @@ RK_S32 SAMPLE_COMM_ISP_SET_Crop(RK_S32 CamId, rk_aiq_rect_t rect) {
 	pthread_mutex_unlock(&aiq_ctx_mutex[CamId]);
 	return ret;
 }
+
+RK_S32 SAMPLE_COMM_ISP_GetAINrParams(RK_S32 CamId, rk_ainr_param *param) {
+	RK_S32 ret = 0;
+	ret = rk_aiq_uapi_sysctl_getAinrParams(g_aiq_ctx[CamId], param);
+	if (ret != 0) {
+		printf("rk_aiq_uapi_sysctl_getAinrParams failure\n");
+		return -1;
+	}
+	return ret;
+}
+
 #ifdef RKAIQ_GRP
 static int isp_get_ldch_mesh_size(uint16_t *meshdata) {
 	int file_size = 0;
