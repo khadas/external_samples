@@ -56,6 +56,10 @@ static void *GetMediaBuffer0(void *arg) {
 					       stResults.pstResults->stMdInfo.stRect[i].s32Y,
 					       stResults.pstResults->stMdInfo.stRect[i].u32Width,
 					       stResults.pstResults->stMdInfo.stRect[i].u32Height);
+					printf("u32Square %u, u32DetAreaSquare %u, u32DetOutputSquare %u\n",
+					       stResults.pstResults->stMdInfo.u32Square,
+					       stResults.pstResults->stMdInfo.u32DetAreaSquare,
+					       stResults.pstResults->stMdInfo.u32DetOutputSquare);
 				}
 			}
 			RK_MPI_IVS_ReleaseResults(0, &stResults);
@@ -139,7 +143,7 @@ int vi_chn_init(int channelId, int width, int height) {
 	return ret;
 }
 
-static RK_S32 create_ivs(int width, int height) {
+static RK_S32 create_ivs(int width, int height, RK_U32 u32AreaEn) {
 	RK_S32 s32Ret;
 	IVS_CHN_ATTR_S attr;
 	memset(&attr, 0, sizeof(attr));
@@ -156,6 +160,18 @@ static RK_S32 create_ivs(int width, int height) {
 	attr.bODEnable = RK_TRUE;
 	attr.s32ODInterval = 1;
 	attr.s32ODPercent = 7;
+	if (u32AreaEn) {
+		attr.stDetAttr.stDetArea.u32AreaNum = 1;
+		attr.stDetAttr.stDetArea.areas[0].u32PointNum = 4;
+		attr.stDetAttr.stDetArea.areas[0].points[0].s32X = width / 2;
+		attr.stDetAttr.stDetArea.areas[0].points[0].s32Y = 0;
+		attr.stDetAttr.stDetArea.areas[0].points[1].s32X = width;
+		attr.stDetAttr.stDetArea.areas[0].points[1].s32Y = height / 2;
+		attr.stDetAttr.stDetArea.areas[0].points[2].s32X = width / 2;
+		attr.stDetAttr.stDetArea.areas[0].points[2].s32Y = height;
+		attr.stDetAttr.stDetArea.areas[0].points[3].s32X = 0;
+		attr.stDetAttr.stDetArea.areas[0].points[3].s32Y = height / 2;
+	}
 
 	s32Ret = RK_MPI_IVS_CreateChn(0, &attr);
 	if (s32Ret) {
@@ -186,7 +202,7 @@ __FAILED:
 	return -1;
 }
 
-static RK_CHAR optstr[] = "?::w:h:I:";
+static RK_CHAR optstr[] = "?::w:h:I:A:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s -I 0 -w 1920 -h 1080\n", name);
@@ -194,6 +210,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-h | --heght: VI height, Default:1080\n");
 	printf("\t-I | --camid: camera ctx id, Default 0. "
 	       "0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
+	printf("\t-A | --Area: Area detect, Default:0\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -202,6 +219,7 @@ int main(int argc, char *argv[]) {
 	RK_U32 u32Height = 1080;
 	MPP_CHN_S stSrcChn, stIvsChn;
 	RK_S32 s32chnlId = 0;
+	RK_U32 u32AreaEn = 0;
 	int c;
 
 	while ((c = getopt(argc, argv, optstr)) != -1) {
@@ -214,6 +232,9 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'I':
 			s32chnlId = atoi(optarg);
+			break;
+		case 'A':
+			u32AreaEn = atoi(optarg);
 			break;
 		case '?':
 		default:
@@ -234,7 +255,7 @@ int main(int argc, char *argv[]) {
 
 	vi_dev_init();
 	vi_chn_init(s32chnlId, u32Width, u32Height);
-	create_ivs(u32Width, u32Height);
+	create_ivs(u32Width, u32Height, u32AreaEn);
 
 	stSrcChn.enModId = RK_ID_VI;
 	stSrcChn.s32DevId = 0;
