@@ -63,7 +63,7 @@ endif
 
 SOURCES_C     = $(wildcard *.c)
 ifneq ($(RK_MEDIA_CHIP), rv1106)
-SOURCES_C     = $(filter-out simple_vi_get_frame_send_venc_rockiva.c , $(wildcard *.c))
+SOURCES_C     = $(filter-out simple_vi_get_frame_send_venc_rockiva.c simple_vi_bind_venc_rtsp_three_camera_rv1106.c , $(wildcard *.c))
 endif
 
 OBJECTS       = $(basename $(SOURCES_C))
@@ -114,7 +114,7 @@ simple_vi_bind_venc_change_resolution_rv1106: simple_vi_bind_venc_change_resolut
 simple_vi_bind_venc_rtsp: simple_vi_bind_venc_rtsp.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
 
-simple_vi_bind_venc_rtsp_three_camera: simple_vi_bind_venc_rtsp_three_camera.c
+simple_vi_bind_venc_rtsp_three_camera_rv1106: simple_vi_bind_venc_rtsp_three_camera_rv1106.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
 
 simple_vi_bind_venc_svc_rtsp: simple_vi_bind_venc_svc_rtsp.c
