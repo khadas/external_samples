@@ -9,7 +9,6 @@ extern "C" {
 #include <fcntl.h>
 #include <getopt.h>
 #include <pthread.h>
-#include <rk_mpi_mmz.h>
 #include <semaphore.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -52,11 +51,7 @@ static RK_BOOL g_rtsp_ifenbale = RK_FALSE;
 rtsp_demo_handle g_rtsplive = RK_NULL;
 static rtsp_session_handle g_rtsp_session[VENC_CHN_MAX] = {RK_NULL};
 
-static RK_S32 aiisp_callback(MB_BLK pAinrBlk, RK_VOID *pPrivateData) {
-	if (pAinrBlk == RK_NULL) {
-		return RK_FAILURE;
-	}
-	RK_VOID *pAinrParam = RK_MPI_MB_Handle2VirAddr(pAinrBlk);
+static RK_S32 aiisp_callback(RK_VOID *pAinrParam, RK_VOID *pPrivateData) {
 	if (pAinrParam == RK_NULL) {
 		return RK_FAILURE;
 	}
@@ -852,15 +847,10 @@ int main(int argc, char *argv[]) {
 	// set ai isp mode
 	if (enable_ai_isp) {
 		AIISP_ATTR_S stAIISPAttr;
-		MB_BLK pAinrBlk = RK_NULL;
-		s32Ret = RK_MPI_MMZ_Alloc(&pAinrBlk, sizeof(rk_ainr_param), 0);
-		if (RK_SUCCESS != s32Ret) {
-			return s32Ret;
-		}
+
 		memset(&stAIISPAttr, 0, sizeof(AIISP_ATTR_S));
 		stAIISPAttr.bEnable = RK_TRUE;
 		stAIISPAttr.stAiIspCallback.pfUpdateCallback = aiisp_callback;
-		stAIISPAttr.stAiIspCallback.pAinrBlk = pAinrBlk;
 		stAIISPAttr.stAiIspCallback.pPrivateData = RK_NULL;
 
 		s32Ret = RK_MPI_VPSS_SetGrpAIISPAttr(0, &stAIISPAttr);
