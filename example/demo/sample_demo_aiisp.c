@@ -220,7 +220,7 @@ static RK_S32 global_param_deinit(void) {
 	return RK_SUCCESS;
 }
 
-static RK_CHAR optstr[] = "?::a::w:h:o:l:b:f:r:v:e:i:s:I:";
+static RK_CHAR optstr[] = "?::a::w:h:o:l:b:f:r:g:v:e:i:s:I:";
 static const struct option long_options[] = {
     {"aiq", optional_argument, RK_NULL, 'a'},
     {"width", required_argument, RK_NULL, 'w'},
@@ -233,6 +233,7 @@ static const struct option long_options[] = {
     {"vi_buff_cnt", required_argument, RK_NULL, 'v'},
     {"vi_chnid", required_argument, RK_NULL, 'v' + 'i'},
     {"rgn_attach_module", required_argument, RK_NULL, 'r'},
+    {"gop", required_argument, RK_NULL, 'g'},
     {"iva_detect_speed", required_argument, RK_NULL, 'd'},
     {"iva_model_path", required_argument, RK_NULL, 'i' + 'm'},
     {"enable_aiisp", required_argument, RK_NULL, 'e' + 'a'},
@@ -271,6 +272,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t--vi_chnid : vi channel id, default: 0\n");
 	printf("\t-r | --rgn_attach_module : where to attach rgn, 0: vpss, 1: venc, 2: "
 	       "close. default: 1\n");
+	printf("\t-g | --gop : venc GOP(group of pictures). default: 75\n");
 	printf("\t-i | --inputpathbmp1 : input bmp file path. default: RK_NULL\n");
 	printf("\t-I | --inputpathbmp2 : input bmp file path. default: RK_NULL\n");
 	printf("\t-f | --fps : set fps, default: 25\n");
@@ -567,6 +569,7 @@ int main(int argc, char *argv[]) {
 	RK_U32 u32ViBuffCnt = 5;
 	RK_U32 u32IvsWidth = 896;
 	RK_U32 u32IvsHeight = 512;
+	RK_U32 u32Gop = 75;
 	RK_U32 u32IvaDetectFrameRate = 10;
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_CHAR *pInPathBmp1 = NULL;
@@ -682,6 +685,9 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'v':
 			u32ViBuffCnt = atoi(optarg);
+			break;
+		case 'g':
+			u32Gop = atoi(optarg);
 			break;
 		case 'r':
 			rgn_attach_module = atoi(optarg);
@@ -866,7 +872,7 @@ int main(int argc, char *argv[]) {
 	ctx->venc[0].u32Width = u32VideoWidth;
 	ctx->venc[0].u32Height = u32VideoHeight;
 	ctx->venc[0].u32Fps = u32VencFps;
-	ctx->venc[0].u32Gop = 50;
+	ctx->venc[0].u32Gop = u32Gop;
 	ctx->venc[0].u32BitRate = s32BitRate;
 	ctx->venc[0].enCodecType = enCodecType;
 	ctx->venc[0].enRcMode = enRcMode;
@@ -890,7 +896,7 @@ int main(int argc, char *argv[]) {
 	ctx->venc[1].u32Width = u32SubVideoWidth;
 	ctx->venc[1].u32Height = u32SubVideoHeight;
 	ctx->venc[1].u32Fps = u32VencFps;
-	ctx->venc[1].u32Gop = 50;
+	ctx->venc[1].u32Gop = u32Gop;
 	ctx->venc[1].u32BitRate = s32BitRate;
 	ctx->venc[1].enCodecType = enCodecType;
 	ctx->venc[1].enRcMode = enRcMode;
@@ -914,7 +920,7 @@ int main(int argc, char *argv[]) {
 	ctx->venc[2].u32Width = u32ThirdVideoWidth;
 	ctx->venc[2].u32Height = u32ThirdVideoHeight;
 	ctx->venc[2].u32Fps = u32VencFps;
-	ctx->venc[2].u32Gop = 50;
+	ctx->venc[2].u32Gop = u32Gop;
 	ctx->venc[2].u32BitRate = s32BitRate;
 	ctx->venc[2].enCodecType = enCodecType;
 	ctx->venc[2].enRcMode = enRcMode;
