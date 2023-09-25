@@ -44,6 +44,8 @@ typedef struct _rkModeTest {
 	RK_BOOL bIfenable_ai_isp;
 	RK_BOOL bIfenable_iva;
 	RK_BOOL bMultictx;
+	RK_BOOL aiisp_force_type;
+	RK_BOOL bIfaiisp_force_switch;
 	RK_S32 s32CamId;
 	RK_U32 rgn_attach_module;
 	RK_S32 s32ModuleTestType;
@@ -88,6 +90,9 @@ static RK_S32 aiisp_callback(RK_VOID *pAinrParam, RK_VOID *pPrivateData) {
 	}
 	memset(pAinrParam, 0, sizeof(rk_ainr_param));
 	SAMPLE_COMM_ISP_GetAINrParams(0, pAinrParam);
+	if (gModeTest->s32ModuleTestType == 11 && gModeTest->bIfaiisp_force_switch) {
+		((rk_ainr_param *)pAinrParam)->enable = gModeTest->aiisp_force_type;
+	}
 	return RK_SUCCESS;
 }
 
@@ -157,7 +162,8 @@ static void print_usage(const RK_CHAR *name) {
 	    " \t           3: framerate_switch_test, 4: vpss_ai_isp_switchTest, 5:"
 	    "vpss_chn0_resolution_switch_test, 6: vpss_venc_chn0_resolution_switch_test\n"
 	    "\t            7: encode_type_switch, 8: vpss_rgn_init_and_deinit, 9: "
-	    "venc_rgn_init_and_deinit, 10: Media_deinit_and_init. Default: 0\n");
+	    "venc_rgn_init_and_deinit, 10: Media_deinit_and_init, 11: "
+	    "aiisp_force_switch_test. Default: 0\n");
 	printf("\t-b | --bitrate: encode bitrate, Default 4096\n");
 	printf("\t-o | --output_path : encode output file path, Default: RK_NULL\n");
 	printf("\t-l | --loop_count : when encoder output frameCounts equal to "
@@ -487,6 +493,13 @@ static RK_S32 frameRate_switchTest(SAMPLE_VI_CTX_S *ctx) {
 	RK_LOGE("---------------Framerate switch to: %d",
 	        pstChnAttr.stFrameRate.s32DstFrameRate);
 
+	return RK_SUCCESS;
+}
+
+static RK_S32 ai_isp_force_switchTest(SAMPLE_VPSS_CTX_S *ctx) {
+	gModeTest->aiisp_force_type = !gModeTest->aiisp_force_type;
+	RK_LOGE("---------------AIISP force switch to: %d(0->close, 1->enable)",
+	        gModeTest->aiisp_force_type);
 	return RK_SUCCESS;
 }
 
@@ -952,6 +965,7 @@ static RK_S32 global_param_init(void) {
 	gModeTest->inputBmp1Path = NULL;
 	gModeTest->inputBmp2Path = NULL;
 	gModeTest->bIfenable_iva = RK_TRUE;
+	gModeTest->bIfaiisp_force_switch = RK_FALSE;
 
 	for (RK_S32 i = 0; i < VENC_CHN_MAX; i++) {
 		sem_init(&g_sem_module_test[i], 0, 0);
@@ -1498,6 +1512,11 @@ static void *sample_demo_stresstest(void *pArgs) {
 				return RK_NULL;
 			}
 			pCTestModel = "Media_deinit_and_init";
+			break;
+		case 11:
+			gModeTest->bIfaiisp_force_switch = RK_TRUE;
+			ai_isp_force_switchTest(&ctx->vpss);
+			pCTestModel = "ai_isp_force_switchTest";
 			break;
 		default:
 			RK_LOGE("this test type is not support");
