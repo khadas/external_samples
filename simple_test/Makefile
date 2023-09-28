@@ -69,7 +69,11 @@ endif
 OBJECTS       = $(basename $(SOURCES_C))
 
 $(warning "here add the debug info $(OBJECTS)")
-all: $(OBJECTS)
+all:
+	@test -f $(RK_MEDIA_OUTPUT)/lib/librockit.so  || make -C $(RK_MEDIA_TOP_DIR) media_libs
+	@make simple_build
+
+simple_build: $(OBJECTS)
 	@mkdir -p $(SIMPLE_OUT_DIR)/bin
 	@mv -f $(OBJECTS) $(SIMPLE_OUT_DIR)/bin
 	$(call MAROC_COPY_PKG_TO_MEDIA_OUTPUT, $(RK_MEDIA_OUTPUT)/bin, $(SIMPLE_OUT_DIR)/bin)
@@ -102,7 +106,6 @@ simple_vi_bind_ivs: simple_vi_bind_ivs.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
 simple_vi_get_frame_send_venc_rockiva: simple_vi_get_frame_send_venc_rockiva.c
-	@make -C $(RK_MEDIA_TOP_DIR)/iva
 	$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -DROCKIVA -lrockiva -lrknnmrt -I$(RK_MEDIA_OUTPUT)/include/rockiva
 
 simple_vi_bind_venc: simple_vi_bind_venc.c

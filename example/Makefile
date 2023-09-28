@@ -112,19 +112,11 @@ export SAMPLE_CFLAGS RK_MEDIA_CROSS
 all: $(PKG_TARGET)
 	@echo "build $(PKG_NAME) done";
 
-ifeq ($(RK_MEDIA_CHIP), rv1106)
-sample-build: libasound librkaiq librockit librockiva librksysutils
-endif
+COMM_LIB:
+	@make -C $(CURRENT_DIR)/common
 
-ifeq ($(RK_MEDIA_CHIP), rv1126)
-sample-build: librkaiq librockit
-ifeq ($(CONFIG_RK_IVA), y)
-sample-build: librockiva
-endif
-ifeq ($(CONFIG_RK_LIBEASYIIO),y)
-sample-build: libeasyiio
-endif
-endif
+sample-build:
+	@test -f $(RK_MEDIA_OUTPUT)/lib/librockit.so  || make -C $(RK_MEDIA_TOP_DIR) media_libs
 	@mkdir -p $(SAMPLE_OUT_DIR)/bin
 	@make COMM_LIB
 	@make -C $(CURRENT_DIR)/audio;
@@ -146,27 +138,6 @@ endif
 	@make -C $(CURRENT_DIR)/demo;
 	@make -C $(CURRENT_DIR)/demo install;
 	$(call MAROC_COPY_PKG_TO_MEDIA_OUTPUT, $(RK_MEDIA_OUTPUT), $(PKG_BIN))
-
-COMM_LIB:
-	@make -C $(CURRENT_DIR)/common
-
-libasound:
-	@test ! -d $(RK_MEDIA_TOP_DIR)/alsa-lib || make -C $(RK_MEDIA_TOP_DIR)/alsa-lib
-
-librkaiq:
-	@test ! -d $(RK_MEDIA_TOP_DIR)/isp || make -C $(RK_MEDIA_TOP_DIR)/isp
-
-librockit:
-	@test ! -d $(RK_MEDIA_TOP_DIR)/rockit || make -C $(RK_MEDIA_TOP_DIR)/rockit
-
-librockiva:
-	@test ! -d $(RK_MEDIA_TOP_DIR)/iva || make -C $(RK_MEDIA_TOP_DIR)/iva
-
-librksysutils:
-	@test ! -d $(RK_MEDIA_TOP_DIR)/sysutils || make -C $(RK_MEDIA_TOP_DIR)/sysutils
-
-libeasyiio:
-	@test ! -d $(RK_MEDIA_TOP_DIR)/iio || make -C $(RK_MEDIA_TOP_DIR)/iio
 
 clean:
 	@make -C $(CURRENT_DIR)/common clean

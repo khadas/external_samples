@@ -27,22 +27,16 @@ endif
 PKG_NAME := sample
 PKG_BUILD ?= build
 
-ifeq ($(CONFIG_RK_SAMPLE),y)
-PKG_TARGET := example-build
-PKG_TARGET += simple_test-build
-else
-PKG_TARGET :=
-$(warning Not config source RK_SAMPLE, Skip...)
-endif
-
 all: $(PKG_TARGET)
+ifeq ($(CONFIG_RK_SAMPLE),y)
+	@make -C $(CURRENT_DIR)/simple_test/ -j$(RK_MEDIA_JOBS)
+	@make -C $(CURRENT_DIR)/example/ -j$(RK_MEDIA_JOBS)
+endif
 	@echo "build $(PKG_NAME) done";
 
 example-build:
-	@make -C $(CURRENT_DIR)/example/ -j$(RK_MEDIA_JOBS)
 
 simple_test-build:
-	@make -C $(CURRENT_DIR)/simple_test/ -j$(RK_MEDIA_JOBS)
 
 clean:
 	@make -C $(CURRENT_DIR)/example/ clean
