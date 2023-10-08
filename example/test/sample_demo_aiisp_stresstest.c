@@ -83,6 +83,7 @@ static pthread_mutex_t g_frame_count_mutex[VENC_CHN_MAX];
 static RK_BOOL g_rtsp_ifenbale = RK_FALSE;
 rtsp_demo_handle g_rtsplive = RK_NULL;
 static rtsp_session_handle g_rtsp_session[VENC_CHN_MAX] = {RK_NULL};
+static pthread_t ivs_detect_thread_id;
 
 static RK_S32 aiisp_callback(RK_VOID *pAinrParam, RK_VOID *pPrivateData) {
 	if (pAinrParam == RK_NULL) {
@@ -142,9 +143,13 @@ static const struct option long_options[] = {
  * function : show usage
  ******************************************************************************/
 static void print_usage(const RK_CHAR *name) {
-	printf("usage example:\n");
+	printf("RV1126 example:\n");
 	printf("\t%s -w 2688 -h 1520 -a /etc/iqfiles/ -e h264cbr -b 4096 --enable_aiisp 1 -m "
 	       "0 --test_frame_count 10 --mode_test_loop 50\n",
+	       name);
+	printf("RV1106 example:\n");
+	printf("\t%s -w 2560 -h 1440 -a /etc/iqfiles/ -e h264cbr -b 2048 --enable_aiisp 1 -m "
+	       "0 --test_frame_count 10 --mode_test_loop 50 --vi_buff_cnt 2\n",
 	       name);
 #ifdef RKAIQ
 	printf("\t-a | --aiq : enable aiq with dirpath provided, eg:-a /etc/iqfiles/, \n"
@@ -388,7 +393,8 @@ static RK_S32 rgn_init(RK_CHAR *bmp1_file_path, RK_CHAR *bmp2_file_path,
 
 static RK_S32 rgn_deinit(SAMPLE_MPI_CTX_S *ctx, RK_S32 rgn_attach_module) {
 	RK_S32 s32Ret = RK_SUCCESS;
-	if (rgn_attach_module = 2) {
+	if (rgn_attach_module != RGN_ATTACH_VENC && rgn_attach_module != RGN_ATTACH_VPSS) {
+		RK_LOGW("RGN not attach to a valid node!");
 		return 0;
 	}
 	for (RK_S32 i = 0; i < RGN_NUM_MAX; i++) {
@@ -520,6 +526,12 @@ static RK_S32 vpss_ai_isp_switchTest(SAMPLE_VPSS_CTX_S *ctx) {
 
 	pstAIISPAttr.stAiIspCallback.pfUpdateCallback = aiisp_callback;
 	pstAIISPAttr.stAiIspCallback.pPrivateData = RK_NULL;
+	pstAIISPAttr.pModelFilePath = "/oem/usr/lib/";
+#if defined(RV1106)
+	pstAIISPAttr.u32FrameBufCnt = 1;
+#else
+	pstAIISPAttr.u32FrameBufCnt = 2;
+#endif
 
 	s32Ret = RK_MPI_VPSS_SetGrpAIISPAttr(ctx->s32GrpId, &pstAIISPAttr);
 	if (RK_SUCCESS != s32Ret) {
@@ -573,21 +585,17 @@ static RK_S32 vpss_venc_chn0_resolution_switch_test(SAMPLE_VPSS_CTX_S *pVpssCtx,
 	RK_U32 u32DstWidth = 1280;
 	RK_U32 u32DstHeight = 720;
 	VPSS_CHN_ATTR_S VpsspstChnAttr;
+	VENC_CHN_ATTR_S VencChnAttr;
 	MPP_CHN_S stSrcChn, stDestChn;
 
-	/* rgn detach venc */
-	if (rgn_attach_module == 1) {
+	// rgn detach venc
+	if (rgn_attach_module == RGN_ATTACH_VENC) {
 		s32Ret = rgn_deinit(ctx, rgn_attach_module);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("venc_rgn_detach failure");
 			return s32Ret;
 		}
 	}
-	gModeTest->bIfVencThreadQuit[0] = RK_TRUE;
-	if (pVencCtx->getStreamCbFunc) {
-		pthread_join(pVencCtx->getStreamThread, RK_NULL);
-	}
-
 	// unBind vpss and venc
 	stSrcChn.enModId = RK_ID_VPSS;
 	stSrcChn.s32DevId = pVpssCtx->s32GrpId;
@@ -603,12 +611,6 @@ static RK_S32 vpss_venc_chn0_resolution_switch_test(SAMPLE_VPSS_CTX_S *pVpssCtx,
 
 	memset(&VpsspstChnAttr, 0, sizeof(VPSS_CHN_ATTR_S));
 
-	/*destory venc[0]*/
-	s32Ret = SAMPLE_COMM_VENC_DestroyChn(pVencCtx);
-	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("SAMPLE_COMM_VENC_DestroyChn 0 Failure s32Ret:%#X", s32Ret);
-		return s32Ret;
-	}
 	/* vpss reset resolution */
 	s32Ret = RK_MPI_VPSS_GetChnAttr(pVpssCtx->s32GrpId, 0, &VpsspstChnAttr);
 	if (s32Ret != RK_SUCCESS) {
@@ -629,16 +631,27 @@ static RK_S32 vpss_venc_chn0_resolution_switch_test(SAMPLE_VPSS_CTX_S *pVpssCtx,
 	}
 	RK_LOGE("vpss set chn resolution %dx%d-----\n", VpsspstChnAttr.u32Width,
 	        VpsspstChnAttr.u32Height);
-	pVencCtx->u32Width = VpsspstChnAttr.u32Width;
-	pVencCtx->u32Height = VpsspstChnAttr.u32Height;
 
-	gModeTest->bIfVencThreadQuit[0] = RK_FALSE;
-	// Init VENC
-	s32Ret = SAMPLE_COMM_VENC_CreateChn(pVencCtx);
+	memset(&VencChnAttr, 0, sizeof(VENC_CHN_ATTR_S));
+	/* venc reset resolution */
+	s32Ret = RK_MPI_VENC_GetChnAttr(pVencCtx->s32ChnId, &VencChnAttr);
 	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("SAMPLE_COMM_VENC_DestroyChn 0 Failure s32Ret:%#X", s32Ret);
+		RK_LOGE("RK_MPI_VENC_GetChnAttr failure:%X", s32Ret);
 		return s32Ret;
 	}
+	pVencCtx->u32Width = VpsspstChnAttr.u32Width;
+	pVencCtx->u32Height = VpsspstChnAttr.u32Height;
+	VencChnAttr.stVencAttr.u32PicWidth = VpsspstChnAttr.u32Width;
+	VencChnAttr.stVencAttr.u32VirWidth = VpsspstChnAttr.u32Width;
+	VencChnAttr.stVencAttr.u32PicHeight = VpsspstChnAttr.u32Height;
+	VencChnAttr.stVencAttr.u32VirHeight = VpsspstChnAttr.u32Height;
+	s32Ret = RK_MPI_VENC_SetChnAttr(pVencCtx->s32ChnId, &VencChnAttr);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("venc set chn resolution failure");
+		return s32Ret;
+	}
+	RK_LOGE("venc set chn resolution %dx%d-----\n", VpsspstChnAttr.u32Width,
+	        VpsspstChnAttr.u32Height);
 
 	// Bind vpss and venc
 	stSrcChn.enModId = RK_ID_VPSS;
@@ -652,15 +665,16 @@ static RK_S32 vpss_venc_chn0_resolution_switch_test(SAMPLE_VPSS_CTX_S *pVpssCtx,
 		RK_LOGE("vpss bind to venc[0] failure");
 		return s32Ret;
 	}
-
-	/* rgn attach */
-	if (rgn_attach_module == 1) {
-		s32Ret = rgn_deinit(ctx, rgn_attach_module);
+	// rgn attach venc
+	if (rgn_attach_module == RGN_ATTACH_VENC) {
+		s32Ret = rgn_init(gModeTest->inputBmp1Path
+				, gModeTest->inputBmp2Path, ctx, rgn_attach_module);
 		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("venc_rgn_detach failure");
+			RK_LOGE("venc_rgn_attach failure");
 			return s32Ret;
 		}
 	}
+
 	return RK_SUCCESS;
 }
 
@@ -671,6 +685,15 @@ static RK_S32 encode_destroy_and_restart(CODEC_TYPE_E enCodecType,
 	RK_S32 s32Ret = RK_FAILURE;
 	MPP_CHN_S stSrcChn, stDestChn;
 	RK_S32 Chnid = pVencCtx->s32ChnId;
+
+	// rgn detach venc
+	if (gModeTest->rgn_attach_module == RGN_ATTACH_VENC) {
+		s32Ret = rgn_deinit(ctx, gModeTest->rgn_attach_module);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("venc_rgn_detach failure");
+			return s32Ret;
+		}
+	}
 
 	gModeTest->bIfVencThreadQuit[Chnid] = RK_TRUE;
 	if (ctx->venc[Chnid].getStreamCbFunc) {
@@ -711,7 +734,7 @@ static RK_S32 encode_destroy_and_restart(CODEC_TYPE_E enCodecType,
 		return s32Ret;
 	}
 
-	// Bind vi and venc
+	// Bind vpss and venc
 	stSrcChn.enModId = RK_ID_VPSS;
 	stSrcChn.s32DevId = ctx->vpss.s32GrpId;
 	stSrcChn.s32ChnId = 0;
@@ -723,6 +746,16 @@ static RK_S32 encode_destroy_and_restart(CODEC_TYPE_E enCodecType,
 		RK_LOGE("vpss unbind to venc[%d] failure", Chnid);
 		program_handle_error(__func__, __LINE__);
 		return s32Ret;
+	}
+
+	// rgn attach venc
+	if (gModeTest->rgn_attach_module == RGN_ATTACH_VENC) {
+		s32Ret = rgn_init(gModeTest->inputBmp1Path
+				, gModeTest->inputBmp2Path, ctx, gModeTest->rgn_attach_module);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("venc_rgn_attach failure");
+			return s32Ret;
+		}
 	}
 	return s32Ret;
 }
@@ -1044,6 +1077,7 @@ static void rkIvaFrame_releaseCallBack(const RockIvaReleaseFrames *releaseFrames
 
 static void *vpss_iva_thread(void *pArgs) {
 	prctl(PR_SET_NAME, "vpss_iva_thread");
+	RK_LOGI("vpss_iva_thread start");
 	SAMPLE_MPI_CTX_S *ctx = (SAMPLE_MPI_CTX_S *)pArgs;
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_CHAR *pData = RK_NULL;
@@ -1102,7 +1136,7 @@ static void *ivs_detect_thread(void *pArgs) {
 
 	RK_LOGE("odIfEnable:%d ", pstAttr.bODEnable);
 
-	while (!gModeTest->bIvsDetectThreadQuit) {
+	while (!gModeTest->bIfIvsDetectThreadQuit) {
 		memset(&stResults, 0, sizeof(IVS_RESULT_INFO_S));
 		s32Ret = RK_MPI_IVS_GetResults(ctx->s32ChnId, &stResults, GET_STREAM_TIMEOUT);
 		if (s32Ret == RK_SUCCESS) {
@@ -1266,6 +1300,7 @@ static RK_S32 media_deinit(RK_S32 rgn_attach_module) {
 
 	/* rgn deinit*/
 	rgn_deinit(ctx, rgn_attach_module);
+
 #ifdef ROCKIVA
 	/* Destroy IVA */
 	if (gModeTest->bIfenable_iva) {
@@ -1283,7 +1318,7 @@ static RK_S32 media_deinit(RK_S32 rgn_attach_module) {
 	/* VPSS[3] unbind IVS[0]*/
 	stSrcChn.enModId = RK_ID_VPSS;
 	stSrcChn.s32DevId = ctx->vpss.s32GrpId;
-	stSrcChn.s32ChnId = 0;
+	stSrcChn.s32ChnId = 3;
 	stDestChn.enModId = RK_ID_IVS;
 	stDestChn.s32DevId = 0;
 	stDestChn.s32ChnId = ctx->ivs.s32ChnId;
@@ -1300,9 +1335,8 @@ static RK_S32 media_deinit(RK_S32 rgn_attach_module) {
 		return s32Ret;
 	}
 #endif
-
 	for (int i = 0; i < VENC_CHN_MAX; i++) {
-		gModeTest->bIfVencThreadQuit[i] = true;
+		gModeTest->bIfVencThreadQuit[i] = RK_TRUE;
 		pthread_join(ctx->venc[i].getStreamThread, RK_NULL);
 	}
 
@@ -1551,6 +1585,9 @@ int main(int argc, char *argv[]) {
 	RK_U32 u32ThirdVideoWidth = 704;
 	RK_U32 u32ThirdVideoHeight = 576;
 	RK_U32 u32ViBuffCnt = 5;
+#if defined(RV1106)
+	u32ViBuffCnt = 2;
+#endif
 	RK_U32 u32IvsWidth = 896;
 	RK_U32 u32IvsHeight = 512;
 	RK_U32 u32IvaDetectFrameRate = 10;
@@ -1573,8 +1610,6 @@ int main(int argc, char *argv[]) {
 	RK_U32 rgn_module = 1; // if not test rgn ,rgn dafault attach to venc
 	MPP_CHN_S stSrcChn, stDestChn;
 	pthread_t modeTest_thread_id;
-
-	pthread_t ivs_detect_thread_id;
 
 	if (argc < 2) {
 		print_usage(argv[0]);
@@ -1851,6 +1886,12 @@ int main(int argc, char *argv[]) {
 		stAIISPAttr.bEnable = RK_TRUE;
 		stAIISPAttr.stAiIspCallback.pfUpdateCallback = aiisp_callback;
 		stAIISPAttr.stAiIspCallback.pPrivateData = RK_NULL;
+		stAIISPAttr.pModelFilePath = "/oem/usr/lib/";
+#if defined(RV1106)
+		stAIISPAttr.u32FrameBufCnt = 1;
+#else
+		stAIISPAttr.u32FrameBufCnt = 2;
+#endif
 
 		s32Ret = RK_MPI_VPSS_SetGrpAIISPAttr(0, &stAIISPAttr);
 		if (RK_SUCCESS != s32Ret) {
@@ -1872,6 +1913,8 @@ int main(int argc, char *argv[]) {
 	ctx->venc[0].getStreamCbFunc = venc_get_stream;
 	ctx->venc[0].s32loopCount = s32loopCnt;
 	ctx->venc[0].dstFilePath = pOutPathVenc;
+	ctx->venc[0].u32BuffSize = u32VideoWidth * u32VideoHeight / 2;
+	ctx->venc[0].enable_buf_share = RK_TRUE;
 	// H264  66：Baseline  77：Main Profile 100：High Profile
 	// H265  0：Main Profile  1：Main 10 Profile
 	// MJPEG 0：Baseline
@@ -1896,6 +1939,8 @@ int main(int argc, char *argv[]) {
 	ctx->venc[1].getStreamCbFunc = venc_get_stream;
 	ctx->venc[1].s32loopCount = s32loopCnt;
 	ctx->venc[1].dstFilePath = pOutPathVenc;
+	ctx->venc[1].u32BuffSize = u32SubVideoWidth * u32SubVideoHeight / 2;
+	ctx->venc[1].enable_buf_share = RK_TRUE;
 	// H264  66：Baseline  77：Main Profile 100：High Profile
 	// H265  0：Main Profile  1：Main 10 Profile
 	// MJPEG 0：Baseline
@@ -1920,6 +1965,8 @@ int main(int argc, char *argv[]) {
 	ctx->venc[2].getStreamCbFunc = venc_get_stream;
 	ctx->venc[2].s32loopCount = s32loopCnt;
 	ctx->venc[2].dstFilePath = pOutPathVenc;
+	ctx->venc[2].u32BuffSize = u32ThirdVideoWidth * u32ThirdVideoHeight / 2;
+	ctx->venc[2].enable_buf_share = RK_TRUE;
 	// H264  66：Baseline  77：Main Profile 100：High Profile
 	// H265  0：Main Profile  1：Main 10 Profile
 	// MJPEG 0：Baseline
@@ -1953,6 +2000,8 @@ int main(int argc, char *argv[]) {
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("SAMPLE_COMM_IVS_Create failure:%X", s32Ret);
 		program_handle_error(__func__, __LINE__);
+	} else {
+		RK_LOGI("SAMPLE_COMM_IVS_Create success");
 	}
 #endif
 	// rgn test case
@@ -2013,7 +2062,11 @@ int main(int argc, char *argv[]) {
 	stDestChn.enModId = RK_ID_IVS;
 	stDestChn.s32DevId = 0;
 	stDestChn.s32ChnId = ctx->ivs.s32ChnId;
-	SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
+	s32Ret = SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
+	if (s32Ret != RK_NULL)
+		RK_LOGE("IVS bind to VPSS error %#X!", s32Ret);
+	else
+		RK_LOGI("IVS bind to VPSS success!");
 #endif
 
 #ifdef ROCKIT_IVS
@@ -2062,12 +2115,12 @@ int main(int argc, char *argv[]) {
 #endif
 #ifdef ROCKIT_IVS
 	/* ivs detect thread exit*/
-	gModeTest->bIvsDetectThreadQuit = RK_TRUE;
+	gModeTest->bIfIvsDetectThreadQuit = RK_TRUE;
 	pthread_join(ivs_detect_thread_id, RK_NULL);
 	/* VPSS[3] unbind IVS[0]*/
 	stSrcChn.enModId = RK_ID_VPSS;
 	stSrcChn.s32DevId = ctx->vpss.s32GrpId;
-	stSrcChn.s32ChnId = 0;
+	stSrcChn.s32ChnId = 3;
 	stDestChn.enModId = RK_ID_IVS;
 	stDestChn.s32DevId = 0;
 	stDestChn.s32ChnId = ctx->ivs.s32ChnId;
@@ -2085,6 +2138,7 @@ int main(int argc, char *argv[]) {
 		gModeTest->bIfVencThreadQuit[i] = true;
 		pthread_join(ctx->venc[i].getStreamThread, RK_NULL);
 	}
+
 	/* Venc[0] unbind VPSS[0,0]*/
 	stSrcChn.enModId = RK_ID_VPSS;
 	stSrcChn.s32DevId = ctx->vpss.s32GrpId;

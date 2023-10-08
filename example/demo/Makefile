@@ -14,9 +14,7 @@ all:
 ifeq ($(RK_MEDIA_CHIP), rv1106)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_rv1103_dual_memory_opt.c -o sample_rv1103_dual_memory_opt $(LD_FLAGS)
 endif
-ifeq ($(RK_MEDIA_CHIP), rv1126)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_aiisp.c -o sample_demo_aiisp $(LD_FLAGS) -lrockiva
-endif
 ifeq ($(HAVE_AVS), y)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_vi_avs_venc.c -o sample_demo_vi_avs_venc $(LD_FLAGS)
 endif
@@ -29,9 +27,7 @@ endif
 
 install:
 	@mv -f sample_demo_vi_venc $(SAMPLE_OUT_DIR)/bin
-ifeq ($(RK_MEDIA_CHIP), rv1126)
 	@mv -f sample_demo_aiisp $(SAMPLE_OUT_DIR)/bin
-endif
 	@mv -f sample_demo_multi_camera_eptz $(SAMPLE_OUT_DIR)/bin
 ifeq ($(RK_MEDIA_CHIP), rv1106)
 	@mv -f sample_rv1103_dual_memory_opt $(SAMPLE_OUT_DIR)/bin

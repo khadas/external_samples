@@ -4,6 +4,9 @@ extern "C" {
 #endif
 #endif /* End of #ifdef __cplusplus */
 
+#include "rockiva/rockiva_ba_api.h"
+#include "rtsp_demo.h"
+#include "sample_comm.h"
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -20,20 +23,19 @@ extern "C" {
 #include <time.h>
 #include <unistd.h>
 
-#include "rtsp_demo.h"
-#include "sample_comm.h"
-
-#ifdef ROCKIVA
-#include "rockiva/rockiva_ba_api.h"
-#endif
-
 #define VENC_CHN_MAX 3
+#define VPSS_GRP_MAX 2
 #define BUFFER_SIZE 255
 #define RGN_NUM_MAX 4
 #define GET_STREAM_TIMEOUT 2000
 #define SEND_STREAM_TIMEOUT 2000
 #define RGN_ATTACH_VPSS 0
 #define RGN_ATTACH_VENC 1
+#define RGN_ATTACH_NONE 2
+
+#define TRACE_BEGIN() RK_LOGW("Enter\n")
+#define TRACE_END() RK_LOGW("Exit\n")
+
 typedef struct _rkThreadStatus {
 	RK_BOOL bIfMainThreadQuit;
 	RK_BOOL bIfVencThreadQuit[VENC_CHN_MAX];
@@ -42,9 +44,53 @@ typedef struct _rkThreadStatus {
 	RK_BOOL bIfVpssIvaTHreadQuit;
 } ThreadStatus;
 
-/* global param */
+typedef struct _rkMpiCtx {
+	SAMPLE_VI_CTX_S vi;
+	SAMPLE_VENC_CTX_S venc[VENC_CHN_MAX];
+	SAMPLE_RGN_CTX_S rgn[RGN_NUM_MAX];
+	SAMPLE_VPSS_CTX_S vpss[VPSS_GRP_MAX];
+	SAMPLE_IVS_CTX_S ivs;
+	SAMPLE_IVA_CTX_S iva;
+} SAMPLE_MPI_CTX_S;
 
+typedef struct _rkCmdArgs {
+	RK_U32 u32VideoWidth;
+	RK_U32 u32VideoHeight;
+	RK_U32 u32SubVideoWidth;
+	RK_U32 u32SubVideoHeight;
+	RK_U32 u32ThirdVideoWidth;
+	RK_U32 u32ThirdVideoHeight;
+	RK_U32 u32ViBuffCnt;
+	RK_U32 u32IvsWidth;
+	RK_U32 u32IvsHeight;
+	RK_U32 u32Gop;
+	RK_U32 u32IvaDetectFrameRate;
+	RK_CHAR *pInPathBmp1;
+	RK_CHAR *pInPathBmp2;
+	RK_CHAR *pOutPathVenc;
+	RK_CHAR *pIvaModelPath;
+	RK_CHAR *pIqFileDir;
+	RK_CHAR *pAiispModelPath;
+	RK_U32 u32AiispBuffCnt;
+	RK_BOOL bMultictx;
+	CODEC_TYPE_E enCodecType;
+	VENC_RC_MODE_E enRcMode;
+	RK_CHAR *pCodecName;
+	RK_S32 s32CamId;
+	RK_S32 s32loopCnt;
+	RK_BOOL bEnableAIIsp;
+	RK_BOOL bEnableIva;
+	RK_BOOL bEnableIvs;
+	RK_S32 s32BitRate;
+	RK_U32 u32VencFps;
+	rk_aiq_working_mode_t eHdrMode;
+	RK_U32 s32RgnAttachModule; // 0:vpss,1:venc
+} RkCmdArgs;
+
+/* global param */
 static ThreadStatus *gPThreadStatus = RK_NULL;
+static pthread_t g_iva_thread_id;
+static pthread_t g_ivs_thread_id;
 static RK_S32 g_exit_result = RK_SUCCESS;
 static pthread_mutex_t g_rtsp_mutex = {0};
 static RK_BOOL g_rtsp_ifenbale = RK_FALSE;
@@ -53,24 +99,19 @@ static rtsp_session_handle g_rtsp_session[VENC_CHN_MAX] = {RK_NULL};
 
 static RK_S32 aiisp_callback(RK_VOID *pAinrParam, RK_VOID *pPrivateData) {
 	if (pAinrParam == RK_NULL) {
+		RK_LOGE("pAinrParam is nullptr!\n");
 		return RK_FAILURE;
 	}
+	RK_S32 s32Ret = RK_SUCCESS;
 	memset(pAinrParam, 0, sizeof(rk_ainr_param));
-	SAMPLE_COMM_ISP_GetAINrParams(0, pAinrParam);
-	return RK_SUCCESS;
+	s32Ret = SAMPLE_COMM_ISP_GetAINrParams(0, pAinrParam);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("Can't get ainr param!\n");
+		return s32Ret;
+	}
+	RK_LOGD("aiisp enable %d\n", ((rk_ainr_param *)pAinrParam)->enable);
+	return s32Ret;
 }
-typedef struct _rkMpiCtx {
-	SAMPLE_VI_CTX_S vi;
-	SAMPLE_VENC_CTX_S venc[VENC_CHN_MAX];
-	SAMPLE_RGN_CTX_S rgn[RGN_NUM_MAX];
-	SAMPLE_VPSS_CTX_S vpss;
-#ifdef ROCKIT_IVS
-	SAMPLE_IVS_CTX_S ivs;
-#endif
-#ifdef ROCKIVA
-	SAMPLE_IVA_CTX_S iva;
-#endif
-} SAMPLE_MPI_CTX_S;
 
 static void program_handle_error(const char *func, RK_U32 line) {
 	RK_LOGE("func: <%s> line: <%d> error exit!", func, line);
@@ -134,10 +175,8 @@ static void *venc_get_stream(void *pArgs) {
 				rtsp_do_event(g_rtsplive);
 				pthread_mutex_unlock(&g_rtsp_mutex);
 			} else {
-				RK_LOGD("venc %d get_stream count: %d", ctx->s32ChnId, loopCount);
+				RK_LOGI("venc %d get_stream count: %d", ctx->s32ChnId, loopCount);
 			}
-
-			RK_LOGI("venc %d get_stream count: %d", ctx->s32ChnId, loopCount);
 
 			SAMPLE_COMM_VENC_ReleaseStream(ctx);
 			loopCount++;
@@ -155,6 +194,7 @@ static void *venc_get_stream(void *pArgs) {
 }
 
 static RK_S32 rtsp_init(CODEC_TYPE_E enCodecType) {
+	TRACE_BEGIN();
 	RK_S32 i = 0;
 	g_rtsplive = create_rtsp_demo(554);
 	RK_CHAR rtspAddr[BUFFER_SIZE] = {0};
@@ -175,20 +215,23 @@ static RK_S32 rtsp_init(CODEC_TYPE_E enCodecType) {
 		RK_LOGE("rtsp <%s> init success", rtspAddr);
 	}
 	g_rtsp_ifenbale = RK_TRUE;
+	TRACE_END();
 	return RK_SUCCESS;
 }
 
 static RK_S32 rtsp_deinit(void) {
+	TRACE_BEGIN();
 	if (g_rtsplive)
 		rtsp_del_demo(g_rtsplive);
+	TRACE_END();
 	return RK_SUCCESS;
 }
 
 static RK_S32 global_param_init(void) {
-
+	TRACE_BEGIN();
 	gPThreadStatus = (ThreadStatus *)malloc(sizeof(ThreadStatus));
 	if (!gPThreadStatus) {
-		printf("malloc for gPThreadStatus failure\n");
+		RK_LOGI("malloc for gPThreadStatus failure\n");
 		goto __global_init_fail;
 	}
 	memset(gPThreadStatus, 0, sizeof(ThreadStatus));
@@ -197,7 +240,7 @@ static RK_S32 global_param_init(void) {
 		RK_LOGE("pthread_mutex_init failure");
 		goto __global_init_fail;
 	}
-
+	TRACE_END();
 	return RK_SUCCESS;
 
 __global_init_fail:
@@ -205,11 +248,12 @@ __global_init_fail:
 		free(gPThreadStatus);
 		gPThreadStatus = RK_NULL;
 	}
+	TRACE_END();
 	return RK_FAILURE;
 }
 
 static RK_S32 global_param_deinit(void) {
-
+	TRACE_BEGIN();
 	if (gPThreadStatus) {
 		free(gPThreadStatus);
 		gPThreadStatus = RK_NULL;
@@ -217,73 +261,10 @@ static RK_S32 global_param_deinit(void) {
 
 	pthread_mutex_destroy(&g_rtsp_mutex);
 
+	TRACE_END();
 	return RK_SUCCESS;
 }
 
-static RK_CHAR optstr[] = "?::a::w:h:o:l:b:f:r:g:v:e:i:s:I:";
-static const struct option long_options[] = {
-    {"aiq", optional_argument, RK_NULL, 'a'},
-    {"width", required_argument, RK_NULL, 'w'},
-    {"height", required_argument, RK_NULL, 'h'},
-    {"encode", required_argument, RK_NULL, 'e'},
-    {"output_path", required_argument, RK_NULL, 'o'},
-    {"loop_count", required_argument, RK_NULL, 'l'},
-    {"bitrate", required_argument, NULL, 'b'},
-    {"fps", required_argument, RK_NULL, 'f'},
-    {"vi_buff_cnt", required_argument, RK_NULL, 'v'},
-    {"vi_chnid", required_argument, RK_NULL, 'v' + 'i'},
-    {"rgn_attach_module", required_argument, RK_NULL, 'r'},
-    {"gop", required_argument, RK_NULL, 'g'},
-    {"iva_detect_speed", required_argument, RK_NULL, 'd'},
-    {"iva_model_path", required_argument, RK_NULL, 'i' + 'm'},
-    {"enable_aiisp", required_argument, RK_NULL, 'e' + 'a'},
-    {"enable_iva", required_argument, RK_NULL, 'e' + 'i'},
-    {"enable_ivs", required_argument, RK_NULL, 'e' + 's'},
-    {"inputBmpPath1", required_argument, RK_NULL, 'i'},
-    {"inputBmpPath2", required_argument, RK_NULL, 'I'},
-    {"help", optional_argument, RK_NULL, '?'},
-    {RK_NULL, 0, RK_NULL, 0},
-};
-
-/******************************************************************************
- * function : show usage
- ******************************************************************************/
-static void print_usage(const RK_CHAR *name) {
-	printf("usage example:\n");
-	printf("\t%s -w 2688 -h 1520 -a /etc/iqfiles/ -e h264cbr -b 4096 --enable_aiisp 1\n",
-	       name);
-#ifdef RKAIQ
-	printf("\t-a | --aiq : enable aiq with dirpath provided, eg:-a /etc/iqfiles/, \n"
-	       "\t		set dirpath empty to using path by default, without "
-	       "this option aiq \n"
-	       "\t		should run in other application\n");
-#endif
-	printf("\t-w | --width : mainStream width, must is sensor width\n");
-	printf("\t-h | --height : mainStream height, must is sensor height\n");
-	printf("\t-e | --encode: encode type, Default:h264cbr, Value:h264cbr, "
-	       "h264vbr, h264avbr "
-	       "h265cbr, h265vbr, h265avbr, mjpegcbr, mjpegvbr\n");
-	printf("\t-b | --bitrate: encode bitrate, Default 4096\n");
-	printf("\t-o | --output_path : encode output file path, Default: RK_NULL\n");
-	printf("\t-l | --loop_count : when encoder output frameCounts equal to "
-	       "<loop_count>, "
-	       "process will exit. Default: -1\n");
-	printf("\t-v | --vi_buff_cnt : main stream vi buffer num, Default: 6\n");
-	printf("\t--vi_chnid : vi channel id, default: 0\n");
-	printf("\t-r | --rgn_attach_module : where to attach rgn, 0: vpss, 1: venc, 2: "
-	       "close. default: 1\n");
-	printf("\t-g | --gop : venc GOP(group of pictures). default: 75\n");
-	printf("\t-i | --inputpathbmp1 : input bmp file path. default: RK_NULL\n");
-	printf("\t-I | --inputpathbmp2 : input bmp file path. default: RK_NULL\n");
-	printf("\t-f | --fps : set fps, default: 25\n");
-	printf("\t--enable_aiisp : enable ai isp, 0: close, 1: enable. default: 1\n");
-	printf("\t--enable_iva : enable iva, 0: close, 1: enable. default: 1\n");
-	printf("\t--enable_ivs : enable ivs, 0: close, 1: enable. default: 0\n");
-	printf("\t--iva_detect_speed : iva detect framerate. default: 10\n");
-	printf("\t--iva_model_path : iva model data path, default: /oem/usr/lib\n");
-}
-
-#ifdef ROCKIVA
 static void rkIvaEvent_callback(const RockIvaBaResult *result,
                                 const RockIvaExecuteStatus status, void *userData) {
 
@@ -313,7 +294,7 @@ static void rkIvaFrame_releaseCallBack(const RockIvaReleaseFrames *releaseFrames
 			program_handle_error(__func__, __LINE__);
 			continue;
 		}
-		s32Ret = RK_MPI_VPSS_ReleaseChnFrame(0, 3, releaseFrames->frames[i].extData);
+		s32Ret = RK_MPI_VPSS_ReleaseChnFrame(1, 1, releaseFrames->frames[i].extData);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("RK_MPI_VI_ReleaseChnFrame failure:%#X", s32Ret);
 			program_handle_error(__func__, __LINE__);
@@ -326,24 +307,24 @@ static void *vpss_iva_thread(void *pArgs) {
 	prctl(PR_SET_NAME, "vpss_iva_thread");
 	SAMPLE_MPI_CTX_S *ctx = (SAMPLE_MPI_CTX_S *)pArgs;
 	RK_S32 s32Ret = RK_FAILURE;
-	RK_CHAR *pData = RK_NULL;
 	RK_S32 s32Fd = 0;
 	RockIvaImage ivaImage;
 	RK_U32 u32Loopcount = 0;
 	RK_U32 u32GetOneFrameTime = 1000 / ctx->iva.u32IvaDetectFrameRate;
 	VIDEO_FRAME_INFO_S *stVpssFrame = NULL;
 
+	// IVA attach with VPSS[1, 1]
 	while (!gPThreadStatus->bIfVpssIvaTHreadQuit) {
-		s32Ret = RK_MPI_VPSS_GetChnFrame(0, 3, &ctx->vpss.stChnFrameInfos, -1);
+		s32Ret = RK_MPI_VPSS_GetChnFrame(1, 1, &ctx->vpss[1].stChnFrameInfos, -1);
 		if (s32Ret == RK_SUCCESS) {
 			stVpssFrame = (VIDEO_FRAME_INFO_S *)malloc(sizeof(VIDEO_FRAME_INFO_S));
 			if (!stVpssFrame) {
 				RK_LOGE("-----error malloc fail for stVpssFrame");
-				RK_MPI_VPSS_ReleaseChnFrame(ctx->vpss.s32GrpId, 3,
-				                            &ctx->vpss.stChnFrameInfos);
+				RK_MPI_VPSS_ReleaseChnFrame(1, 1, &ctx->vpss[1].stChnFrameInfos);
 				continue;
 			}
-			memcpy(stVpssFrame, &ctx->vpss.stChnFrameInfos, sizeof(VIDEO_FRAME_INFO_S));
+			memcpy(stVpssFrame, &ctx->vpss[1].stChnFrameInfos,
+			       sizeof(VIDEO_FRAME_INFO_S));
 			s32Fd = RK_MPI_MB_Handle2Fd(stVpssFrame->stVFrame.pMbBlk);
 			memset(&ivaImage, 0, sizeof(RockIvaImage));
 			ivaImage.info.transformMode = ctx->iva.eImageTransform;
@@ -364,11 +345,9 @@ static void *vpss_iva_thread(void *pArgs) {
 	RK_LOGE("vpss_iva_thread exit !!!");
 	return RK_NULL;
 }
-#endif
 
-#ifdef ROCKIT_IVS
 static void *ivs_detect_thread(void *pArgs) {
-	printf("enter ive detect thread------------>\n");
+	RK_LOGI("enter ive detect thread------------>\n");
 	prctl(PR_SET_NAME, "ivs_detect_thread");
 	SAMPLE_IVS_CTX_S *ctx = (SAMPLE_IVS_CTX_S *)pArgs;
 	RK_S32 s32Ret = RK_FAILURE;
@@ -408,34 +387,41 @@ static void *ivs_detect_thread(void *pArgs) {
 	RK_LOGE("ivs_detect_thread exit");
 	return RK_NULL;
 }
-#endif
 
-static RK_S32 rgn_init(RK_CHAR *bmp1_file_path, RK_CHAR *bmp2_file_path,
-                       SAMPLE_MPI_CTX_S *ctx, RK_S32 rgn_attach_module) {
-
+static RK_S32 rgn_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
 	RK_S32 s32Ret = RK_FAILURE;
 	MPP_CHN_S RGN_CHN;
 	RK_U32 u32Width = 0;
 	RK_U32 u32Height = 0;
-	if (rgn_attach_module == RGN_ATTACH_VENC) {
+
+	TRACE_BEGIN();
+	if (pArgs->s32RgnAttachModule == RGN_ATTACH_VENC) {
 		RGN_CHN.enModId = RK_ID_VENC;
 		RGN_CHN.s32ChnId = 0;
 		RGN_CHN.s32DevId = 0;
-	} else if (rgn_attach_module == RGN_ATTACH_VPSS) {
+	} else if (pArgs->s32RgnAttachModule == RGN_ATTACH_VPSS) {
 		RGN_CHN.enModId = RK_ID_VPSS;
 		RGN_CHN.s32ChnId = VPSS_MAX_CHN_NUM;
-		RGN_CHN.s32DevId = ctx->vpss.s32GrpId;
+		RGN_CHN.s32DevId = 0;
 	} else {
 		RK_LOGE("RGN closed");
-		return 0;
+		TRACE_END();
+		return s32Ret;
 	}
 
 	/* Init RGN[0] */
 	ctx->rgn[0].rgnHandle = 0;
 	ctx->rgn[0].stRgnAttr.enType = COVER_RGN;
+// RV1106 just support attach cover in VI channel.
+#if defined (RV1106)
+	ctx->rgn[0].stMppChn.enModId = RK_ID_VI;
+	ctx->rgn[0].stMppChn.s32ChnId = 0;
+	ctx->rgn[0].stMppChn.s32DevId = 0;
+#else
 	ctx->rgn[0].stMppChn.enModId = RGN_CHN.enModId;
 	ctx->rgn[0].stMppChn.s32ChnId = RGN_CHN.s32ChnId;
 	ctx->rgn[0].stMppChn.s32DevId = RGN_CHN.s32DevId;
+#endif
 	ctx->rgn[0].stRegion.s32X = 0;        // must be 16 aligned
 	ctx->rgn[0].stRegion.s32Y = 0;        // must be 16 aligned
 	ctx->rgn[0].stRegion.u32Width = 256;  // must be 16 aligned
@@ -446,16 +432,22 @@ static RK_S32 rgn_init(RK_CHAR *bmp1_file_path, RK_CHAR *bmp2_file_path,
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("SAMPLE_COMM_RGN_CreateChn Failure s32Ret:%#X rgn handle:%d", s32Ret,
 		        ctx->rgn[0].rgnHandle);
+		TRACE_END();
 		return s32Ret;
 	}
 
 	ctx->rgn[1].rgnHandle = 1;
 	ctx->rgn[1].stRgnAttr.enType = COVER_RGN;
+#if defined (RV1106)
+	ctx->rgn[1].stMppChn.enModId = RK_ID_VI;
+	ctx->rgn[1].stMppChn.s32ChnId = 0;
+	ctx->rgn[1].stMppChn.s32DevId = 0;
+#else
 	ctx->rgn[1].stMppChn.enModId = RGN_CHN.enModId;
 	ctx->rgn[1].stMppChn.s32ChnId = RGN_CHN.s32ChnId;
 	ctx->rgn[1].stMppChn.s32DevId = RGN_CHN.s32DevId;
+#endif
 	ctx->rgn[1].stRegion.s32X = 0;
-	;                                     // must be 16 aligned
 	ctx->rgn[1].stRegion.s32Y = 0;        // must be 16 aligned
 	ctx->rgn[1].stRegion.u32Width = 128;  // must be 16 aligned
 	ctx->rgn[1].stRegion.u32Height = 128; // must be 16 aligned
@@ -465,10 +457,11 @@ static RK_S32 rgn_init(RK_CHAR *bmp1_file_path, RK_CHAR *bmp2_file_path,
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("SAMPLE_COMM_RGN_CreateChn Failure s32Ret:%#X rgn handle:%d", s32Ret,
 		        ctx->rgn[1].rgnHandle);
+		TRACE_END();
 		return s32Ret;
 	}
 
-	s32Ret = SAMPLE_COMM_GetBmpResolution(bmp1_file_path, &u32Width, &u32Height);
+	s32Ret = SAMPLE_COMM_GetBmpResolution(pArgs->pInPathBmp1, &u32Width, &u32Height);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("SAMPLE_COMM_GetBmpResolution failure");
 		u32Width = 256;
@@ -488,19 +481,20 @@ static RK_S32 rgn_init(RK_CHAR *bmp1_file_path, RK_CHAR *bmp2_file_path,
 	ctx->rgn[2].u32BgAlpha = 128;
 	ctx->rgn[2].u32FgAlpha = 128;
 	ctx->rgn[2].u32Layer = 3;
-	ctx->rgn[2].srcFileBmpName = bmp1_file_path;
-	if (bmp1_file_path) {
+	ctx->rgn[2].srcFileBmpName = pArgs->pInPathBmp1;
+	if (pArgs->pInPathBmp1) {
 		s32Ret = SAMPLE_COMM_RGN_CreateChn(&ctx->rgn[2]);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("SAMPLE_COMM_RGN_CreateChn Failure s32Ret:%#X rgn handle:%d", s32Ret,
 			        ctx->rgn[2].rgnHandle);
+			TRACE_END();
 			return s32Ret;
 		}
 	} else {
 		RK_LOGE("input_bmp1 file is NULL, overlay rgn skips");
 	}
 
-	s32Ret = SAMPLE_COMM_GetBmpResolution(bmp2_file_path, &u32Width, &u32Height);
+	s32Ret = SAMPLE_COMM_GetBmpResolution(pArgs->pInPathBmp2, &u32Width, &u32Height);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("SAMPLE_COMM_GetBmpResolution failure");
 		u32Width = 128;
@@ -521,103 +515,662 @@ static RK_S32 rgn_init(RK_CHAR *bmp1_file_path, RK_CHAR *bmp2_file_path,
 	ctx->rgn[3].u32BgAlpha = 128;
 	ctx->rgn[3].u32FgAlpha = 128;
 	ctx->rgn[3].u32Layer = 4;
-	ctx->rgn[3].srcFileBmpName = bmp2_file_path;
-	if (bmp2_file_path) {
+	ctx->rgn[3].srcFileBmpName = pArgs->pInPathBmp2;
+	if (pArgs->pInPathBmp2) {
 		s32Ret = SAMPLE_COMM_RGN_CreateChn(&ctx->rgn[3]);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("SAMPLE_COMM_RGN_CreateChn Failure s32Ret:%#X rgn handle:%d", s32Ret,
 			        ctx->rgn[3].rgnHandle);
+			TRACE_END();
 			return s32Ret;
 		}
 	} else {
 		RK_LOGE("input_bmp2 file is NULL, overlay rgn skips");
 	}
 
+	TRACE_END();
 	return s32Ret;
 }
 
-static RK_S32 rgn_deinit(SAMPLE_MPI_CTX_S *ctx, RK_S32 rgn_attach_module) {
+static RK_S32 rgn_deinit(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
 	RK_S32 s32Ret = RK_SUCCESS;
-	if (rgn_attach_module = 2) {
-		return 0;
-	}
+	TRACE_BEGIN();
+	if (pArgs->s32RgnAttachModule != RGN_ATTACH_VENC &&
+	    pArgs->s32RgnAttachModule != RGN_ATTACH_VPSS)
+		return s32Ret;
 	for (RK_S32 i = 0; i < RGN_NUM_MAX; i++) {
-		if (!ctx->rgn[i].srcFileBmpName && ctx->rgn[i].stRgnAttr.enType == OVERLAY_RGN) {
+		if (!ctx->rgn[i].srcFileBmpName && ctx->rgn[i].stRgnAttr.enType == OVERLAY_RGN)
 			continue;
-		}
 		s32Ret = SAMPLE_COMM_RGN_DestroyChn(&ctx->rgn[i]);
-		if (s32Ret != RK_SUCCESS) {
+		if (s32Ret != RK_SUCCESS)
 			RK_LOGE("SAMPLE_COMM_RGN_DestroyChn Failure s32Ret:%#X rgn handle:%d", s32Ret,
 			        ctx->rgn[i].rgnHandle);
-		}
 	}
+	TRACE_END();
 	return s32Ret;
+}
+
+static RK_S32 vi_chn_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
+	RK_S32 s32Ret = RK_SUCCESS;
+	TRACE_BEGIN();
+	/* Init VI[0] */
+	ctx->vi.u32Width = pArgs->u32VideoWidth;
+	ctx->vi.u32Height = pArgs->u32VideoHeight;
+	ctx->vi.s32DevId = 0;
+	ctx->vi.u32PipeId = ctx->vi.s32DevId;
+	ctx->vi.s32ChnId = 0;
+	ctx->vi.stChnAttr.stIspOpt.stMaxSize.u32Width = pArgs->u32VideoWidth;
+	ctx->vi.stChnAttr.stIspOpt.stMaxSize.u32Height = pArgs->u32VideoHeight;
+	ctx->vi.stChnAttr.stIspOpt.u32BufCount = pArgs->u32ViBuffCnt;
+	ctx->vi.stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
+	// pCtx->vi.stChnAttr.u32Depth = 4;
+	ctx->vi.stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
+	ctx->vi.stChnAttr.enCompressMode = COMPRESS_MODE_NONE;
+	ctx->vi.stChnAttr.stFrameRate.s32SrcFrameRate = 25;
+	ctx->vi.stChnAttr.stFrameRate.s32DstFrameRate = 25;
+	s32Ret = SAMPLE_COMM_VI_CreateChn(&(ctx->vi));
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("SAMPLE_COMM_VI_CreateChn failure:%d", s32Ret);
+	TRACE_END();
+	return s32Ret;
+}
+
+static RK_S32 vi_chn_deinit(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
+	RK_S32 s32Ret = RK_SUCCESS;
+	TRACE_BEGIN();
+	s32Ret = SAMPLE_COMM_VI_DestroyChn(&(ctx->vi));
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("SAMPLE_COMM_VI_DestroyChn failure:%d", s32Ret);
+	TRACE_END();
+	return s32Ret;
+}
+
+static RK_S32 vpss_chn_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
+	RK_S32 s32Ret = RK_SUCCESS;
+	RK_S32 vpssGrpId;
+
+	TRACE_BEGIN();
+	// Init VPSS[0]
+	vpssGrpId = 0;
+	ctx->vpss[vpssGrpId].s32GrpId = vpssGrpId;
+	ctx->vpss[vpssGrpId].s32ChnId = 0;
+	ctx->vpss[vpssGrpId].enVProcDevType = VIDEO_PROC_DEV_RGA;
+	ctx->vpss[vpssGrpId].stGrpVpssAttr.enPixelFormat = RK_FMT_YUV420SP;
+	ctx->vpss[vpssGrpId].stGrpVpssAttr.enCompressMode = COMPRESS_MODE_NONE; // no compress
+	ctx->vpss[vpssGrpId].s32ChnRotation[0] = ROTATION_0;
+
+	// SET VPSS[0,0]
+	ctx->vpss[vpssGrpId].stVpssChnAttr[0].enChnMode = VPSS_CHN_MODE_PASSTHROUGH;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[0].enCompressMode = COMPRESS_MODE_NONE;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[0].enDynamicRange = DYNAMIC_RANGE_SDR8;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[0].enPixelFormat = RK_FMT_YUV420SP;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[0].stFrameRate.s32DstFrameRate = -1;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[0].u32Width = pArgs->u32VideoWidth;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[0].u32Height = pArgs->u32VideoHeight;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[0].u32Depth = 0;
+
+	// SET VPSS[0,1]
+	ctx->vpss[vpssGrpId].stVpssChnAttr[1].enChnMode = VPSS_CHN_MODE_AUTO;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[1].enCompressMode = COMPRESS_MODE_NONE;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[1].enDynamicRange = DYNAMIC_RANGE_SDR8;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[1].enPixelFormat = RK_FMT_YUV420SP;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[1].stFrameRate.s32SrcFrameRate = -1;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[1].stFrameRate.s32DstFrameRate = -1;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[1].u32Width = pArgs->u32SubVideoWidth;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[1].u32Height = pArgs->u32SubVideoHeight;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[1].u32Depth = 0;
+
+	s32Ret = SAMPLE_COMM_VPSS_CreateChn(&(ctx->vpss[vpssGrpId]));
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("SAMPLE_COMM_VPSS_CreateChn group 0 failed %#X\n", s32Ret);
+
+	// Attach aiisp to vpss group 0.
+	if (pArgs->bEnableAIIsp) {
+		AIISP_ATTR_S stAIISPAttr;
+		memset(&stAIISPAttr, 0, sizeof(AIISP_ATTR_S));
+		stAIISPAttr.bEnable = RK_TRUE;
+		stAIISPAttr.stAiIspCallback.pfUpdateCallback = aiisp_callback;
+		stAIISPAttr.stAiIspCallback.pPrivateData = RK_NULL;
+		stAIISPAttr.pModelFilePath = pArgs->pAiispModelPath;
+		stAIISPAttr.u32FrameBufCnt = pArgs->u32AiispBuffCnt;
+
+		s32Ret = RK_MPI_VPSS_SetGrpAIISPAttr(0, &stAIISPAttr);
+		if (RK_SUCCESS != s32Ret)
+			RK_LOGE("VPSS GRP 0 RK_MPI_VPSS_SetGrpAIISPAttr failed with %#x!", s32Ret);
+	}
+
+	// Init VPSS[1]
+	vpssGrpId = 1;
+	ctx->vpss[vpssGrpId].s32GrpId = vpssGrpId;
+	ctx->vpss[vpssGrpId].s32ChnId = 0;
+	ctx->vpss[vpssGrpId].enVProcDevType = VIDEO_PROC_DEV_RGA;
+	ctx->vpss[vpssGrpId].stGrpVpssAttr.enPixelFormat = RK_FMT_YUV420SP;
+	ctx->vpss[vpssGrpId].stGrpVpssAttr.enCompressMode = COMPRESS_MODE_NONE; // no compress
+	ctx->vpss[vpssGrpId].s32ChnRotation[0] = ROTATION_0;
+
+	// SET VPSS[1,0]
+	ctx->vpss[vpssGrpId].stVpssChnAttr[0].enChnMode = VPSS_CHN_MODE_AUTO;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[0].enCompressMode = COMPRESS_MODE_NONE;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[0].enDynamicRange = DYNAMIC_RANGE_SDR8;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[0].enPixelFormat = RK_FMT_YUV420SP;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[0].stFrameRate.s32DstFrameRate = -1;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[0].u32Width = pArgs->u32ThirdVideoWidth;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[0].u32Height = pArgs->u32ThirdVideoHeight;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[0].u32Depth = 0;
+
+	// SET VPSS[1,1]
+	ctx->vpss[vpssGrpId].stVpssChnAttr[1].enChnMode = VPSS_CHN_MODE_AUTO;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[1].enCompressMode = COMPRESS_MODE_NONE;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[1].enDynamicRange = DYNAMIC_RANGE_SDR8;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[1].enPixelFormat = RK_FMT_YUV420SP;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[1].stFrameRate.s32SrcFrameRate = -1;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[1].stFrameRate.s32DstFrameRate = -1;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[1].u32Width = pArgs->u32IvsWidth;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[1].u32Height = pArgs->u32IvsHeight;
+	ctx->vpss[vpssGrpId].stVpssChnAttr[1].u32Depth = 1;
+
+	s32Ret = SAMPLE_COMM_VPSS_CreateChn(&(ctx->vpss[vpssGrpId]));
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("SAMPLE_COMM_VPSS_CreateChn group 1 failed %#X\n", s32Ret);
+	TRACE_END();
+
+	return s32Ret;
+}
+
+static RK_S32 vpss_chn_deinit(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
+	RK_S32 s32Ret = RK_SUCCESS;
+
+	TRACE_BEGIN();
+	s32Ret = SAMPLE_COMM_VPSS_DestroyChn(&(ctx->vpss[1]));
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("SAMPLE_COMM_VPSS_DestroyChn group 1 failed %#X\n", s32Ret);
+	s32Ret = SAMPLE_COMM_VPSS_DestroyChn(&(ctx->vpss[0]));
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("SAMPLE_COMM_VPSS_DestroyChn group 0 failed %#X\n", s32Ret);
+	TRACE_END();
+
+	return s32Ret;
+}
+
+static RK_S32 venc_chn_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
+	RK_S32 s32Ret = RK_SUCCESS;
+
+	TRACE_BEGIN();
+	// Init VENC[0]
+	ctx->venc[0].s32ChnId = 0;
+	ctx->venc[0].u32Width = pArgs->u32VideoWidth;
+	ctx->venc[0].u32Height = pArgs->u32VideoHeight;
+	ctx->venc[0].u32Fps = pArgs->u32VencFps;
+	ctx->venc[0].u32Gop = pArgs->u32Gop;
+	ctx->venc[0].u32BitRate = pArgs->s32BitRate;
+	ctx->venc[0].enCodecType = pArgs->enCodecType;
+	ctx->venc[0].enRcMode = pArgs->enRcMode;
+	ctx->venc[0].getStreamCbFunc = venc_get_stream;
+	ctx->venc[0].s32loopCount = pArgs->s32loopCnt;
+	ctx->venc[0].dstFilePath = pArgs->pOutPathVenc;
+	ctx->venc[0].u32BuffSize = pArgs->u32VideoWidth * pArgs->u32VideoHeight / 2;
+	ctx->venc[0].enable_buf_share = RK_TRUE;
+	// H264  66：Baseline  77：Main Profile 100：High Profile
+	// H265  0：Main Profile  1：Main 10 Profile
+	// MJPEG 0：Baseline
+	ctx->venc[0].stChnAttr.stGopAttr.enGopMode =
+	    VENC_GOPMODE_NORMALP; // VENC_GOPMODE_SMARTP
+	if (RK_CODEC_TYPE_H264 != pArgs->enCodecType) {
+		ctx->venc[0].stChnAttr.stVencAttr.u32Profile = 0;
+	} else {
+		ctx->venc[0].stChnAttr.stVencAttr.u32Profile = 100;
+	}
+	s32Ret = SAMPLE_COMM_VENC_CreateChn(&ctx->venc[0]);
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("SAMPLE_COMM_VENC_CreateChn venc0 failed %#X\n", s32Ret);
+
+	// Init VENC[1]
+	ctx->venc[1].s32ChnId = 1;
+	ctx->venc[1].u32Width = pArgs->u32SubVideoWidth;
+	ctx->venc[1].u32Height = pArgs->u32SubVideoHeight;
+	ctx->venc[1].u32Fps = pArgs->u32VencFps;
+	ctx->venc[1].u32Gop = pArgs->u32Gop;
+	ctx->venc[1].u32BitRate = pArgs->s32BitRate;
+	ctx->venc[1].enCodecType = pArgs->enCodecType;
+	ctx->venc[1].enRcMode = pArgs->enRcMode;
+	ctx->venc[1].getStreamCbFunc = venc_get_stream;
+	ctx->venc[1].s32loopCount = pArgs->s32loopCnt;
+	ctx->venc[1].dstFilePath = pArgs->pOutPathVenc;
+	ctx->venc[1].u32BuffSize = pArgs->u32SubVideoWidth * pArgs->u32SubVideoHeight / 2;
+	ctx->venc[1].enable_buf_share = RK_TRUE;
+	// H264  66：Baseline  77：Main Profile 100：High Profile
+	// H265  0：Main Profile  1：Main 10 Profile
+	// MJPEG 0：Baseline
+	ctx->venc[1].stChnAttr.stGopAttr.enGopMode =
+	    VENC_GOPMODE_NORMALP; // VENC_GOPMODE_SMARTP
+	if (RK_CODEC_TYPE_H264 != pArgs->enCodecType) {
+		ctx->venc[1].stChnAttr.stVencAttr.u32Profile = 0;
+	} else {
+		ctx->venc[1].stChnAttr.stVencAttr.u32Profile = 100;
+	}
+	s32Ret = SAMPLE_COMM_VENC_CreateChn(&ctx->venc[1]);
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("SAMPLE_COMM_VENC_CreateChn venc1 failed %#X\n", s32Ret);
+
+	// Init VENC[2]
+	ctx->venc[2].s32ChnId = 2;
+	ctx->venc[2].u32Width = pArgs->u32ThirdVideoWidth;
+	ctx->venc[2].u32Height = pArgs->u32ThirdVideoHeight;
+	ctx->venc[2].u32Fps = pArgs->u32VencFps;
+	ctx->venc[2].u32Gop = pArgs->u32Gop;
+	ctx->venc[2].u32BitRate = pArgs->s32BitRate;
+	ctx->venc[2].enCodecType = pArgs->enCodecType;
+	ctx->venc[2].enRcMode = pArgs->enRcMode;
+	ctx->venc[2].getStreamCbFunc = venc_get_stream;
+	ctx->venc[2].s32loopCount = pArgs->s32loopCnt;
+	ctx->venc[2].dstFilePath = pArgs->pOutPathVenc;
+	ctx->venc[2].u32BuffSize = pArgs->u32ThirdVideoWidth * pArgs->u32ThirdVideoHeight / 2;
+	ctx->venc[2].enable_buf_share = RK_TRUE;
+	// H264  66：Baseline  77：Main Profile 100：High Profile
+	// H265  0：Main Profile  1：Main 10 Profile
+	// MJPEG 0：Baseline
+	ctx->venc[2].stChnAttr.stGopAttr.enGopMode =
+	    VENC_GOPMODE_NORMALP; // VENC_GOPMODE_SMARTP
+	if (RK_CODEC_TYPE_H264 != pArgs->enCodecType) {
+		ctx->venc[2].stChnAttr.stVencAttr.u32Profile = 0;
+	} else {
+		ctx->venc[2].stChnAttr.stVencAttr.u32Profile = 100;
+	}
+	s32Ret = SAMPLE_COMM_VENC_CreateChn(&ctx->venc[2]);
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("SAMPLE_COMM_VENC_CreateChn venc2 failed %#X\n", s32Ret);
+	TRACE_END();
+
+	return s32Ret;
+}
+
+static RK_S32 venc_chn_deinit(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
+	RK_S32 s32Ret = RK_SUCCESS;
+
+	TRACE_BEGIN();
+	s32Ret = SAMPLE_COMM_VENC_DestroyChn(&ctx->venc[2]);
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("SAMPLE_COMM_VENC_CreateChn venc2 failed %#X\n", s32Ret);
+
+	s32Ret = SAMPLE_COMM_VENC_DestroyChn(&ctx->venc[1]);
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("SAMPLE_COMM_VENC_CreateChn venc1 failed %#X\n", s32Ret);
+
+	s32Ret = SAMPLE_COMM_VENC_DestroyChn(&ctx->venc[0]);
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("SAMPLE_COMM_VENC_CreateChn venc0 failed %#X\n", s32Ret);
+	TRACE_END();
+
+	return s32Ret;
+}
+
+static RK_S32 ivs_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
+	RK_S32 s32Ret = RK_SUCCESS;
+
+	TRACE_BEGIN();
+	/* Init ivs */
+	ctx->ivs.s32ChnId = 0;
+	ctx->ivs.stIvsAttr.enMode = IVS_MODE_MD_OD;
+	ctx->ivs.stIvsAttr.u32PicWidth = pArgs->u32IvsWidth;
+	ctx->ivs.stIvsAttr.u32PicHeight = pArgs->u32IvsHeight;
+	ctx->ivs.stIvsAttr.enPixelFormat = RK_FMT_YUV420SP;
+	ctx->ivs.stIvsAttr.s32Gop = 30;
+	ctx->ivs.stIvsAttr.bSmearEnable = RK_FALSE;
+	ctx->ivs.stIvsAttr.bWeightpEnable = RK_FALSE;
+	ctx->ivs.stIvsAttr.bMDEnable = RK_TRUE;
+	ctx->ivs.stIvsAttr.s32MDInterval = 5;
+	ctx->ivs.stIvsAttr.bMDNightMode = RK_TRUE;
+	ctx->ivs.stIvsAttr.u32MDSensibility = 3;
+	ctx->ivs.stIvsAttr.bODEnable = RK_TRUE;
+	ctx->ivs.stIvsAttr.s32ODInterval = 1;
+	ctx->ivs.stIvsAttr.s32ODPercent = 7;
+	s32Ret = SAMPLE_COMM_IVS_Create(&ctx->ivs);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("SAMPLE_COMM_IVS_Create failure:%X", s32Ret);
+		program_handle_error(__func__, __LINE__);
+	}
+	TRACE_END();
+
+	return s32Ret;
+}
+
+static RK_S32 ivs_deinit(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
+	RK_S32 s32Ret = RK_SUCCESS;
+
+	TRACE_BEGIN();
+	s32Ret = SAMPLE_COMM_IVS_Destroy(ctx->ivs.s32ChnId);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("SAMPLE_COMM_IVS_Destroy failure:%X", s32Ret);
+		program_handle_error(__func__, __LINE__);
+	}
+	TRACE_END();
+
+	return s32Ret;
+}
+
+static RK_S32 iva_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
+	RK_S32 s32Ret = RK_SUCCESS;
+
+	TRACE_BEGIN();
+	/* Init iva */
+	ctx->iva.pModelDataPath = pArgs->pIvaModelPath;
+	ctx->iva.u32ImageHeight = pArgs->u32IvsWidth;
+	ctx->iva.u32ImageWidth = pArgs->u32IvsHeight;
+	ctx->iva.u32DetectStartX = 0;
+	ctx->iva.u32DetectStartY = 0;
+	ctx->iva.u32DetectWidth = pArgs->u32IvsWidth;
+	ctx->iva.u32DetectHight = pArgs->u32IvsHeight;
+	ctx->iva.eImageTransform = ROCKIVA_IMAGE_TRANSFORM_NONE;
+	ctx->iva.eImageFormat = ROCKIVA_IMAGE_FORMAT_YUV420SP_NV12;
+	ctx->iva.eModeType = ROCKIVA_DET_MODEL_PFP;
+	ctx->iva.u32IvaDetectFrameRate = pArgs->u32IvaDetectFrameRate;
+	ctx->iva.resultCallback = rkIvaEvent_callback;
+	ctx->iva.releaseCallback = rkIvaFrame_releaseCallBack;
+	s32Ret = SAMPLE_COMM_IVA_Create(&ctx->iva);
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("SAMPLE_COMM_IVA_Create failure:%#X", s32Ret);
+	TRACE_END();
+
+	return s32Ret;
+}
+
+static RK_S32 iva_deinit(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
+	TRACE_BEGIN();
+	RK_S32 s32Ret = RK_SUCCESS;
+	s32Ret = SAMPLE_COMM_IVA_Destroy(&ctx->iva);
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("SAMPLE_COMM_IVA_Destroy failure:%#X", s32Ret);
+	TRACE_END();
+	return s32Ret;
+}
+
+static RK_S32 bind_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
+	RK_S32 s32Ret = RK_SUCCESS;
+	MPP_CHN_S stSrcChn, stDestChn;
+
+	TRACE_BEGIN();
+	// Bind VI and VPSS[0]
+	stSrcChn.enModId = RK_ID_VI;
+	stSrcChn.s32DevId = ctx->vi.s32DevId;
+	stSrcChn.s32ChnId = ctx->vi.s32ChnId;
+	stDestChn.enModId = RK_ID_VPSS;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = 0;
+	s32Ret = SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("bind vi to vpss0 failed");
+
+	/* Bind VPSS[0, 0] and VENC[0] */
+	stSrcChn.enModId = RK_ID_VPSS;
+	stSrcChn.s32DevId = 0;
+	stSrcChn.s32ChnId = 0;
+	stDestChn.enModId = RK_ID_VENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = 0;
+	s32Ret = SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("bind vpss[0,0] to venc0 fail");
+
+	/* Bind VPSS[0, 1] and VENC[1] */
+	stSrcChn.enModId = RK_ID_VPSS;
+	stSrcChn.s32DevId = 0;
+	stSrcChn.s32ChnId = 1;
+	stDestChn.enModId = RK_ID_VENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = 1;
+	s32Ret = SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("bind vpss[0,1] to venc1 fail");
+
+	/* Bind VPSS[0, 1] and VPSS[1] */
+	stSrcChn.enModId = RK_ID_VPSS;
+	stSrcChn.s32DevId = 0;
+	stSrcChn.s32ChnId = 1;
+	stDestChn.enModId = RK_ID_VPSS;
+	stDestChn.s32DevId = 1;
+	stDestChn.s32ChnId = 0;
+	s32Ret = SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("bind vpss[0,1] to vpss1 fail");
+
+	/* Bind VPSS[1, 0] and VENC[2] */
+	stSrcChn.enModId = RK_ID_VPSS;
+	stSrcChn.s32DevId = 1;
+	stSrcChn.s32ChnId = 0;
+	stDestChn.enModId = RK_ID_VENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = 2;
+	s32Ret = SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("bind vpss[1,0] to venc2 fail");
+
+	/* Bind VPSS[1, 1] and IVS */
+	stSrcChn.enModId = RK_ID_VPSS;
+	stSrcChn.s32DevId = 1;
+	stSrcChn.s32ChnId = 1;
+	stDestChn.enModId = RK_ID_IVS;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = 0;
+	s32Ret = SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
+	if (s32Ret != RK_SUCCESS)
+		RK_LOGE("bind vpss[1,1] to ivs fail");
+	TRACE_END();
+
+	return s32Ret;
+}
+
+static RK_S32 bind_deinit(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
+	RK_S32 s32Ret = RK_SUCCESS;
+	MPP_CHN_S stSrcChn, stDestChn;
+
+	TRACE_BEGIN();
+	/* UnBind VPSS[1, 1] and IVS */
+	stSrcChn.enModId = RK_ID_VPSS;
+	stSrcChn.s32DevId = 1;
+	stSrcChn.s32ChnId = 1;
+	stDestChn.enModId = RK_ID_IVS;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = 0;
+	SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
+
+	/* UnBind VPSS[1, 0] and VENC[2] */
+	stSrcChn.enModId = RK_ID_VPSS;
+	stSrcChn.s32DevId = 1;
+	stSrcChn.s32ChnId = 0;
+	stDestChn.enModId = RK_ID_VENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = 2;
+	SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
+
+	/* UnBind VPSS[0, 1] and VPSS[1] */
+	stSrcChn.enModId = RK_ID_VPSS;
+	stSrcChn.s32DevId = 0;
+	stSrcChn.s32ChnId = 1;
+	stDestChn.enModId = RK_ID_VPSS;
+	stDestChn.s32DevId = 1;
+	stDestChn.s32ChnId = 0;
+	SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
+
+	/* UnBind VPSS[0, 1] and VENC[1] */
+	stSrcChn.enModId = RK_ID_VPSS;
+	stSrcChn.s32DevId = 0;
+	stSrcChn.s32ChnId = 1;
+	stDestChn.enModId = RK_ID_VENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = 1;
+	SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
+
+	/* UnBind VPSS[0, 0] and VENC[0] */
+	stSrcChn.enModId = RK_ID_VPSS;
+	stSrcChn.s32DevId = 0;
+	stSrcChn.s32ChnId = 0;
+	stDestChn.enModId = RK_ID_VENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = 0;
+	SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
+
+	// UnBind VI and VPSS[0]
+	stSrcChn.enModId = RK_ID_VI;
+	stSrcChn.s32DevId = ctx->vi.s32DevId;
+	stSrcChn.s32ChnId = ctx->vi.s32ChnId;
+	stDestChn.enModId = RK_ID_VPSS;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = 0;
+	SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
+	TRACE_END();
+
+	return s32Ret;
+}
+
+static RK_S32 sub_threads_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
+	TRACE_BEGIN();
+	// ivs detect thread launch
+	if (pArgs->bEnableIvs)
+		pthread_create(&g_ivs_thread_id, 0, ivs_detect_thread, (void *)&ctx->ivs);
+	// vpss iva thread launch
+	if (pArgs->bEnableIva)
+		pthread_create(&g_iva_thread_id, 0, vpss_iva_thread, (void *)ctx);
+	TRACE_END();
+	return RK_SUCCESS;
+}
+
+static RK_S32 sub_threads_deinit(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
+	TRACE_BEGIN();
+	for (int i = 0; i < VENC_CHN_MAX; i++) {
+		gPThreadStatus->bIfVencThreadQuit[i] = true;
+		pthread_join(ctx->venc[i].getStreamThread, RK_NULL);
+		ctx->venc[i].getStreamThread = 0;
+	}
+	if (pArgs->bEnableIva) {
+		gPThreadStatus->bIfVpssIvaTHreadQuit = RK_TRUE;
+		pthread_join(g_iva_thread_id, NULL);
+		g_iva_thread_id = 0;
+	}
+	if (pArgs->bEnableIvs) {
+		gPThreadStatus->bIvsDetectThreadQuit = RK_TRUE;
+		pthread_join(g_ivs_thread_id, NULL);
+		g_ivs_thread_id = 0;
+	}
+	TRACE_END();
+	return RK_SUCCESS;
+}
+
+static RK_CHAR optstr[] = "?::a::w:h:o:l:b:f:r:g:v:e:i:s:I:";
+
+static const struct option long_options[] = {
+    {"aiq", optional_argument, RK_NULL, 'a'},
+    {"width", required_argument, RK_NULL, 'w'},
+    {"height", required_argument, RK_NULL, 'h'},
+    {"encode", required_argument, RK_NULL, 'e'},
+    {"output_path", required_argument, RK_NULL, 'o'},
+    {"loop_count", required_argument, RK_NULL, 'l'},
+    {"bitrate", required_argument, NULL, 'b'},
+    {"fps", required_argument, RK_NULL, 'f'},
+    {"vi_buff_cnt", required_argument, RK_NULL, 'v'},
+    {"vi_chnid", required_argument, RK_NULL, 'v' + 'i'},
+    {"rgn_attach_module", required_argument, RK_NULL, 'r'},
+    {"gop", required_argument, RK_NULL, 'g'},
+    {"iva_detect_speed", required_argument, RK_NULL, 'd'},
+    {"iva_model_path", required_argument, RK_NULL, 'i' + 'm'},
+    {"enable_aiisp", required_argument, RK_NULL, 'e' + 'a'},
+    {"aiisp_model_path", required_argument, RK_NULL, 'e' + 'j'},
+    {"aiisp_buff_cnt", required_argument, RK_NULL, 'e' + 'k'},
+    {"enable_iva", required_argument, RK_NULL, 'e' + 'i'},
+    {"enable_ivs", required_argument, RK_NULL, 'e' + 's'},
+    {"inputBmpPath1", required_argument, RK_NULL, 'i'},
+    {"inputBmpPath2", required_argument, RK_NULL, 'I'},
+    {"help", optional_argument, RK_NULL, '?'},
+    {RK_NULL, 0, RK_NULL, 0},
+};
+
+/******************************************************************************
+ * function : show usage
+ ******************************************************************************/
+static void print_usage(const RK_CHAR *name) {
+	printf("RV1126 example:\n");
+	printf("\t%s -w 2688 -h 1520 -a /etc/iqfiles/ -e h264cbr -b 2048 "
+	       "--enable_aiisp 1 --vi_buff_cnt 4\n",
+	       name);
+	printf("RV1106 example:\n");
+	printf("\t%s -w 2560 -h 1440 -a /etc/iqfiles/ -e h264cbr -b 2048 "
+	       "--enable_aiisp 1 --vi_buff_cnt 2\n",
+	       name);
+	printf("\t-a | --aiq : enable aiq with dirpath provided, eg:-a /etc/iqfiles/, \n"
+	       "\t		set dirpath empty to using path by default, without "
+	       "this option aiq \n"
+	       "\t		should run in other application\n");
+	printf("\t-w | --width : mainStream width, must is sensor width\n");
+	printf("\t-h | --height : mainStream height, must is sensor height\n");
+	printf("\t-e | --encode: encode type, Default:h264cbr, Value:h264cbr, "
+	       "h264vbr, h264avbr "
+	       "h265cbr, h265vbr, h265avbr, mjpegcbr, mjpegvbr\n");
+	printf("\t-b | --bitrate: encode bitrate, Default 4096\n");
+	printf("\t-o | --output_path : encode output file path, Default: RK_NULL\n");
+	printf("\t-l | --loop_count : when encoder output frameCounts equal to "
+	       "<loop_count>, "
+	       "process will exit. Default: -1\n");
+	printf("\t-v | --vi_buff_cnt : main stream vi buffer num, Default: 6\n");
+	printf("\t--vi_chnid : vi channel id, default: 0\n");
+	printf("\t-r | --rgn_attach_module : where to attach rgn, 0: vpss, 1: venc, 2: "
+	       "close. default: 1\n");
+	printf("\t-g | --gop : venc GOP(group of pictures). default: 75\n");
+	printf("\t-i | --inputpathbmp1 : input bmp file path. default: RK_NULL\n");
+	printf("\t-I | --inputpathbmp2 : input bmp file path. default: RK_NULL\n");
+	printf("\t-f | --fps : set fps, default: 25\n");
+	printf("\t--enable_aiisp : enable ai isp, 0: close, 1: enable. default: 1\n");
+	printf("\t--enable_iva : enable iva, 0: close, 1: enable. default: 1\n");
+	printf("\t--enable_ivs : enable ivs, 0: close, 1: enable. default: 0\n");
+	printf("\t--iva_detect_speed : iva detect framerate. default: 10\n");
+	printf("\t--iva_model_path : iva model data path, default: /oem/usr/lib\n");
+	printf("\t--aiisp_model_path : aiisp model data path, default: /oem/usr/lib\n");
+	printf("\t--aiisp_buff_cnt : aiisp buffer count, default: 2\n");
 }
 
 /******************************************************************************
- * function    : main()
- * Description : main
+ * function    : parse_cmd_args()
+ * Description : Parse command line arguments.
  ******************************************************************************/
-int main(int argc, char *argv[]) {
-	SAMPLE_MPI_CTX_S *ctx;
-	RK_U32 u32VideoWidth = 2688;
-	RK_U32 u32VideoHeight = 1520;
-	RK_U32 u32SubVideoWidth = 1280;
-	RK_U32 u32SubVideoHeight = 720;
-	RK_U32 u32ThirdVideoWidth = 704;
-	RK_U32 u32ThirdVideoHeight = 576;
-	RK_U32 u32ViBuffCnt = 5;
-	RK_U32 u32IvsWidth = 896;
-	RK_U32 u32IvsHeight = 512;
-	RK_U32 u32Gop = 75;
-	RK_U32 u32IvaDetectFrameRate = 10;
-	RK_S32 s32Ret = RK_FAILURE;
-	RK_CHAR *pInPathBmp1 = NULL;
-	RK_CHAR *pInPathBmp2 = NULL;
-	RK_CHAR *pOutPathVenc = NULL;
-	RK_CHAR *pIvaModelPath = "/oem/usr/lib/";
-	RK_CHAR *pIqFileDir = RK_NULL;
-	RK_BOOL bMultictx = RK_FALSE;
-	CODEC_TYPE_E enCodecType = RK_CODEC_TYPE_H264;
-	VENC_RC_MODE_E enRcMode = VENC_RC_MODE_H264CBR;
-	RK_CHAR *pCodecName = "H264";
-	RK_S32 s32CamId = 0;
-	RK_S32 s32loopCnt = -1;
-	RK_BOOL enable_ai_isp = RK_TRUE;
-	RK_BOOL enable_iva = RK_TRUE;
-	RK_BOOL enable_ivs = RK_FALSE;
-	RK_S32 s32BitRate = 4 * 1024;
-	RK_U32 u32VencFps = 25;
-	rk_aiq_working_mode_t eHdrMode = RK_AIQ_WORKING_MODE_NORMAL;
-	RK_U32 rgn_attach_module = 1; // 0:vpss,1:venc
-	MPP_CHN_S stSrcChn, stDestChn;
-
-	pthread_t vpss_iva_thread_id;
-
-	pthread_t ivs_detect_thread_id;
-
-	if (argc < 2) {
-		print_usage(argv[0]);
-		g_exit_result = RK_FAILURE;
-		goto __PARAM_INIT_FAILED;
-	}
-
-	ctx = (SAMPLE_MPI_CTX_S *)(malloc(sizeof(SAMPLE_MPI_CTX_S)));
-	if (!ctx) {
-		RK_LOGE("ctx is null, malloc failure");
-		return RK_FAILURE;
-	}
-	memset(ctx, 0, sizeof(SAMPLE_MPI_CTX_S));
-
-	s32Ret = global_param_init();
-	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("global_param_init failure");
-		g_exit_result = RK_FAILURE;
-		goto __PARAM_INIT_FAILED;
-	}
-
-	signal(SIGINT, sigterm_handler);
-	signal(SIGTERM, sigterm_handler);
+static RK_S32 parse_cmd_args(int argc, char **argv, RkCmdArgs *pArgs) {
+	pArgs->u32VideoWidth = 2688;
+	pArgs->u32VideoHeight = 1520;
+	pArgs->u32SubVideoWidth = 1280;
+	pArgs->u32SubVideoHeight = 720;
+	pArgs->u32ThirdVideoWidth = 640;
+	pArgs->u32ThirdVideoHeight = 480;
+	pArgs->u32ViBuffCnt = 5;
+#if defined(RV1106)
+	pArgs->u32ViBuffCnt = 2;
+#endif
+	pArgs->u32IvsWidth = 704;
+	pArgs->u32IvsHeight = 576;
+	pArgs->u32Gop = 75;
+	pArgs->u32IvaDetectFrameRate = 10;
+	pArgs->pInPathBmp1 = NULL;
+	pArgs->pInPathBmp2 = NULL;
+	pArgs->pOutPathVenc = NULL;
+	pArgs->pIvaModelPath = "/oem/usr/lib/";
+	pArgs->pIqFileDir = RK_NULL;
+	pArgs->bMultictx = RK_FALSE;
+	pArgs->enCodecType = RK_CODEC_TYPE_H264;
+	pArgs->enRcMode = VENC_RC_MODE_H264CBR;
+	pArgs->pCodecName = "H264";
+	pArgs->s32CamId = 0;
+	pArgs->s32loopCnt = -1;
+	pArgs->bEnableAIIsp = RK_TRUE;
+	pArgs->bEnableIva = RK_TRUE;
+	pArgs->bEnableIvs = RK_TRUE;
+	pArgs->s32BitRate = 4 * 1024;
+	pArgs->u32VencFps = 25;
+	pArgs->eHdrMode = RK_AIQ_WORKING_MODE_NORMAL;
+	pArgs->s32RgnAttachModule = RGN_ATTACH_VENC; // 0:vpss,1:venc
+	pArgs->pAiispModelPath = "/oem/usr/lib/";
+#if defined(RV1106)
+	pArgs->u32AiispBuffCnt = 1;
+#else
+	pArgs->u32AiispBuffCnt = 2;
+#endif
 
 	RK_S32 c = 0;
 	while ((c = getopt_long(argc, argv, optstr, long_options, RK_NULL)) != -1) {
@@ -628,525 +1181,206 @@ int main(int argc, char *argv[]) {
 				tmp_optarg = argv[optind++];
 			}
 			if (tmp_optarg) {
-				pIqFileDir = (char *)tmp_optarg;
+				pArgs->pIqFileDir = (char *)tmp_optarg;
 			} else {
-				pIqFileDir = RK_NULL;
+				pArgs->pIqFileDir = RK_NULL;
 			}
 			break;
 		case 'w':
-			u32VideoWidth = atoi(optarg);
+			pArgs->u32VideoWidth = atoi(optarg);
 			break;
 		case 'h':
-			u32VideoHeight = atoi(optarg);
+			pArgs->u32VideoHeight = atoi(optarg);
 			break;
 		case 'b':
-			s32BitRate = atoi(optarg);
+			pArgs->s32BitRate = atoi(optarg);
 			break;
 		case 'e':
 			if (!strcmp(optarg, "h264cbr")) {
-				enCodecType = RK_CODEC_TYPE_H264;
-				enRcMode = VENC_RC_MODE_H264CBR;
+				pArgs->enCodecType = RK_CODEC_TYPE_H264;
+				pArgs->enRcMode = VENC_RC_MODE_H264CBR;
 			} else if (!strcmp(optarg, "h264vbr")) {
-				enCodecType = RK_CODEC_TYPE_H264;
-				enRcMode = VENC_RC_MODE_H264VBR;
+				pArgs->enCodecType = RK_CODEC_TYPE_H264;
+				pArgs->enRcMode = VENC_RC_MODE_H264VBR;
 			} else if (!strcmp(optarg, "h264avbr")) {
-				enCodecType = RK_CODEC_TYPE_H264;
-				enRcMode = VENC_RC_MODE_H264AVBR;
+				pArgs->enCodecType = RK_CODEC_TYPE_H264;
+				pArgs->enRcMode = VENC_RC_MODE_H264AVBR;
 			} else if (!strcmp(optarg, "h265cbr")) {
-				enCodecType = RK_CODEC_TYPE_H265;
-				enRcMode = VENC_RC_MODE_H265CBR;
+				pArgs->enCodecType = RK_CODEC_TYPE_H265;
+				pArgs->enRcMode = VENC_RC_MODE_H265CBR;
 			} else if (!strcmp(optarg, "h265vbr")) {
-				enCodecType = RK_CODEC_TYPE_H265;
-				enRcMode = VENC_RC_MODE_H265VBR;
+				pArgs->enCodecType = RK_CODEC_TYPE_H265;
+				pArgs->enRcMode = VENC_RC_MODE_H265VBR;
 			} else if (!strcmp(optarg, "h265avbr")) {
-				enCodecType = RK_CODEC_TYPE_H265;
-				enRcMode = VENC_RC_MODE_H265AVBR;
+				pArgs->enCodecType = RK_CODEC_TYPE_H265;
+				pArgs->enRcMode = VENC_RC_MODE_H265AVBR;
 			} else {
-				printf("ERROR: Invalid encoder type.\n");
-				print_usage(argv[0]);
-				g_exit_result = RK_FAILURE;
-				goto __PARAM_INIT_FAILED;
+				RK_LOGE("Invalid encoder type!");
+				return RK_FAILURE;
 			}
 			break;
 		case 'i' + 'm':
-			pIvaModelPath = optarg;
+			pArgs->pIvaModelPath = optarg;
 			break;
 		case 'd':
-			u32IvaDetectFrameRate = atoi(optarg);
+			pArgs->u32IvaDetectFrameRate = atoi(optarg);
 			break;
 		case 'o':
-			pOutPathVenc = optarg;
+			pArgs->pOutPathVenc = optarg;
 			break;
 		case 'l':
-			s32loopCnt = atoi(optarg);
+			pArgs->s32loopCnt = atoi(optarg);
 			break;
 		case 'f':
-			u32VencFps = atoi(optarg);
+			pArgs->u32VencFps = atoi(optarg);
 			break;
 		case 'v':
-			u32ViBuffCnt = atoi(optarg);
+			pArgs->u32ViBuffCnt = atoi(optarg);
 			break;
 		case 'g':
-			u32Gop = atoi(optarg);
+			pArgs->u32Gop = atoi(optarg);
 			break;
 		case 'r':
-			rgn_attach_module = atoi(optarg);
+			pArgs->s32RgnAttachModule = atoi(optarg);
 			break;
 		case 'e' + 'a':
-			enable_ai_isp = atoi(optarg);
+			pArgs->bEnableAIIsp = atoi(optarg);
+			break;
+		case 'e' + 'j':
+			pArgs->pAiispModelPath = optarg;
+			break;
+		case 'e' + 'k':
+			pArgs->u32AiispBuffCnt = atoi(optarg);
 			break;
 		case 'e' + 's':
-			enable_ivs = atoi(optarg);
+			pArgs->bEnableIvs = atoi(optarg);
 			break;
 		case 'e' + 'i':
-			enable_iva = atoi(optarg);
+			pArgs->bEnableIva = atoi(optarg);
 			break;
 		case 'i':
-			pInPathBmp1 = optarg;
+			pArgs->pInPathBmp1 = optarg;
 			break;
 		case 'I':
-			pInPathBmp2 = optarg;
+			pArgs->pInPathBmp2 = optarg;
 			break;
 		case '?':
 		default:
-			print_usage(argv[0]);
-			return 0;
+			return RK_SUCCESS;
 		}
 	}
 
-	printf("#CameraIdx: %d\n", s32CamId);
-	printf("#CodecName:%s\n", pCodecName);
-	printf("#Output Path: %s\n", pOutPathVenc);
-	printf("#RGN_ATTACH: %d\n", rgn_attach_module);
-	printf("#IQ Path: %s\n", pIqFileDir);
-	if (pIqFileDir) {
-#ifdef RKAIQ
-		printf("#Rkaiq XML DirPath: %s\n", pIqFileDir);
-		printf("#bMultictx: %d\n\n", bMultictx);
+	return RK_SUCCESS;
+}
 
-		s32Ret = SAMPLE_COMM_ISP_Init(s32CamId, eHdrMode, bMultictx, pIqFileDir);
-		s32Ret |= SAMPLE_COMM_ISP_Run(s32CamId);
+/******************************************************************************
+ * function    : main()
+ * Description : main
+ ******************************************************************************/
+int main(int argc, char *argv[]) {
+	RK_S32 s32Ret = RK_SUCCESS;
+	SAMPLE_MPI_CTX_S *ctx;
+	RkCmdArgs parsedArgs;
+
+	print_usage(argv[0]);
+	if (argc < 2) {
+		printf("bad arguments!\n");
+		return RK_FAILURE;
+	}
+
+	// Allocate global ctx.
+	ctx = (SAMPLE_MPI_CTX_S *)(malloc(sizeof(SAMPLE_MPI_CTX_S)));
+	if (!ctx) {
+		printf("ctx is null, malloc failure\n");
+		return RK_FAILURE;
+	}
+	memset(ctx, 0, sizeof(SAMPLE_MPI_CTX_S));
+
+	// Parse command line.
+	memset(&parsedArgs, 0, sizeof(RkCmdArgs));
+	parse_cmd_args(argc, argv, &parsedArgs);
+
+	s32Ret = global_param_init();
+	if (s32Ret != RK_SUCCESS) {
+		printf("global_param_init failure\n");
+		g_exit_result = RK_FAILURE;
+		goto __PARAM_INIT_FAILED;
+	}
+
+	signal(SIGINT, sigterm_handler);
+	signal(SIGTERM, sigterm_handler);
+
+	printf("#CameraIdx: %d\n", parsedArgs.s32CamId);
+	printf("#CodecName:%s\n", parsedArgs.pCodecName);
+	printf("#Output Path: %s\n", parsedArgs.pOutPathVenc);
+	printf("#RGN_ATTACH: %d\n", parsedArgs.s32RgnAttachModule);
+	printf("#IQ Path: %s\n", parsedArgs.pIqFileDir);
+	if (parsedArgs.pIqFileDir) {
+		printf("#Rkaiq XML DirPath: %s\n", parsedArgs.pIqFileDir);
+		printf("#bMultictx: %d\n\n", parsedArgs.bMultictx);
+
+		s32Ret = SAMPLE_COMM_ISP_Init(parsedArgs.s32CamId, parsedArgs.eHdrMode,
+		                              parsedArgs.bMultictx, parsedArgs.pIqFileDir);
+		s32Ret |= SAMPLE_COMM_ISP_Run(parsedArgs.s32CamId);
 		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("ISP init failure");
+			printf("ISP init failure");
 			g_exit_result = RK_FAILURE;
-			goto __FAILED2;
+			goto __ISP_INIT_FAILED;
 		}
-#endif
 	}
 
 	if (RK_MPI_SYS_Init() != RK_SUCCESS) {
-		RK_LOGE("RK_MPI_SYS_Init failure");
+		printf("RK_MPI_SYS_Init failure");
 		g_exit_result = RK_FAILURE;
-		goto __FAILED;
+		goto __MPI_INIT_FAILED;
 	}
 
-	s32Ret = rtsp_init(enCodecType);
-	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("rtsp_init failure");
-		g_exit_result = RK_FAILURE;
-		goto __FAILED;
-	}
+	// Initialize rtsp server.
+	rtsp_init(parsedArgs.enCodecType);
+	// Initialize all pipeline nodes.
+	if (parsedArgs.bEnableIva)
+		iva_init(ctx, &parsedArgs);
+	vi_chn_init(ctx, &parsedArgs);
+	vpss_chn_init(ctx, &parsedArgs);
+	venc_chn_init(ctx, &parsedArgs);
+	if (parsedArgs.bEnableIvs)
+		ivs_init(ctx, &parsedArgs);
+	rgn_init(ctx, &parsedArgs);
+	// Bind all pipeline nodes.
+	bind_init(ctx, &parsedArgs);
+	// Start sub-threads after all initialization done.
+	sub_threads_init(ctx, &parsedArgs);
 
-#ifdef ROCKIVA
-	/* Init iva */
-	ctx->iva.pModelDataPath = pIvaModelPath;
-	ctx->iva.u32ImageHeight = u32IvsWidth;
-	ctx->iva.u32ImageWidth = u32IvsHeight;
-	ctx->iva.u32DetectStartX = 0;
-	ctx->iva.u32DetectStartY = 0;
-	ctx->iva.u32DetectWidth = u32IvsWidth;
-	ctx->iva.u32DetectHight = u32IvsHeight;
-	ctx->iva.eImageTransform = ROCKIVA_IMAGE_TRANSFORM_NONE;
-	ctx->iva.eImageFormat = ROCKIVA_IMAGE_FORMAT_YUV420SP_NV12;
-	ctx->iva.eModeType = ROCKIVA_DET_MODEL_PFP;
-	ctx->iva.u32IvaDetectFrameRate = u32IvaDetectFrameRate;
-	ctx->iva.resultCallback = rkIvaEvent_callback;
-	ctx->iva.releaseCallback = rkIvaFrame_releaseCallBack;
-	s32Ret = SAMPLE_COMM_IVA_Create(&ctx->iva);
-	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("SAMPLE_COMM_IVA_Create failure:%#X", s32Ret);
-		goto __FAILED;
-	}
-#endif
-
-	/* Init VI[0] */
-	ctx->vi.u32Width = u32VideoWidth;
-	ctx->vi.u32Height = u32VideoHeight;
-	ctx->vi.s32DevId = 0;
-	ctx->vi.u32PipeId = ctx->vi.s32DevId;
-	ctx->vi.s32ChnId = 0;
-	ctx->vi.stChnAttr.stIspOpt.stMaxSize.u32Width = u32VideoWidth;
-	ctx->vi.stChnAttr.stIspOpt.stMaxSize.u32Height = u32VideoHeight;
-	ctx->vi.stChnAttr.stIspOpt.u32BufCount = u32ViBuffCnt;
-	ctx->vi.stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
-	// ctx->vi.stChnAttr.u32Depth = 4;
-	ctx->vi.stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
-	ctx->vi.stChnAttr.enCompressMode = COMPRESS_MODE_NONE;
-	ctx->vi.stChnAttr.stFrameRate.s32SrcFrameRate = -1;
-	ctx->vi.stChnAttr.stFrameRate.s32DstFrameRate = -1;
-	s32Ret = SAMPLE_COMM_VI_CreateChn(&ctx->vi);
-	if (s32Ret != RK_SUCCESS) {
-		g_exit_result = RK_FAILURE;
-		RK_LOGE("SAMPLE_COMM_VI_CreateChn failure:%d", s32Ret);
-		goto __FAILED;
-	}
-
-	// Init VPSS[0]
-	ctx->vpss.s32GrpId = 0;
-	ctx->vpss.s32ChnId = 0;
-	ctx->vpss.enVProcDevType = VIDEO_PROC_DEV_RGA;
-	ctx->vpss.stGrpVpssAttr.enPixelFormat = RK_FMT_YUV420SP;
-	ctx->vpss.stGrpVpssAttr.enCompressMode = COMPRESS_MODE_NONE; // no compress
-	ctx->vpss.s32ChnRotation[0] = ROTATION_0;
-
-	// SET VPSS[0,0]
-	ctx->vpss.stVpssChnAttr[0].enChnMode = VPSS_CHN_MODE_USER;
-	ctx->vpss.stVpssChnAttr[0].enCompressMode = COMPRESS_MODE_NONE;
-	ctx->vpss.stVpssChnAttr[0].enDynamicRange = DYNAMIC_RANGE_SDR8;
-	ctx->vpss.stVpssChnAttr[0].enPixelFormat = RK_FMT_YUV420SP;
-	ctx->vpss.stVpssChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
-	ctx->vpss.stVpssChnAttr[0].stFrameRate.s32DstFrameRate = -1;
-	ctx->vpss.stVpssChnAttr[0].u32Width = u32VideoWidth;
-	ctx->vpss.stVpssChnAttr[0].u32Height = u32VideoHeight;
-	ctx->vpss.stVpssChnAttr[0].u32Depth = 0;
-
-	// SET VPSS[0,1]
-	ctx->vpss.stVpssChnAttr[1].enChnMode = VPSS_CHN_MODE_USER;
-	ctx->vpss.stVpssChnAttr[1].enCompressMode = COMPRESS_MODE_NONE;
-	ctx->vpss.stVpssChnAttr[1].enDynamicRange = DYNAMIC_RANGE_SDR8;
-	ctx->vpss.stVpssChnAttr[1].enPixelFormat = RK_FMT_YUV420SP;
-	ctx->vpss.stVpssChnAttr[1].stFrameRate.s32SrcFrameRate = -1;
-	ctx->vpss.stVpssChnAttr[1].stFrameRate.s32DstFrameRate = -1;
-	ctx->vpss.stVpssChnAttr[1].u32Width = u32SubVideoWidth;
-	ctx->vpss.stVpssChnAttr[1].u32Height = u32SubVideoHeight;
-	ctx->vpss.stVpssChnAttr[1].u32Depth = 0;
-
-	// SET VPSS[0,2]
-	ctx->vpss.stVpssChnAttr[2].enChnMode = VPSS_CHN_MODE_USER;
-	ctx->vpss.stVpssChnAttr[2].enCompressMode = COMPRESS_MODE_NONE;
-	ctx->vpss.stVpssChnAttr[2].enDynamicRange = DYNAMIC_RANGE_SDR8;
-	ctx->vpss.stVpssChnAttr[2].enPixelFormat = RK_FMT_YUV420SP;
-	ctx->vpss.stVpssChnAttr[2].stFrameRate.s32SrcFrameRate = -1;
-	ctx->vpss.stVpssChnAttr[2].stFrameRate.s32DstFrameRate = -1;
-	ctx->vpss.stVpssChnAttr[2].u32Width = u32ThirdVideoWidth;
-	ctx->vpss.stVpssChnAttr[2].u32Height = u32ThirdVideoHeight;
-	ctx->vpss.stVpssChnAttr[2].u32Depth = 0;
-
-#if (defined ROCKIT_IVS) || (defined ROCKIVA)
-	// SET VPSS[0,3]
-	ctx->vpss.stVpssChnAttr[3].enChnMode = VPSS_CHN_MODE_USER;
-	ctx->vpss.stVpssChnAttr[3].enCompressMode = COMPRESS_MODE_NONE;
-	ctx->vpss.stVpssChnAttr[3].enDynamicRange = DYNAMIC_RANGE_SDR8;
-	ctx->vpss.stVpssChnAttr[3].enPixelFormat = RK_FMT_YUV420SP;
-	ctx->vpss.stVpssChnAttr[3].stFrameRate.s32SrcFrameRate = 25;
-	ctx->vpss.stVpssChnAttr[3].stFrameRate.s32DstFrameRate = 5;
-	ctx->vpss.stVpssChnAttr[3].u32Width = u32IvsWidth;
-	ctx->vpss.stVpssChnAttr[3].u32Height = u32IvsHeight;
-	ctx->vpss.stVpssChnAttr[3].u32Depth = 0;
-	ctx->vpss.stVpssChnAttr[3].u32FrameBufCnt = 1;
-	if (enable_iva) {
-		ctx->vpss.stVpssChnAttr[3].u32Depth += 1;
-	}
-
-#endif
-	SAMPLE_COMM_VPSS_CreateChn(&ctx->vpss);
-	// set ai isp mode
-	if (enable_ai_isp) {
-		AIISP_ATTR_S stAIISPAttr;
-
-		memset(&stAIISPAttr, 0, sizeof(AIISP_ATTR_S));
-		stAIISPAttr.bEnable = RK_TRUE;
-		stAIISPAttr.stAiIspCallback.pfUpdateCallback = aiisp_callback;
-		stAIISPAttr.stAiIspCallback.pPrivateData = RK_NULL;
-
-		s32Ret = RK_MPI_VPSS_SetGrpAIISPAttr(0, &stAIISPAttr);
-		if (RK_SUCCESS != s32Ret) {
-			RK_LOGE("VPSS GRP 0 RK_MPI_VPSS_SetGrpAIISPAttr failed with %#x!", s32Ret);
-			goto __FAILED;
-		}
-		RK_LOGD("VPSS GRP 0 RK_MPI_VPSS_SetGrpAIISPAttr success.");
-	}
-
-	// Init VENC[0]
-	ctx->venc[0].s32ChnId = 0;
-	ctx->venc[0].u32Width = u32VideoWidth;
-	ctx->venc[0].u32Height = u32VideoHeight;
-	ctx->venc[0].u32Fps = u32VencFps;
-	ctx->venc[0].u32Gop = u32Gop;
-	ctx->venc[0].u32BitRate = s32BitRate;
-	ctx->venc[0].enCodecType = enCodecType;
-	ctx->venc[0].enRcMode = enRcMode;
-	ctx->venc[0].getStreamCbFunc = venc_get_stream;
-	ctx->venc[0].s32loopCount = s32loopCnt;
-	ctx->venc[0].dstFilePath = pOutPathVenc;
-	// H264  66：Baseline  77：Main Profile 100：High Profile
-	// H265  0：Main Profile  1：Main 10 Profile
-	// MJPEG 0：Baseline
-	ctx->venc[0].stChnAttr.stGopAttr.enGopMode =
-	    VENC_GOPMODE_NORMALP; // VENC_GOPMODE_SMARTP
-	if (RK_CODEC_TYPE_H264 != enCodecType) {
-		ctx->venc[0].stChnAttr.stVencAttr.u32Profile = 0;
-	} else {
-		ctx->venc[0].stChnAttr.stVencAttr.u32Profile = 100;
-	}
-	SAMPLE_COMM_VENC_CreateChn(&ctx->venc[0]);
-
-	// Init VENC[1]
-	ctx->venc[1].s32ChnId = 1;
-	ctx->venc[1].u32Width = u32SubVideoWidth;
-	ctx->venc[1].u32Height = u32SubVideoHeight;
-	ctx->venc[1].u32Fps = u32VencFps;
-	ctx->venc[1].u32Gop = u32Gop;
-	ctx->venc[1].u32BitRate = s32BitRate;
-	ctx->venc[1].enCodecType = enCodecType;
-	ctx->venc[1].enRcMode = enRcMode;
-	ctx->venc[1].getStreamCbFunc = venc_get_stream;
-	ctx->venc[1].s32loopCount = s32loopCnt;
-	ctx->venc[1].dstFilePath = pOutPathVenc;
-	// H264  66：Baseline  77：Main Profile 100：High Profile
-	// H265  0：Main Profile  1：Main 10 Profile
-	// MJPEG 0：Baseline
-	ctx->venc[1].stChnAttr.stGopAttr.enGopMode =
-	    VENC_GOPMODE_NORMALP; // VENC_GOPMODE_SMARTP
-	if (RK_CODEC_TYPE_H264 != enCodecType) {
-		ctx->venc[1].stChnAttr.stVencAttr.u32Profile = 0;
-	} else {
-		ctx->venc[1].stChnAttr.stVencAttr.u32Profile = 100;
-	}
-	SAMPLE_COMM_VENC_CreateChn(&ctx->venc[1]);
-
-	// Init VENC[2]
-	ctx->venc[2].s32ChnId = 2;
-	ctx->venc[2].u32Width = u32ThirdVideoWidth;
-	ctx->venc[2].u32Height = u32ThirdVideoHeight;
-	ctx->venc[2].u32Fps = u32VencFps;
-	ctx->venc[2].u32Gop = u32Gop;
-	ctx->venc[2].u32BitRate = s32BitRate;
-	ctx->venc[2].enCodecType = enCodecType;
-	ctx->venc[2].enRcMode = enRcMode;
-	ctx->venc[2].getStreamCbFunc = venc_get_stream;
-	ctx->venc[2].s32loopCount = s32loopCnt;
-	ctx->venc[2].dstFilePath = pOutPathVenc;
-	// H264  66：Baseline  77：Main Profile 100：High Profile
-	// H265  0：Main Profile  1：Main 10 Profile
-	// MJPEG 0：Baseline
-	ctx->venc[2].stChnAttr.stGopAttr.enGopMode =
-	    VENC_GOPMODE_NORMALP; // VENC_GOPMODE_SMARTP
-	if (RK_CODEC_TYPE_H264 != enCodecType) {
-		ctx->venc[2].stChnAttr.stVencAttr.u32Profile = 0;
-	} else {
-		ctx->venc[2].stChnAttr.stVencAttr.u32Profile = 100;
-	}
-	SAMPLE_COMM_VENC_CreateChn(&ctx->venc[2]);
-
-#ifdef ROCKIT_IVS
-	/* Init ivs */
-	if (enable_ivs) {
-		ctx->ivs.s32ChnId = 0;
-		ctx->ivs.stIvsAttr.enMode = IVS_MODE_MD_OD;
-		ctx->ivs.stIvsAttr.u32PicWidth = u32IvsWidth;
-		ctx->ivs.stIvsAttr.u32PicHeight = u32IvsHeight;
-		ctx->ivs.stIvsAttr.enPixelFormat = RK_FMT_YUV420SP;
-		ctx->ivs.stIvsAttr.s32Gop = 30;
-		ctx->ivs.stIvsAttr.bSmearEnable = RK_FALSE;
-		ctx->ivs.stIvsAttr.bWeightpEnable = RK_FALSE;
-		ctx->ivs.stIvsAttr.bMDEnable = RK_TRUE;
-		ctx->ivs.stIvsAttr.s32MDInterval = 5;
-		ctx->ivs.stIvsAttr.bMDNightMode = RK_TRUE;
-		ctx->ivs.stIvsAttr.u32MDSensibility = 3;
-		ctx->ivs.stIvsAttr.bODEnable = RK_TRUE;
-		ctx->ivs.stIvsAttr.s32ODInterval = 1;
-		ctx->ivs.stIvsAttr.s32ODPercent = 7;
-		s32Ret = SAMPLE_COMM_IVS_Create(&ctx->ivs);
-		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("SAMPLE_COMM_IVS_Create failure:%X", s32Ret);
-			program_handle_error(__func__, __LINE__);
-		}
-	}
-#endif
-
-	/*rgn init*/
-	rgn_init(pInPathBmp1, pInPathBmp2, ctx, rgn_attach_module);
-
-	// Bind VI and VPSS[0]
-	stSrcChn.enModId = RK_ID_VI;
-	stSrcChn.s32DevId = ctx->vi.s32DevId;
-	stSrcChn.s32ChnId = ctx->vi.s32ChnId;
-	stDestChn.enModId = RK_ID_VPSS;
-	stDestChn.s32DevId = ctx->vpss.s32GrpId;
-	stDestChn.s32ChnId = ctx->vpss.s32ChnId;
-	SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
-
-	/* Bind VPSS and VENC[0] */
-	stSrcChn.enModId = RK_ID_VPSS;
-	stSrcChn.s32DevId = ctx->vpss.s32GrpId;
-	stSrcChn.s32ChnId = ctx->vpss.s32ChnId;
-	stDestChn.enModId = RK_ID_VENC;
-	stDestChn.s32DevId = 0;
-	stDestChn.s32ChnId = ctx->venc[0].s32ChnId;
-	SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
-
-	/* Bind VPSS and VENC[1] */
-	stSrcChn.enModId = RK_ID_VPSS;
-	stSrcChn.s32DevId = ctx->vpss.s32GrpId;
-	stSrcChn.s32ChnId = 1;
-	stDestChn.enModId = RK_ID_VENC;
-	stDestChn.s32DevId = 0;
-	stDestChn.s32ChnId = ctx->venc[1].s32ChnId;
-	SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
-
-	/* Bind VPSS and VENC[2] */
-	stSrcChn.enModId = RK_ID_VPSS;
-	stSrcChn.s32DevId = ctx->vpss.s32GrpId;
-	stSrcChn.s32ChnId = 2;
-	stDestChn.enModId = RK_ID_VENC;
-	stDestChn.s32DevId = 0;
-	stDestChn.s32ChnId = ctx->venc[2].s32ChnId;
-	SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
-
-#ifdef ROCKIT_IVS
-	if (enable_ivs) {
-		/* VPSS bind IVS[0]*/
-
-		stSrcChn.enModId = RK_ID_VPSS;
-		stSrcChn.s32DevId = ctx->vpss.s32GrpId;
-		stSrcChn.s32ChnId = 3;
-		stDestChn.enModId = RK_ID_IVS;
-		stDestChn.s32DevId = 0;
-		stDestChn.s32ChnId = ctx->ivs.s32ChnId;
-		SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
-
-		/* ivs detect thread launch */
-		pthread_create(&ivs_detect_thread_id, 0, ivs_detect_thread, (void *)&ctx->ivs);
-	}
-#endif
-#ifdef ROCKIVA
-	// vpss iva thread launch
-	if (enable_iva)
-		pthread_create(&vpss_iva_thread_id, 0, vpss_iva_thread, (void *)ctx);
-#endif
-
-	printf("%s initial finish\n", __func__);
-
+	// Keep running ...
 	while (!gPThreadStatus->bIfMainThreadQuit) {
 		sleep(1);
 	}
 
-	printf("%s exit!\n", __func__);
-
-	rgn_deinit(ctx, rgn_attach_module);
-#ifdef ROCKIVA
-	/* Destroy IVA */
-	if (enable_iva) {
-		gPThreadStatus->bIfVpssIvaTHreadQuit = RK_TRUE;
-		pthread_join(vpss_iva_thread_id, RK_NULL);
-		SAMPLE_COMM_IVA_Destroy(&ctx->iva);
-	}
-
-#endif
-#ifdef ROCKIT_IVS
-	if (enable_ivs) {
-		/* ivs detect thread exit*/
-		gPThreadStatus->bIvsDetectThreadQuit = RK_TRUE;
-		pthread_join(ivs_detect_thread_id, RK_NULL);
-		/* VPSS[3] unbind IVS[0]*/
-		stSrcChn.enModId = RK_ID_VPSS;
-		stSrcChn.s32DevId = ctx->vpss.s32GrpId;
-		stSrcChn.s32ChnId = 0;
-		stDestChn.enModId = RK_ID_IVS;
-		stDestChn.s32DevId = 0;
-		stDestChn.s32ChnId = ctx->ivs.s32ChnId;
-		s32Ret = SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
-		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("VPSS and IVS bind failure:%X", s32Ret);
-			g_exit_result = RK_FAILURE;
-		}
-
-		/* ivs chn destroy*/
-		SAMPLE_COMM_IVS_Destroy(ctx->ivs.s32ChnId);
-	}
-#endif
-
-	for (int i = 0; i < VENC_CHN_MAX; i++) {
-		gPThreadStatus->bIfVencThreadQuit[i] = true;
-		pthread_join(ctx->venc[i].getStreamThread, RK_NULL);
-	}
-	/* Venc[0] unbind VPSS[0,0]*/
-	stSrcChn.enModId = RK_ID_VPSS;
-	stSrcChn.s32DevId = ctx->vpss.s32GrpId;
-	stSrcChn.s32ChnId = ctx->vpss.s32ChnId;
-	stDestChn.enModId = RK_ID_VENC;
-	stDestChn.s32DevId = 0;
-	stDestChn.s32ChnId = ctx->venc[0].s32ChnId;
-	s32Ret = SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
-	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("venc[0] and Vpss unbind failure:%X", s32Ret);
-		g_exit_result = RK_FAILURE;
-	}
-
-	/* Venc[1] unbind VPSS[0,1]*/
-	stSrcChn.enModId = RK_ID_VPSS;
-	stSrcChn.s32DevId = ctx->vpss.s32GrpId;
-	stSrcChn.s32ChnId = 1;
-	stDestChn.enModId = RK_ID_VENC;
-	stDestChn.s32DevId = 0;
-	stDestChn.s32ChnId = ctx->venc[1].s32ChnId;
-	s32Ret = SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
-	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("Venc[1] and Vpss unbind failure:%X", s32Ret);
-		g_exit_result = RK_FAILURE;
-	}
-
-	/* Venc[2] unbind VPSS[0,2]*/
-	stSrcChn.enModId = RK_ID_VPSS;
-	stSrcChn.s32DevId = ctx->vpss.s32GrpId;
-	stSrcChn.s32ChnId = 2;
-	stDestChn.enModId = RK_ID_VENC;
-	stDestChn.s32DevId = 0;
-	stDestChn.s32ChnId = ctx->venc[2].s32ChnId;
-	s32Ret = SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
-	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("Venc[2] and Vpss unbind failure:%X", s32Ret);
-		g_exit_result = RK_FAILURE;
-	}
-
-	SAMPLE_COMM_VENC_DestroyChn(&ctx->venc[0]);
-	SAMPLE_COMM_VENC_DestroyChn(&ctx->venc[1]);
-	SAMPLE_COMM_VENC_DestroyChn(&ctx->venc[2]);
-
-	// UnBind VI and VPSS
-	stSrcChn.enModId = RK_ID_VI;
-	stSrcChn.s32DevId = ctx->vi.s32DevId;
-	stSrcChn.s32ChnId = ctx->vi.s32ChnId;
-	stDestChn.enModId = RK_ID_VPSS;
-	stDestChn.s32DevId = ctx->vpss.s32GrpId;
-	stDestChn.s32ChnId = ctx->vpss.s32ChnId;
-	s32Ret = SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
-	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("VI and Vpss unbind failure:%X", s32Ret);
-		g_exit_result = RK_FAILURE;
-	}
-	// Destroy VPSS
-	SAMPLE_COMM_VPSS_DestroyChn(&ctx->vpss);
-	// Destroy VI
-	SAMPLE_COMM_VI_DestroyChn(&ctx->vi);
-	/* rtsp deinit */
+	// Destroy pipeline.
+	sub_threads_deinit(ctx, &parsedArgs);
+	bind_deinit(ctx, &parsedArgs);
+	rgn_deinit(ctx, &parsedArgs);
+	if (parsedArgs.bEnableIvs)
+		ivs_deinit(ctx, &parsedArgs);
+	venc_chn_deinit(ctx, &parsedArgs);
+	vpss_chn_deinit(ctx, &parsedArgs);
+	vi_chn_deinit(ctx, &parsedArgs);
+	if (parsedArgs.bEnableIva)
+		iva_deinit(ctx, &parsedArgs);
 	rtsp_deinit();
-__FAILED:
+
+__MPI_INIT_FAILED:
 	RK_MPI_SYS_Exit();
-	if (pIqFileDir) {
-#ifdef RKAIQ
-		SAMPLE_COMM_ISP_Stop(s32CamId);
-#endif
-	}
-__FAILED2:
+__ISP_INIT_FAILED:
+	if (parsedArgs.pIqFileDir)
+		SAMPLE_COMM_ISP_Stop(parsedArgs.s32CamId);
+
+__PARAM_INIT_FAILED:
 	global_param_deinit();
 
-	if (ctx) {
-		free(ctx);
-		ctx = RK_NULL;
-	}
-__PARAM_INIT_FAILED:
+	free(ctx);
+	ctx = RK_NULL;
+
 	return g_exit_result;
 }
 #ifdef __cplusplus

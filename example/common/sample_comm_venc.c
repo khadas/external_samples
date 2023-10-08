@@ -292,7 +292,8 @@ RK_S32 SAMPLE_COMM_VENC_GetStream(SAMPLE_VENC_CTX_S *ctx, void **pdata) {
 			*pdata = RK_MPI_MB_Handle2VirAddr(ctx->stFrame.pstPack->pMbBlk);
 			break;
 		} else {
-			RK_LOGE("RK_MPI_VENC_GetStream chnid:%d fail %#X", ctx->s32ChnId, s32Ret);
+			RK_LOGE("RK_MPI_VENC_GetStream chnid:%d fail %#X"
+					, ctx->s32ChnId, s32Ret);
 		}
 	}
 	return s32Ret;

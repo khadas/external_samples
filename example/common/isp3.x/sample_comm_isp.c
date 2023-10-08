@@ -447,6 +447,16 @@ RK_S32 SAMPLE_COMM_ISP_CamGroup_SetLDCH(RK_U32 CamId, RK_U32 u32Level,
 	return RK_SUCCESS;
 }
 
+RK_S32 SAMPLE_COMM_ISP_GetAINrParams(RK_S32 CamId, rk_ainr_param *param) {
+	RK_S32 ret = RK_SUCCESS;
+	ret = rk_aiq_uapi2_sysctl_getAinrParams(g_aiq_ctx[CamId], param);
+	if (ret != RK_SUCCESS) {
+		printf("rk_aiq_uapi2_sysctl_getAinrParams failure %#X\n", ret);
+		return ret;
+	}
+	return ret;
+}
+
 #ifdef __cplusplus
 #if __cplusplus
 }
