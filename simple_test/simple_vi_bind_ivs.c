@@ -190,6 +190,10 @@ static RK_S32 create_ivs(int width, int height, RK_U32 u32AreaEn) {
 	stMdAttr.s32ThreshSad = 40;
 	stMdAttr.s32ThreshMove = 2;
 	stMdAttr.s32SwitchSad = 0;
+	stMdAttr.bFlycatkinFlt = RK_TRUE;
+	stMdAttr.s32ThresDustMove = 3;
+	stMdAttr.s32ThresDustBlk = 3;
+	stMdAttr.s32ThresDustChng = 50;
 	s32Ret = RK_MPI_IVS_SetMdAttr(0, &stMdAttr);
 	if (s32Ret) {
 		RK_LOGE("ivs set mdattr failed:%x", s32Ret);
