@@ -220,14 +220,6 @@ RK_S32 SAMPLE_COMM_VENC_CreateChn(SAMPLE_VENC_CTX_S *ctx) {
 			RK_LOGE("RK_MPI_VENC_SetJpegParam failure:%X", s32Ret);
 			return s32Ret;
 		}
-	} else if (ctx->stChnAttr.stVencAttr.enType == RK_VIDEO_ID_MJPEG) {
-		VENC_MJPEG_PARAM_S stMjpegParam;
-		memset(&stMjpegParam, 0, sizeof(stMjpegParam));
-		memset(&stMjpegParam.u8YQt, 1, sizeof(stMjpegParam.u8YQt));
-		memset(&stMjpegParam.u8CbQt, 1, sizeof(stMjpegParam.u8CbQt));
-		memset(&stMjpegParam.u8CrQt, 1, sizeof(stMjpegParam.u8CrQt));
-		stMjpegParam.u32MCUPerECS = 100;
-		RK_MPI_VENC_SetMjpegParam(ctx->s32ChnId, &stMjpegParam);
 	}
 
 	if (ctx->bComboIfEnable) {
