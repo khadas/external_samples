@@ -171,5 +171,7 @@ RK_S32 SAMPLE_COMM_TDE_Destroy(SAMPLE_TDE_CTX_S *ctx) {
 		return s32Ret;
 	}
 	RK_TDE_Close();
+
+	RK_MPI_SYS_WaitFreeMB();
 	return s32Ret;
 }

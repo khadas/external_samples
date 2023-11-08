@@ -363,7 +363,7 @@ static void *vi_iva_thread(void *pArgs) {
 	VIDEO_FRAME_INFO_S *stViFrame = NULL;
 
 	while (!gPThreadStatus->bIfViIvaTHreadQuit) {
-		s32Ret = SAMPLE_COMM_VI_GetChnFrame(&ctx->vi[2], (void*)&pData);
+		s32Ret = SAMPLE_COMM_VI_GetChnFrame(&ctx->vi[2], (void *)&pData);
 		if (s32Ret == RK_SUCCESS) {
 			stViFrame = (VIDEO_FRAME_INFO_S *)malloc(sizeof(VIDEO_FRAME_INFO_S));
 			if (!stViFrame) {

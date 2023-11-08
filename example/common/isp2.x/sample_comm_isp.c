@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-//#ifdef RKAIQ
+// #ifdef RKAIQ
 
 #include <assert.h>
 #include <fcntl.h>
@@ -1101,4 +1101,4 @@ RK_S32 SAMPLE_COMM_ISP_CamGroup_SetLDCH(RK_U32 CamId, RK_U32 u32Level,
 	return RK_SUCCESS;
 }
 #endif
-//#endif
+// #endif

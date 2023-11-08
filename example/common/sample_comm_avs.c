@@ -194,6 +194,7 @@ RK_S32 SAMPLE_COMM_AVS_DestroyGrp(SAMPLE_AVS_CTX_S *ctx) {
 			}
 		}
 	}
+	RK_MPI_SYS_WaitFreeMB();
 	return RK_SUCCESS;
 }
 

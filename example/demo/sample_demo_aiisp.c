@@ -413,7 +413,7 @@ static RK_S32 rgn_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
 	ctx->rgn[0].rgnHandle = 0;
 	ctx->rgn[0].stRgnAttr.enType = COVER_RGN;
 // RV1106 just support attach cover in VI channel.
-#if defined (RV1106)
+#if defined(RV1106)
 	ctx->rgn[0].stMppChn.enModId = RK_ID_VI;
 	ctx->rgn[0].stMppChn.s32ChnId = 0;
 	ctx->rgn[0].stMppChn.s32DevId = 0;
@@ -438,7 +438,7 @@ static RK_S32 rgn_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
 
 	ctx->rgn[1].rgnHandle = 1;
 	ctx->rgn[1].stRgnAttr.enType = COVER_RGN;
-#if defined (RV1106)
+#if defined(RV1106)
 	ctx->rgn[1].stMppChn.enModId = RK_ID_VI;
 	ctx->rgn[1].stMppChn.s32ChnId = 0;
 	ctx->rgn[1].stMppChn.s32DevId = 0;

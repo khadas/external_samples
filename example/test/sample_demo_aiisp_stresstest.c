@@ -667,8 +667,8 @@ static RK_S32 vpss_venc_chn0_resolution_switch_test(SAMPLE_VPSS_CTX_S *pVpssCtx,
 	}
 	// rgn attach venc
 	if (rgn_attach_module == RGN_ATTACH_VENC) {
-		s32Ret = rgn_init(gModeTest->inputBmp1Path
-				, gModeTest->inputBmp2Path, ctx, rgn_attach_module);
+		s32Ret = rgn_init(gModeTest->inputBmp1Path, gModeTest->inputBmp2Path, ctx,
+		                  rgn_attach_module);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("venc_rgn_attach failure");
 			return s32Ret;
@@ -750,8 +750,8 @@ static RK_S32 encode_destroy_and_restart(CODEC_TYPE_E enCodecType,
 
 	// rgn attach venc
 	if (gModeTest->rgn_attach_module == RGN_ATTACH_VENC) {
-		s32Ret = rgn_init(gModeTest->inputBmp1Path
-				, gModeTest->inputBmp2Path, ctx, gModeTest->rgn_attach_module);
+		s32Ret = rgn_init(gModeTest->inputBmp1Path, gModeTest->inputBmp2Path, ctx,
+		                  gModeTest->rgn_attach_module);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("venc_rgn_attach failure");
 			return s32Ret;

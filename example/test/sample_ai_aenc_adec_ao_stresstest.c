@@ -226,7 +226,7 @@ static RK_S32 init_ai_gbs() {
 	return RK_SUCCESS;
 }
 
-//声音质量增强
+// 声音质量增强
 RK_S32 init_ai_vqe(RK_S32 s32SampleRate) {
 	AI_VQE_CONFIG_S stAiVqeConfig, stAiVqeConfig2;
 	RK_S32 result;
@@ -300,7 +300,7 @@ RK_S32 ai_set_other(RK_S32 s32SetVolume) {
 
 	RK_MPI_AI_SetVolume(s32DevId, s32SetVolume);
 
-	//左声道，无需修改
+	// 左声道，无需修改
 	RK_MPI_AI_SetTrackMode(s32DevId, AUDIO_TRACK_FRONT_LEFT);
 	AUDIO_TRACK_MODE_E trackMode;
 	RK_MPI_AI_GetTrackMode(s32DevId, &trackMode);
@@ -337,7 +337,7 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate, RK_U32 u3
 
 	aiAttr.enSoundmode = AUDIO_SOUND_MODE_MONO;
 	aiAttr.u32PtNumPerFrm = u32FrameCnt;
-	//以下参数无特殊需求，无需变动，保持默认值即可
+	// 以下参数无特殊需求，无需变动，保持默认值即可
 	aiAttr.u32FrmNum = 4;
 	aiAttr.u32EXFlag = 0;
 	aiAttr.u32ChnCnt = 2;
@@ -483,7 +483,7 @@ RK_S32 open_device_ao(RK_S32 s32SampleRate, RK_U32 u32FrameCnt) {
 
 	aoAttr.enSoundmode = AUDIO_SOUND_MODE_MONO;
 	aoAttr.u32PtNumPerFrm = u32FrameCnt; // 1024
-	//以下参数没有特殊需要，无需修改
+	// 以下参数没有特殊需要，无需修改
 	aoAttr.u32FrmNum = 4;
 	aoAttr.u32EXFlag = 0;
 	aoAttr.u32ChnCnt = 2;

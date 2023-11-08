@@ -16,8 +16,8 @@
 
 #include "sample_comm.h"
 #include <stdlib.h>
-//#include "test_comm_imgproc.h"
-//#include "test_comm_utils.h"
+// #include "test_comm_imgproc.h"
+// #include "test_comm_utils.h"
 
 #define RK_CLIP3(l, h, a) ((a) < (l) ? (l) : ((a) > (h) ? (h) : (a)))
 

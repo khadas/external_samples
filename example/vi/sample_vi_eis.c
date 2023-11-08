@@ -34,11 +34,11 @@ extern "C" {
 #include <time.h>
 #include <unistd.h>
 
-#include "sample_comm.h"
 #include "rk_aiq.h"
 #include "rk_aiq_mems_sensor.h"
 #include "rkiio.h"
 #include "rtsp_demo.h"
+#include "sample_comm.h"
 #include "uAPI/rk_aiq_user_api_sysctl.h"
 
 #define BUFFER_SIZE 255

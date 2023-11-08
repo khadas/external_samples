@@ -403,7 +403,6 @@ int main(int argc, char *argv[]) {
 		goto __FAILED;
 	}
 
-
 	/* Init avs[0] */
 	ctx->avs.s32GrpId = 0;
 	ctx->avs.s32ChnId = 0;

@@ -176,6 +176,7 @@ RK_S32 SAMPLE_COMM_VI_DestroyChn(SAMPLE_VI_CTX_S *ctx) {
 		return s32Ret;
 	}
 
+	RK_MPI_SYS_WaitFreeMB();
 	return RK_SUCCESS;
 }
 
