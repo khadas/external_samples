@@ -84,6 +84,12 @@ simple_adec_bind_ao: simple_adec_bind_ao.c
 simple_ai_bind_aenc: simple_ai_bind_aenc.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
+simple_adec_bind_ao_external_decoder: simple_adec_bind_ao_external_decoder.c
+	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaudio -lrkdemuxer
+
+simple_ai_bind_aenc_external_encoder: simple_ai_bind_aenc_external_encoder.c
+	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaudio
+
 simple_ai_get_frame: simple_ai_get_frame.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
