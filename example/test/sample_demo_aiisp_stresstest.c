@@ -243,7 +243,7 @@ static void *venc_get_stream(void *pArgs) {
 				gModeTest->u32VencGetFrameCount[ctx->s32ChnId]++;
 				pthread_mutex_unlock(&g_frame_count_mutex[ctx->s32ChnId]);
 
-				if (gModeTest->u32VencGetFrameCount[ctx->s32ChnId] ==
+				if (gModeTest->u32VencGetFrameCount[ctx->s32ChnId] >=
 				    gModeTest->u32TestFrameCount) {
 					sem_post(&g_sem_module_test[ctx->s32ChnId]);
 				}
@@ -1588,8 +1588,8 @@ int main(int argc, char *argv[]) {
 #if defined(RV1106)
 	u32ViBuffCnt = 2;
 #endif
-	RK_U32 u32IvsWidth = 896;
-	RK_U32 u32IvsHeight = 512;
+	RK_U32 u32IvsWidth = 704;
+	RK_U32 u32IvsHeight = 576;
 	RK_U32 u32IvaDetectFrameRate = 10;
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_CHAR *pOutPathVenc = NULL;
@@ -2113,6 +2113,7 @@ int main(int argc, char *argv[]) {
 		SAMPLE_COMM_IVA_Destroy(&ctx->iva);
 	}
 #endif
+
 #ifdef ROCKIT_IVS
 	/* ivs detect thread exit*/
 	gModeTest->bIfIvsDetectThreadQuit = RK_TRUE;
