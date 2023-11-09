@@ -36,8 +36,6 @@ RK_S32 ao_set_other(RK_S32 s32SetVolume) {
 	RK_MPI_AO_GetVolume(s32DevId, &volume);
 	RK_LOGI("test info : get volume = %d", volume);
 
-	RK_MPI_AO_SetTrackMode(s32DevId, AUDIO_TRACK_OUT_STEREO);
-
 	AUDIO_TRACK_MODE_E trackMode;
 	RK_MPI_AO_GetTrackMode(s32DevId, &trackMode);
 	RK_LOGI("test info : get track mode = %d", trackMode);
@@ -45,7 +43,7 @@ RK_S32 ao_set_other(RK_S32 s32SetVolume) {
 	return 0;
 }
 
-RK_S32 open_device_ao(RK_S32 s32SampleRate, RK_S32 u32FrameCnt) {
+RK_S32 open_device_ao(RK_S32 s32SampleRate, RK_S32 channel, RK_S32 u32FrameCnt) {
 	printf("\n=======%s=======\n", __func__);
 	RK_S32 result = 0;
 	AUDIO_DEV aoDevId = 0;
@@ -73,7 +71,15 @@ RK_S32 open_device_ao(RK_S32 s32SampleRate, RK_S32 u32FrameCnt) {
 	aoAttr.enBitwidth = AUDIO_BIT_WIDTH_16;                   // AUDIO_BIT_WIDTH_16
 	aoAttr.enSamplerate = (AUDIO_SAMPLE_RATE_E)s32SampleRate; // 16000
 
-	aoAttr.enSoundmode = AUDIO_SOUND_MODE_MONO;
+	if (channel == 1)
+		aoAttr.enSoundmode = AUDIO_SOUND_MODE_MONO;
+	else if (channel == 2)
+		aoAttr.enSoundmode = AUDIO_SOUND_MODE_STEREO;
+	else {
+		RK_LOGE("unsupport = %d", channel);
+		return RK_FAILURE;
+	}
+
 	aoAttr.u32PtNumPerFrm = u32FrameCnt; // 1024
 	//以下参数没有特殊需要，无需修改
 	aoAttr.u32FrmNum = 4;
@@ -89,6 +95,11 @@ RK_S32 open_device_ao(RK_S32 s32SampleRate, RK_S32 u32FrameCnt) {
 		RK_LOGE("ao set channel params, aoChn = %d", aoChn);
 		return RK_FAILURE;
 	}
+
+	if (channel == 1)
+		RK_MPI_AO_SetTrackMode(aoDevId, AUDIO_TRACK_OUT_STEREO);
+	else
+		RK_MPI_AO_SetTrackMode(aoDevId, AUDIO_TRACK_NORMAL);
 	/*==============================================================================*/
 	result = RK_MPI_AO_EnableChn(aoDevId, aoChn);
 	if (result != 0) {
@@ -150,7 +161,8 @@ static void print_usage(const RK_CHAR *name) {
 }
 
 int main(int argc, char *argv[]) {
-	RK_S32 u32SampleRate = 16000;
+	RK_S32 u32SampleRate = 8000;
+	RK_S32 u32Channel = 1;
 	RK_U32 u32FrameCnt = 1024;
 	RK_CHAR *pInPath = "/tmp/aenc.g726";
 	RK_CHAR *pCodecName = "g726";
@@ -161,6 +173,9 @@ int main(int argc, char *argv[]) {
 		switch (c) {
 		case 'r':
 			u32SampleRate = atoi(optarg);
+			break;
+		case 'c':
+			u32Channel = atoi(optarg);
 			break;
 		case 'i':
 			pInPath = optarg;
@@ -188,6 +203,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	printf("#SampleRate: %d\n", u32SampleRate);
+	printf("#Channel: %d\n", u32Channel);
 	printf("#Frame Count: %d\n", u32FrameCnt);
 	printf("#CodecName:%s\n", pCodecName);
 	printf("#Input Path: %s\n", pInPath);
@@ -203,8 +219,11 @@ int main(int argc, char *argv[]) {
 	signal(SIGINT, sigterm_handler);
 
 	RK_MPI_SYS_Init();
-	open_device_ao(u32SampleRate, u32FrameCnt);
-	init_mpi_adec(u32SampleRate);
+	if (open_device_ao(u32SampleRate, u32Channel, u32FrameCnt))
+		return -1;
+
+	if (init_mpi_adec(u32SampleRate))
+		return -1;
 
 	// adec bind ao
 	MPP_CHN_S stSrcChn, stDestChn;
@@ -233,10 +252,10 @@ int main(int argc, char *argv[]) {
 	AUDIO_STREAM_S stAudioStream;
 
 	while (!quit) {
-		srcData = calloc(1024, sizeof(RK_U8));
-		memset(srcData, 0, 1024);
+		srcData = calloc(u32FrameCnt, sizeof(RK_U8));
+		memset(srcData, 0, u32FrameCnt);
 
-		srcSize = fread(srcData, 1, 1024, adec_file);
+		srcSize = fread(srcData, 1, u32FrameCnt, adec_file);
 		if (srcSize == 0 || srcData == RK_NULL) {
 			RK_LOGI("read eos packet, now send eos packet!");
 			pktEos = 1;

@@ -86,8 +86,6 @@ RK_S32 ai_set_other(RK_S32 s32SetVolume) {
 
 	RK_MPI_AI_SetVolume(s32DevId, s32SetVolume);
 
-	//左声道，无需修改
-	RK_MPI_AI_SetTrackMode(s32DevId, AUDIO_TRACK_FRONT_LEFT);
 	AUDIO_TRACK_MODE_E trackMode;
 	RK_MPI_AI_GetTrackMode(s32DevId, &trackMode);
 	RK_LOGI("test info : get track mode = %d", trackMode);
@@ -96,7 +94,7 @@ RK_S32 ai_set_other(RK_S32 s32SetVolume) {
 }
 
 RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate,
-                      RK_S32 u32FrameCnt) {
+                      RK_S32 channel, RK_S32 u32FrameCnt) {
 	printf("\n=======%s=======\n", __func__);
 	AIO_ATTR_S aiAttr;
 	AI_CHN_PARAM_S pstParams;
@@ -154,6 +152,8 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate,
 
 	// init_ai_vqe(OutputSampleRate);
 
+	//左声道，无需修改
+	RK_MPI_AI_SetTrackMode(aiDevId, AUDIO_TRACK_FRONT_LEFT);
 	result = RK_MPI_AI_EnableChn(aiDevId, aiChn);
 	if (result != 0) {
 		RK_LOGE("ai enable channel fail, aiChn = %d, reason = %x", aiChn, result);
@@ -177,7 +177,7 @@ __FAILED:
 	return RK_FAILURE;
 }
 
-RK_S32 init_mpi_aenc(RK_S32 s32SampleRate) {
+RK_S32 init_mpi_aenc(RK_S32 s32SampleRate, RK_S32 channel) {
 	printf("\n=======%s=======\n", __func__);
 	RK_S32 s32ret = 0;
 	AENC_CHN_ATTR_S pstChnAttr;
@@ -205,7 +205,7 @@ RK_S32 init_mpi_aenc(RK_S32 s32SampleRate) {
 	return s32ret;
 }
 
-static RK_CHAR optstr[] = "?::r:o:t:";
+static RK_CHAR optstr[] = "?::r:o:t:c:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s [-r 8000] [-t g726] -o /tmp/aenc.g726\n", name);
@@ -217,6 +217,7 @@ static void print_usage(const RK_CHAR *name) {
 // 编码g726的时候，只支持8000 单声道，所以需要设置所以需要设置track_mode为8
 int main(int argc, char *argv[]) {
 	RK_S32 u32SampleRate = 8000;
+	RK_S32 u32Channel = 1;
 	RK_U32 u32FrameCnt = 1024;
 	RK_CHAR *pOutPath = "/tmp/aenc.g726";
 	RK_CHAR *pCodecName = "g726";
@@ -227,6 +228,9 @@ int main(int argc, char *argv[]) {
 		switch (c) {
 		case 'r':
 			u32SampleRate = atoi(optarg);
+			break;
+		case 'c':
+			u32Channel = atoi(optarg);
 			break;
 		case 'o':
 			pOutPath = optarg;
@@ -254,6 +258,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	printf("#SampleRate: %d\n", u32SampleRate);
+	printf("#Channel: %d\n", u32Channel);
 	printf("#Frame Count: %d\n", u32FrameCnt);
 	printf("#CodecName:%s\n", pCodecName);
 	printf("#Output Path: %s\n", pOutPath);
@@ -270,9 +275,11 @@ int main(int argc, char *argv[]) {
 
 	RK_MPI_SYS_Init();
 
-	open_device_ai(u32SampleRate, u32SampleRate, u32FrameCnt);
+	if (open_device_ai(u32SampleRate, u32SampleRate, u32Channel, u32FrameCnt))
+		return -1;
 
-	init_mpi_aenc(u32SampleRate);
+	if (init_mpi_aenc(u32SampleRate, u32Channel))
+		return -1;
 
 	// ai bind aenc
 	MPP_CHN_S stSrcChn, stDestChn;
