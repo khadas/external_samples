@@ -291,7 +291,9 @@ RK_S32 SAMPLE_COMM_VPSS_DestroyChn(SAMPLE_VPSS_CTX_S *ctx) {
 		return s32Ret;
 	}
 
+#if defined(RV1106)
 	RK_MPI_SYS_WaitFreeMB();
+#endif
 	return RK_SUCCESS;
 }
 
