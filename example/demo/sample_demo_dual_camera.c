@@ -683,8 +683,8 @@ int main(int argc, char *argv[]) {
 
 	SAMPLE_COMM_UnBind(&vi_chn[0], &venc_chn[0]);
 	SAMPLE_COMM_UnBind(&vi_chn[1], &venc_chn[1]);
-	SAMPLE_COMM_UnBind(&vi_chn[3], &venc_chn[2]);
-	SAMPLE_COMM_UnBind(&vi_chn[4], &venc_chn[3]);
+	SAMPLE_COMM_UnBind(&vi_chn[2], &venc_chn[2]);
+	SAMPLE_COMM_UnBind(&vi_chn[3], &venc_chn[3]);
 
 	// Destroy VI[0]
 	for (i = 0; i < s32CamNum; i++) {

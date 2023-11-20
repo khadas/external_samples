@@ -15,6 +15,7 @@ all:
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_rgn_stresstest.c -o sample_rgn_stresstest $(LD_FLAGS) -lrockchip_mpp -lrkaiq -lrtsp
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_mulit_isp_stresstest.c -o sample_mulit_isp_stresstest $(LD_FLAGS) -lrkaiq
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_aiisp_stresstest.c -o sample_demo_aiisp_stresstest $(LD_FLAGS) -lrockchip_mpp -lrkaiq -lrtsp -lrockiva
+	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_dual_aiisp_stresstest.c -o sample_demo_dual_aiisp_stresstest $(LD_FLAGS) -lrockchip_mpp -lrkaiq -lrtsp -lrockiva
 ifeq ($(HAVE_AVS), y)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_avs_stresstest.c -o sample_avs_stresstest $(LD_FLAGS) -lrkaiq
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_vi_avs_venc_stresstest.c -o sample_demo_vi_avs_venc_stresstest $(LD_FLAGS) -lrockchip_mpp -lrkaiq -lrtsp
@@ -40,6 +41,7 @@ endif
 	@mv -f sample_vpss_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_demo_vi_venc_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_demo_aiisp_stresstest $(SAMPLE_OUT_DIR)/bin
+	@mv -f sample_demo_dual_aiisp_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mkdir -p ../../../../output/out/userdata/
 	@cp -f source/ai_aenc_adec_ao_stresstes.sh ../../../../output/out/userdata/
 	@cp -f source/160x96.bmp ../../../../output/out/userdata/
@@ -55,6 +57,7 @@ endif
 	@cp -f source/rv1126_stresstest.sh ../../../../output/out/userdata/
 	@cp -f source/demo_vi_avs_venc_stresstest.sh ../../../../output/out/userdata/
 	@cp -f source/demo_aiisp_stresstest.sh ../../../../output/out/userdata/
+	@cp -f source/demo_dual_aiisp_stresstest.sh ../../../../output/out/userdata/
 	@cp -f source/rv1106_multi_cam_stresstest.sh ../../../../output/out/userdata/
 	@cp -f source/multi_isp_stresstest.sh ../../../../output/out/userdata/
 	@cp -f source/rv1126_multi_cam_stresstest.sh ../../../../output/out/userdata/
