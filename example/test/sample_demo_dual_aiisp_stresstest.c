@@ -286,7 +286,7 @@ static RK_S32 hdrMode_stressTest() {
 	s32Ret |= SAMPLE_COMM_ISP_SetWDRModeDyn(CAM_1_INDEX, g_cmd_args->eHdrMode);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("SAMPLE_COMM_ISP_SetWDRModeDyn failure:%#X cam:%d hdrmodr:%d", s32Ret,
-		        gModeTest->s32CamId, gModeTest->eHdrMode);
+		        g_cmd_args->s32CamId, g_cmd_args->eHdrMode);
 		return s32Ret;
 	}
 #endif
