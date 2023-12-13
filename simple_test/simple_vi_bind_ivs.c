@@ -29,6 +29,12 @@
 #include "rk_mpi_vo.h"
 #include "rk_mpi_vpss.h"
 
+struct ivs_info {
+	RK_U32 u32Width;
+	RK_U32 u32Height;
+	RK_U32 u32Sensitivity;
+};
+
 static bool quit = false;
 
 static void sigterm_handler(int sig) {
@@ -37,13 +43,14 @@ static void sigterm_handler(int sig) {
 }
 
 static void *GetMediaBuffer0(void *arg) {
-	(void)arg;
+	struct ivs_info *info = (struct ivs_info *)arg;
 	printf("========%s========\n", __func__);
 	int loopCount = 0;
 	int s32Ret;
 	IVS_RESULT_INFO_S stResults;
 	// int width = 1920;
 	// int height = 1080;
+	RK_U32 u32SquarePct[5] = {50, 30, 25, 20, 20};
 
 	while (!quit) {
 		memset(&stResults, 0, sizeof(IVS_RESULT_INFO_S));
@@ -61,6 +68,8 @@ static void *GetMediaBuffer0(void *arg) {
 					       stResults.pstResults->stMdInfo.u32DetAreaSquare,
 					       stResults.pstResults->stMdInfo.u32DetOutputSquare);
 				}
+				if (1000 * stResults.pstResults->stMdInfo.u32Square / info->u32Width / info->u32Height > u32SquarePct[info->u32Sensitivity])
+					printf("Detect movement!\n");
 			}
 			RK_MPI_IVS_ReleaseResults(0, &stResults);
 		} else {
@@ -143,7 +152,7 @@ int vi_chn_init(int channelId, int width, int height) {
 	return ret;
 }
 
-static RK_S32 create_ivs(int width, int height, RK_U32 u32AreaEn) {
+static RK_S32 create_ivs(int width, int height, RK_U32 u32AreaEn, RK_U32 u32Sensitivity) {
 	RK_S32 s32Ret;
 	IVS_CHN_ATTR_S attr;
 	memset(&attr, 0, sizeof(attr));
@@ -187,9 +196,37 @@ static RK_S32 create_ivs(int width, int height, RK_U32 u32AreaEn) {
 		RK_LOGE("ivs get mdattr failed:%x", s32Ret);
 		goto __FAILED;
 	}
-	stMdAttr.s32ThreshSad = 40;
-	stMdAttr.s32ThreshMove = 2;
-	stMdAttr.s32SwitchSad = 0;
+	switch (u32Sensitivity) {
+	case 0:
+		stMdAttr.s32ThreshSad = 96;
+		stMdAttr.s32ThreshMove = 3;
+		stMdAttr.s32SwitchSad = 2;
+		break;
+	case 1:
+		stMdAttr.s32ThreshSad = 72;
+		stMdAttr.s32ThreshMove = 2;
+		stMdAttr.s32SwitchSad = 2;
+		break;
+	case 2:
+		stMdAttr.s32ThreshSad = 64;
+		stMdAttr.s32ThreshMove = 2;
+		stMdAttr.s32SwitchSad = 2;
+	case 3:
+		stMdAttr.s32ThreshSad = 48;
+		stMdAttr.s32ThreshMove = 1;
+		stMdAttr.s32SwitchSad = 2;
+		break;
+	case 4:
+		stMdAttr.s32ThreshSad = 32;
+		stMdAttr.s32ThreshMove = 1;
+		stMdAttr.s32SwitchSad = 0;
+		break;
+	default:
+		stMdAttr.s32ThreshSad = 64;
+		stMdAttr.s32ThreshMove = 2;
+		stMdAttr.s32SwitchSad = 2;
+		break;
+	}
 	stMdAttr.bFlycatkinFlt = RK_TRUE;
 	stMdAttr.s32ThresDustMove = 3;
 	stMdAttr.s32ThresDustBlk = 3;
@@ -206,7 +243,7 @@ __FAILED:
 	return -1;
 }
 
-static RK_CHAR optstr[] = "?::w:h:I:A:";
+static RK_CHAR optstr[] = "?::w:h:I:A:S:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s -I 0 -w 1920 -h 1080\n", name);
@@ -215,6 +252,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-I | --camid: camera ctx id, Default 0. "
 	       "0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
 	printf("\t-A | --Area: Area detect, Default:0\n");
+	printf("\t-S | --Sensitivity: MD sensitivity, range [0, 4], Default: 2\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -224,6 +262,7 @@ int main(int argc, char *argv[]) {
 	MPP_CHN_S stSrcChn, stIvsChn;
 	RK_S32 s32chnlId = 0;
 	RK_U32 u32AreaEn = 0;
+	RK_U32 u32Sensitivity = 2;
 	int c;
 
 	while ((c = getopt(argc, argv, optstr)) != -1) {
@@ -239,6 +278,11 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'A':
 			u32AreaEn = atoi(optarg);
+			break;
+		case 'S':
+			u32Sensitivity = atoi(optarg);
+			if (u32Sensitivity > 4)
+				u32Sensitivity = 4;
 			break;
 		case '?':
 		default:
@@ -259,7 +303,7 @@ int main(int argc, char *argv[]) {
 
 	vi_dev_init();
 	vi_chn_init(s32chnlId, u32Width, u32Height);
-	create_ivs(u32Width, u32Height, u32AreaEn);
+	create_ivs(u32Width, u32Height, u32AreaEn, u32Sensitivity);
 
 	stSrcChn.enModId = RK_ID_VI;
 	stSrcChn.s32DevId = 0;
@@ -275,8 +319,9 @@ int main(int argc, char *argv[]) {
 		goto __FAILED;
 	}
 
+	struct ivs_info ivs_info = {u32Width, u32Height, u32Sensitivity};
 	pthread_t main_thread;
-	pthread_create(&main_thread, NULL, GetMediaBuffer0, NULL);
+	pthread_create(&main_thread, NULL, GetMediaBuffer0, &ivs_info);
 
 	while (!quit) {
 		usleep(5000);
