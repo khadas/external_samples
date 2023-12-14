@@ -230,7 +230,7 @@ RK_S32 RegisterAdecMp3() {
 		adecCtx.pfnDecodeFrm    = RKAduioMp3DecoderDecode;
 		adecCtx.pfnGetFrmInfo   = RKAduioMp3DecoderGetFrameInfo;
 		adecCtx.pfnCloseDecoder = RKAduioMp3DecoderClose;
-		adecCtx.pfnResetDecoder = RK_NULL;//RKMpiFdkAac_Decoder_reset;
+		adecCtx.pfnResetDecoder = RK_NULL;
 
 		RK_LOGD("register ext audio decoder");
 		RK_S32 ret = RK_MPI_ADEC_RegisterDecoder(&extCodecHandle, &adecCtx);
