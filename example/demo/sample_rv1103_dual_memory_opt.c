@@ -497,7 +497,7 @@ __FAILED:
 		}
 #endif
 	}
-__FAILED2:
+
 	if (ctx) {
 		free(ctx);
 		ctx = RK_NULL;

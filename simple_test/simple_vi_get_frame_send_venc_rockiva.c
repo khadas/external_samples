@@ -441,7 +441,7 @@ static int InitIvaFace(IvaAppContext *ctx) {
 
 	RockIvaFaceCallback callback;
 	callback.detCallback = FaceDetResultCallback;
-	callback.analyseCallback = FaceAnalyseResultCallback;
+	callback.analyseCallback = (ROCKIVA_FACE_AnalyseResultCallback)FaceAnalyseResultCallback;
 	RockIvaRetCode ret = ROCKIVA_FACE_Init(ctx->handle, &ctx->faceParams, callback);
 	if (ret != ROCKIVA_RET_SUCCESS) {
 		printf("ROCKIVA_FACE_Init error %d\n", ret);

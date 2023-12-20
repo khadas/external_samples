@@ -355,7 +355,7 @@ static void *rkipc_get_vi_to_npu(void *arg) {
 			RK_LOGD("loopCount is %d, w is %d, h is %d, seq is %d, pts is %lld\n",
 			        loopCount, stViFrame.stVFrame.u32Width, stViFrame.stVFrame.u32Height,
 			        stViFrame.stVFrame.u32TimeRef, stViFrame.stVFrame.u64PTS / 1000);
-			void *data = RK_MPI_MB_Handle2VirAddr(stViFrame.stVFrame.pMbBlk);
+			// void *data = RK_MPI_MB_Handle2VirAddr(stViFrame.stVFrame.pMbBlk);
 			int32_t fd = RK_MPI_MB_Handle2Fd(stViFrame.stVFrame.pMbBlk);
 
 			rkipc_rockiva_write_nv12_frame_by_fd(
@@ -449,7 +449,6 @@ int main(int argc, char *argv[]) {
 #endif
 	int c;
 	while ((c = getopt_long(argc, argv, optstr, long_options, NULL)) != -1) {
-		const char *tmp_optarg = optarg;
 		switch (c) {
 		case 's':
 			s32CamId = atoi(optarg);
@@ -701,7 +700,7 @@ __FAILED:
 		}
 #endif
 	}
-__FAILED2:
+
 	if (ctx) {
 		free(ctx);
 		ctx = RK_NULL;

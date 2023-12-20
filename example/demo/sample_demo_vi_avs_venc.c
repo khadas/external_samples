@@ -192,7 +192,7 @@ static void *venc_get_stream(void *pArgs) {
 }
 
 static void handle_pipe(int sig) {
-	fprintf("sigaction will ignore signal %d\n", sig);
+	printf("sigaction will ignore signal %d\n", sig);
 	return;
 }
 

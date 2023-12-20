@@ -536,7 +536,7 @@ int main(int argc, char *argv[]) {
 			DemuxerPacket outPacket;
 			ret = rkdemuxer_read_one_audio_packet(demuxerCfg, &outPacket);
 			if (!ret) {
-				srcData = outPacket.s8PacketData;
+				srcData = (unsigned char *)outPacket.s8PacketData;
 				srcSize = outPacket.s32PacketSize;
 			} else
 				continue;

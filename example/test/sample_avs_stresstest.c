@@ -634,8 +634,8 @@ int main(int argc, char *argv[]) {
 	printf("#pCam1LdchMeshPath: %s\n", pCam1LdchMeshPath);
 
 	if (eGetLdchMode == RK_GET_LDCH_BY_FILE && pCam0LdchMeshPath && pCam1LdchMeshPath) {
-		pLdchMeshData[0] = pCam0LdchMeshPath;
-		pLdchMeshData[1] = pCam1LdchMeshPath;
+		pLdchMeshData[0] = (short unsigned int *)pCam0LdchMeshPath;
+		pLdchMeshData[1] = (short unsigned int *)pCam1LdchMeshPath;
 	}
 
 	/* SYS Init */
@@ -702,7 +702,7 @@ int main(int argc, char *argv[]) {
 
 			s32Ret =
 			    SAMPLE_COMM_ISP_CamGroup_Init(s32CamGrpId, hdr_mode, bMultictx,
-			                                  eGetLdchMode, pLdchMeshData, &camgroup_cfg);
+			                                  eGetLdchMode, (void **)pLdchMeshData, &camgroup_cfg);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("SAMPLE_COMM_ISP_CamGroup_Init failure");
 				return s32Ret;

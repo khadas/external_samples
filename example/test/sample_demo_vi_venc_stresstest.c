@@ -409,7 +409,7 @@ static void *vi_iva_thread(void *pArgs) {
 	VIDEO_FRAME_INFO_S *stViFrame = NULL;
 
 	while (!gModeTest->bIfViIvaTHreadQuit) {
-		s32Ret = SAMPLE_COMM_VI_GetChnFrame(&ctx->vi[2], &pData);
+		s32Ret = SAMPLE_COMM_VI_GetChnFrame(&ctx->vi[2], (void **)&pData);
 		if (s32Ret == RK_SUCCESS) {
 			stViFrame = (VIDEO_FRAME_INFO_S *)malloc(sizeof(VIDEO_FRAME_INFO_S));
 			if (!stViFrame) {
@@ -1736,7 +1736,6 @@ static RK_S32 media_init(RK_CHAR *pIqFileDir) {
 #if defined(ROCKIT_IVS)
 	s32Ret = SAMPLE_COMM_IVS_Create(&ctx->ivs);
 	if (s32Ret != RK_SUCCESS) {
-		RK_FALSE;
 		RK_LOGE("SAMPLE_COMM_IVS_Create failure:%#X", s32Ret);
 		return s32Ret;
 	}
@@ -2241,7 +2240,9 @@ int main(int argc, char *argv[]) {
 	RK_U32 u32ViBuffCnt = 2;
 	RK_U32 u32VencBuffSize = 0;
 	RK_U32 u32WrapLine = 4;
+#ifdef RV1126
 	RK_U32 u32Chnid = 1;
+#endif
 	RK_CHAR *pOutPathVenc = RK_NULL;
 	RK_CHAR *pIqFileDir = RK_NULL;
 	RK_CHAR *pIvaModelPath = "/oem/usr/lib/";
@@ -2253,12 +2254,6 @@ int main(int argc, char *argv[]) {
 	rk_aiq_working_mode_t eHdrMode = RK_AIQ_WORKING_MODE_NORMAL;
 
 	pthread_t modeTest_thread_id;
-#ifdef ROCKIT_IVS
-	pthread_t ivs_detect_thread_id;
-#endif
-#ifdef ROCKIVA
-	pthread_t vi_iva_thread_id;
-#endif
 
 	if (argc < 2) {
 		print_usage(argv[0]);
@@ -2384,9 +2379,11 @@ int main(int argc, char *argv[]) {
 		case 'i' + 'm':
 			pIvaModelPath = optarg;
 			break;
+#ifdef RV1126
 		case 'v' + 'i':
 			u32Chnid = atoi(optarg);
 			break;
+#endif
 		case '?':
 		default:
 			print_usage(argv[0]);

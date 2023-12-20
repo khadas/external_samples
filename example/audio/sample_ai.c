@@ -210,7 +210,7 @@ int main(int argc, char *argv[]) {
 	ctx->ai.stAiAttr.u32ChnCnt = s32ChnCnt;
 	ctx->ai.dstFilePath = pOutPath;
 	if (pCardName) {
-		strcpy(ctx->ai.stAiAttr.u8CardName, pCardName);
+		strcpy((char *)ctx->ai.stAiAttr.u8CardName, pCardName);
 	}
 	SAMPLE_COMM_AI_CreateChn(&ctx->ai);
 

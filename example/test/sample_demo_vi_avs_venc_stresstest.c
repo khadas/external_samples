@@ -786,7 +786,6 @@ int main(int argc, char *argv[]) {
 	VENC_RC_MODE_E enRcMode = VENC_RC_MODE_H265CBR;
 	rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
 	RK_CHAR *pCodecName = "H265";
-	MPP_CHN_S stSrcChn, stDestChn;
 	RK_S32 s32CamNum = 2;
 	RK_S32 s32loopCnt = -1;
 	RK_S32 s32BitRate = 4 * 1024;
@@ -1123,7 +1122,7 @@ int main(int argc, char *argv[]) {
 	/* mode test thread launch */
 	if (gModeTest->s32ModuleTestType) {
 		gModeTest->bIfModuleTestopen = RK_TRUE;
-		pthread_create(&mode_test_thread, RK_NULL, sample_demo_stresstest, gModeTest);
+		pthread_create(&mode_test_thread, RK_NULL, (void * (*)(void *))sample_demo_stresstest, gModeTest);
 	}
 
 	s32Ret = media_init(gModeTest);

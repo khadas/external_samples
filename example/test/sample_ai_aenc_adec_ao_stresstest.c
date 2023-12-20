@@ -15,8 +15,10 @@
 #include "rk_mpi_aenc.h"
 #include "rk_mpi_ai.h"
 #include "rk_mpi_ao.h"
+#include "rk_mpi_amix.h"
 #include "rk_mpi_mb.h"
 #include "rk_mpi_sys.h"
+#include "sample_comm.h"
 
 #define AI_ALGO_FRAMES 256 // baed on 16kHz, it's  128 during 8kHz
 
@@ -28,7 +30,7 @@ static void sigterm_handler(int sig) {
 
 static RK_U32 code_type = RK_AUDIO_ID_ADPCM_G726;
 
-typedef struct _rkMpiAICtx {
+typedef struct _rkTestMpiAICtx {
 	const char *srcFilePath;
 	const char *dstFilePath;
 	RK_S32 s32LoopCount;
@@ -540,6 +542,7 @@ RK_S32 init_mpi_adec(RK_S32 s32SampleRate) {
 	return s32ret;
 }
 
+/*
 static RK_S32 adec_data_free(void *opaque) {
 	if (opaque) {
 		free(opaque);
@@ -547,20 +550,13 @@ static RK_S32 adec_data_free(void *opaque) {
 	}
 	return 0;
 }
+*/
 
 void *getDataThread(void *ptr) {
 	TEST_AI_CTX_S *params = (TEST_AI_CTX_S *)(ptr);
-	int aiDevId = 0;
-	int aiChn = 0;
 	RK_S32 result = 0, count = 2;
 	RK_S32 s32MilliSec = -1;
 	AUDIO_FRAME_S getFrame;
-	RK_U8 *srcData = RK_NULL;
-	RK_S32 s32AiAlgoFrames = 0;
-	RK_U32 aed_count = 0, aed_flag = 0;
-	RK_U32 bcd_count = 0, bcd_flag = 0;
-	RK_U32 buz_count = 0, buz_flag = 0;
-	RK_U32 gbs_count = 0, gbs_flag = 0;
 
 	while (!quit && count > 0) {
 		if (params->s32LoopCount > 1)
@@ -661,9 +657,7 @@ int main(int argc, char *argv[]) {
 	int ret = 0;
 	int c;
 	TEST_AI_CTX_S params;
-	pthread_t tidSend;
 	pthread_t tidGet;
-	pthread_t tidComand;
 
 	params.srcFilePath = RK_NULL;
 	params.dstFilePath = RK_NULL;

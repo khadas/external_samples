@@ -884,7 +884,9 @@ int main(int argc, char *argv[]) {
 	RK_U32 u32ViBuffCnt = 2;
 	RK_U32 u32VencBuffSize = 0;
 	RK_U32 u32WrapLine = 4;
+#ifdef RV1126
 	RK_U32 u32Chnid = 1;
+#endif
 	RK_CHAR *pOutPathVenc = RK_NULL;
 	RK_CHAR *pIqFileDir = RK_NULL;
 	RK_CHAR *inputBmp1Path = RK_NULL;
@@ -1027,9 +1029,11 @@ int main(int argc, char *argv[]) {
 		case 'i' + 'm':
 			pIvaModelPath = optarg;
 			break;
+#ifdef RV1126
 		case 'v' + 'i':
 			u32Chnid = atoi(optarg);
 			break;
+#endif
 		case '?':
 		default:
 			print_usage(argv[0]);

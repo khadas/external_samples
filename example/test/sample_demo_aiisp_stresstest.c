@@ -1080,7 +1080,6 @@ static void *vpss_iva_thread(void *pArgs) {
 	RK_LOGI("vpss_iva_thread start");
 	SAMPLE_MPI_CTX_S *ctx = (SAMPLE_MPI_CTX_S *)pArgs;
 	RK_S32 s32Ret = RK_FAILURE;
-	RK_CHAR *pData = RK_NULL;
 	RK_S32 s32Fd = 0;
 	RockIvaImage ivaImage;
 	RK_U32 u32Loopcount = 0;
@@ -1213,7 +1212,6 @@ static RK_S32 media_init(RK_CHAR *pIqFileDir, RK_S32 rgn_attach_module) {
 #if defined(ROCKIT_IVS)
 	s32Ret = SAMPLE_COMM_IVS_Create(&ctx->ivs);
 	if (s32Ret != RK_SUCCESS) {
-		RK_FALSE;
 		RK_LOGE("SAMPLE_COMM_IVS_Create failure:%#X", s32Ret);
 		return s32Ret;
 	}
@@ -1502,7 +1500,7 @@ static void *sample_demo_stresstest(void *pArgs) {
 			break;
 		case 6:
 			g_rtsp_ifenbale = RK_FALSE;
-			s32Ret = vpss_venc_chn0_resolution_switch_test(&ctx->vpss, &ctx->venc,
+			s32Ret = vpss_venc_chn0_resolution_switch_test(&ctx->vpss, (SAMPLE_VENC_CTX_S *)&ctx->venc,
 			                                               gModeTest->rgn_attach_module);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("vpss_venc_chn0_resolution_switch_test failure %X", s32Ret);

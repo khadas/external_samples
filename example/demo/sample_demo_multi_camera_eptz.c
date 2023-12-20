@@ -328,7 +328,7 @@ static RK_VOID *venc_get_stream(RK_VOID *pArgs) {
 		s32Fd = fileno(fp);
 	}
 	while (!gModeTest->bIfVencThreadQuit) {
-		s32Ret = SAMPLE_COMM_VENC_GetStream(ctx, &pData);
+		s32Ret = SAMPLE_COMM_VENC_GetStream(ctx, (void **)&pData);
 		if (s32Ret == RK_SUCCESS) {
 
 			if (fp && !gModeTest->bIfMainThreadQuit) {
