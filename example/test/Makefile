@@ -42,26 +42,26 @@ endif
 	@mv -f sample_demo_vi_venc_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_demo_aiisp_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_demo_dual_aiisp_stresstest $(SAMPLE_OUT_DIR)/bin
-	@mkdir -p ../../../../output/out/userdata/
-	@cp -f source/ai_aenc_adec_ao_stresstes.sh ../../../../output/out/userdata/
-	@cp -f source/160x96.bmp ../../../../output/out/userdata/
-	@cp -f source/192x96.bmp ../../../../output/out/userdata/
-	@cp -f source/rv1103_stresstest.sh ../../../../output/out/userdata/
-	@cp -f source/rv1106_stresstest.sh ../../../../output/out/userdata/
-	@cp -f source/avs_stresstest.sh ../../../../output/out/userdata/
-	@cp -f source/vpss_stresstest.sh ../../../../output/out/userdata/
-	@cp -f source/isp_stresstest.sh ../../../../output/out/userdata/
-	@cp -f source/venc_stresstest.sh ../../../../output/out/userdata/
-	@cp -f source/demo_vi_venc_stresstest.sh ../../../../output/out/userdata/
-	@cp -f source/rgn_stresstest.sh ../../../../output/out/userdata/
-	@cp -f source/rv1126_stresstest.sh ../../../../output/out/userdata/
-	@cp -f source/demo_vi_avs_venc_stresstest.sh ../../../../output/out/userdata/
-	@cp -f source/demo_aiisp_stresstest.sh ../../../../output/out/userdata/
-	@cp -f source/demo_dual_aiisp_stresstest.sh ../../../../output/out/userdata/
-	@cp -f source/rv1106_multi_cam_stresstest.sh ../../../../output/out/userdata/
-	@cp -f source/multi_isp_stresstest.sh ../../../../output/out/userdata/
-	@cp -f source/rv1126_multi_cam_stresstest.sh ../../../../output/out/userdata/
-	@cp -f source/kill_pid.sh ../../../../output/out/userdata/
+	@mkdir -p $(SAMPLE_OUT_DIR)/install_to_userdata/
+	@cp   -f   source/ai_aenc_adec_ao_stresstes.sh     $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/160x96.bmp                       $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/192x96.bmp                       $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/rv1103_stresstest.sh             $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/rv1106_stresstest.sh             $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/avs_stresstest.sh                $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/vpss_stresstest.sh               $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/isp_stresstest.sh                $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/venc_stresstest.sh               $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/demo_vi_venc_stresstest.sh       $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/rgn_stresstest.sh                $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/rv1126_stresstest.sh             $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/demo_vi_avs_venc_stresstest.sh   $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/demo_aiisp_stresstest.sh         $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/demo_dual_aiisp_stresstest.sh    $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/rv1106_multi_cam_stresstest.sh   $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/multi_isp_stresstest.sh          $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/rv1126_multi_cam_stresstest.sh   $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/kill_pid.sh                      $(SAMPLE_OUT_DIR)/install_to_userdata
 
 clean:
 	@echo "clean test"
