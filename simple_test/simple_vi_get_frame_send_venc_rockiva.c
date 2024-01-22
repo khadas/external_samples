@@ -261,14 +261,8 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
 	memset(&stAttr, 0, sizeof(VENC_CHN_ATTR_S));
 	memset(&stParam, 0, sizeof(VENC_CHN_PARAM_S));
 
-	stAttr.stRcAttr.enRcMode =
-	    VENC_RC_MODE_MJPEGFIXQP; // jpeg need VENC_RC_MODE_MJPEGFIXQP
-	stAttr.stRcAttr.stH264Cbr.u32BitRate = 10 * 1024;
-	stAttr.stRcAttr.stH264Cbr.u32Gop = 60;
-
 	stAttr.stVencAttr.enType = enType;
 	stAttr.stVencAttr.enPixelFormat = RK_FMT_YUV420SP;
-	stAttr.stVencAttr.u32Profile = H264E_PROFILE_HIGH;
 	stAttr.stVencAttr.u32PicWidth = width;
 	stAttr.stVencAttr.u32PicHeight = height;
 	stAttr.stVencAttr.u32VirWidth = width;

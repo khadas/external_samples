@@ -265,7 +265,8 @@ static RK_S32 test_venc_init(int chnId, int width, int height, int fps, RK_CODEC
 
 	stAttr.stVencAttr.enType = enType;
 	stAttr.stVencAttr.enPixelFormat = RK_FMT_YUV420SP;
-	stAttr.stVencAttr.u32Profile = (enType == RK_VIDEO_ID_AVC) ? H264E_PROFILE_HIGH : H265E_PROFILE_MAIN;
+	if (enType == RK_VIDEO_ID_AVC)
+		stAttr.stVencAttr.u32Profile = H264E_PROFILE_HIGH;
 	stAttr.stVencAttr.u32PicWidth = width;
 	stAttr.stVencAttr.u32PicHeight = height;
 	stAttr.stVencAttr.u32VirWidth = width;

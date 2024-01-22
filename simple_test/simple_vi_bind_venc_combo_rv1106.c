@@ -413,7 +413,6 @@ static RK_S32 venc_init(RK_S32 s32ChnId, RK_U32 u32Width, RK_U32 u32Height,
 		stAttr.stRcAttr.stH264Cbr.u32Gop = 50;
 		stAttr.stRcAttr.stH264Cbr.u32BitRate = 2 * 1024;
 	} else if (enCodecType == RK_VIDEO_ID_JPEG) {
-		stAttr.stRcAttr.enRcMode = VENC_RC_MODE_MJPEGCBR;
 		stAttr.stVencAttr.stAttrJpege.bSupportDCF = RK_FALSE;
 		stAttr.stVencAttr.stAttrJpege.stMPFCfg.u8LargeThumbNailNum = 0;
 		stAttr.stVencAttr.stAttrJpege.enReceiveMode = VENC_PIC_RECEIVE_SINGLE;

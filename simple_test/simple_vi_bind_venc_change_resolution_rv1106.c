@@ -118,9 +118,18 @@ static void *GetMediaBuffer0(void *arg) {
 			}
 
 			// 2, set venc
-			stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H264CBR;
-			stAttr.stRcAttr.stH264Cbr.u32BitRate = 10 * 1024;
-			stAttr.stRcAttr.stH264Cbr.u32Gop = 60;
+			if (enCodecType == RK_VIDEO_ID_AVC) {
+				stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H264CBR;
+				stAttr.stRcAttr.stH264Cbr.u32BitRate = 10 * 1024;
+				stAttr.stRcAttr.stH264Cbr.u32Gop = 60;
+			} else if (enCodecType == RK_VIDEO_ID_HEVC) {
+				stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H265CBR;
+				stAttr.stRcAttr.stH265Cbr.u32BitRate = 10 * 1024;
+				stAttr.stRcAttr.stH265Cbr.u32Gop = 60;
+			} else if (enCodecType == RK_VIDEO_ID_MJPEG) {
+				stAttr.stRcAttr.enRcMode = VENC_RC_MODE_MJPEGCBR;
+				stAttr.stRcAttr.stMjpegCbr.u32BitRate = 10 * 1024;
+			}
 			stAttr.stVencAttr.enType = enCodecType;
 			stAttr.stVencAttr.u32PicWidth = test_res[idx].size.u32Width;
 			stAttr.stVencAttr.u32PicHeight = test_res[idx].size.u32Height;
@@ -174,13 +183,23 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
 	VENC_CHN_ATTR_S stAttr;
 	memset(&stAttr, 0, sizeof(VENC_CHN_ATTR_S));
 
-	stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H264CBR;
-	stAttr.stRcAttr.stH264Cbr.u32BitRate = 10 * 1024;
-	stAttr.stRcAttr.stH264Cbr.u32Gop = 60;
+	if (enType == RK_VIDEO_ID_AVC) {
+		stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H264CBR;
+		stAttr.stRcAttr.stH264Cbr.u32BitRate = 10 * 1024;
+		stAttr.stRcAttr.stH264Cbr.u32Gop = 60;
+	} else if (enType == RK_VIDEO_ID_HEVC) {
+		stAttr.stRcAttr.enRcMode = VENC_RC_MODE_H265CBR;
+		stAttr.stRcAttr.stH265Cbr.u32BitRate = 10 * 1024;
+		stAttr.stRcAttr.stH265Cbr.u32Gop = 60;
+	} else if (enType == RK_VIDEO_ID_MJPEG) {
+		stAttr.stRcAttr.enRcMode = VENC_RC_MODE_MJPEGCBR;
+		stAttr.stRcAttr.stMjpegCbr.u32BitRate = 10 * 1024;
+	}
 
 	stAttr.stVencAttr.enType = enType;
 	stAttr.stVencAttr.enPixelFormat = RK_FMT_YUV420SP;
-	stAttr.stVencAttr.u32Profile = H264E_PROFILE_HIGH;
+	if (enType == RK_VIDEO_ID_AVC)
+		stAttr.stVencAttr.u32Profile = H264E_PROFILE_HIGH;
 	stAttr.stVencAttr.u32MaxPicWidth = MAXWIDTH;
 	stAttr.stVencAttr.u32MaxPicHeight = MAXHEIGHT;
 	stAttr.stVencAttr.u32PicWidth = width;
