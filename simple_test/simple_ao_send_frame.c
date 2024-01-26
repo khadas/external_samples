@@ -44,7 +44,7 @@ RK_S32 ao_set_other(RK_S32 s32SetVolume) {
 	return 0;
 }
 
-RK_S32 open_device_ao(RK_S32 s32ReSmpSampleRate, RK_S32 s32SampleRate,
+RK_S32 open_device_ao(RK_S32 s32DeviceSampleRate, RK_S32 s32InputSampleRate,
                       RK_S32 u32FrameCnt) {
 	printf("\n=======%s=======\n", __func__);
 	RK_S32 result = 0;
@@ -66,12 +66,12 @@ RK_S32 open_device_ao(RK_S32 s32ReSmpSampleRate, RK_S32 s32SampleRate,
 #endif
 	sprintf((char *)aoAttr.u8CardName, "%s", "hw:0,0");
 
-	aoAttr.soundCard.channels = 2;               // 2
-	aoAttr.soundCard.sampleRate = s32SampleRate; // s32SampleRate;       16000
+	aoAttr.soundCard.channels = 2;
+	aoAttr.soundCard.sampleRate = s32DeviceSampleRate;
 	aoAttr.soundCard.bitWidth = AUDIO_BIT_WIDTH_16;
 
-	aoAttr.enBitwidth = AUDIO_BIT_WIDTH_16;                   // AUDIO_BIT_WIDTH_16
-	aoAttr.enSamplerate = (AUDIO_SAMPLE_RATE_E)s32SampleRate; // 16000
+	aoAttr.enBitwidth = AUDIO_BIT_WIDTH_16;
+	aoAttr.enSamplerate = (AUDIO_SAMPLE_RATE_E)s32InputSampleRate;
 
 	aoAttr.enSoundmode = AUDIO_SOUND_MODE_MONO;
 	aoAttr.u32PtNumPerFrm = u32FrameCnt; // 1024
@@ -99,7 +99,7 @@ RK_S32 open_device_ao(RK_S32 s32ReSmpSampleRate, RK_S32 s32SampleRate,
 	// set sample rate of input data
 	printf("********RK_MPI_AO_EnableReSmp*********\n");
 	result =
-	    RK_MPI_AO_EnableReSmp(aoDevId, aoChn, (AUDIO_SAMPLE_RATE_E)s32ReSmpSampleRate);
+	    RK_MPI_AO_EnableReSmp(aoDevId, aoChn, (AUDIO_SAMPLE_RATE_E)s32InputSampleRate);
 	if (result != 0) {
 		RK_LOGE("ao enable channel fail, reason = %x, aoChn = %d", result, aoChn);
 		return RK_FAILURE;
@@ -110,19 +110,19 @@ RK_S32 open_device_ao(RK_S32 s32ReSmpSampleRate, RK_S32 s32SampleRate,
 	return RK_SUCCESS;
 }
 
-static RK_CHAR optstr[] = "?::d:r:i:t:s:";
+static RK_CHAR optstr[] = "?::d:r:i:t:R:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
-	printf("\t%s -r 16000 -s 16000 -i /tmp/16000.pcm\n",
-	       name); //正常情况-r -s 配置成一样的就好
-	printf("\t-r: Resample rate, Default:16000\n");
-	printf("\t-s: sample rate, Default:16000\n");
+	printf("\t%s -r 16000 -R 16000 -i /tmp/16000.pcm\n",
+	       name); //正常情况-r -R 配置成一样的就好
+	printf("\t-r: device rate, Default:16000\n");
+	printf("\t-R: input rate, Default:16000\n");
 	printf("\t-i: input path, Default:\"/tmp/16000.pcm\"\n");
 }
 
 int main(int argc, char *argv[]) {
-	RK_S32 u32SampleRate = 16000;      // device samplerate
-	RK_S32 s32ReSmpSampleRate = 16000; // input pcm samplerate
+	RK_S32 s32DeviceSampleRate = 16000; // device samplerate
+	RK_S32 s32InputSampleRate = 16000; // input pcm samplerate
 	RK_U32 u32FrameCnt = 1024;
 	RK_CHAR *pInPath = "/tmp/16000.pcm";
 	int c;
@@ -130,10 +130,10 @@ int main(int argc, char *argv[]) {
 	while ((c = getopt(argc, argv, optstr)) != -1) {
 		switch (c) {
 		case 'r':
-			s32ReSmpSampleRate = atoi(optarg);
+			s32DeviceSampleRate = atoi(optarg);
 			break;
-		case 's':
-			u32SampleRate = atoi(optarg);
+		case 'R':
+			s32InputSampleRate = atoi(optarg);
 			break;
 		case 'i':
 			pInPath = optarg;
@@ -145,8 +145,8 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	printf("#SampleRate: %d\n", u32SampleRate);
-	printf("#s32ReSmpSampleRate: %d\n", s32ReSmpSampleRate);
+	printf("#Device SampleRate: %d\n", s32DeviceSampleRate);
+	printf("#Input SampleRate: %d\n", s32InputSampleRate);
 	printf("#Frame Count: %d\n", u32FrameCnt);
 	printf("#Input Path: %s\n", pInPath);
 
@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
 	signal(SIGINT, sigterm_handler);
 
 	RK_MPI_SYS_Init();
-	open_device_ao(s32ReSmpSampleRate, u32SampleRate, u32FrameCnt);
+	open_device_ao(s32DeviceSampleRate, s32InputSampleRate, u32FrameCnt);
 
 	printf("%s initial finish\n", __func__);
 

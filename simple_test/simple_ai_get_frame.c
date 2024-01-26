@@ -128,7 +128,7 @@ RK_S32 ai_set_other(RK_S32 s32SetVolume) {
 	return 0;
 }
 
-RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate, RK_S32 u32FrameCnt,
+RK_S32 open_device_ai(RK_S32 deviceSampleRate, RK_S32 outputSampleRate, RK_S32 u32FrameCnt,
                       RK_S32 vqeEnable) {
 	printf("\n=======%s=======\n", __func__);
 	AIO_ATTR_S aiAttr;
@@ -138,7 +138,7 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate, RK_S32 u3
 	int aiChn = 0;
 	memset(&aiAttr, 0, sizeof(AIO_ATTR_S));
 
-	RK_BOOL needResample = (InputSampleRate != OutputSampleRate) ? RK_TRUE : RK_FALSE;
+	RK_BOOL needResample = (deviceSampleRate != outputSampleRate) ? RK_TRUE : RK_FALSE;
 #ifdef RV1126_RV1109
 	//这是RV1126 声卡打开设置，RV1106设置无效，可以不设置
 	result = RK_MPI_AMIX_SetControl(aiDevId, "Capture MIC Path", (char *)"Main Mic");
@@ -152,10 +152,10 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate, RK_S32 u3
 
 	// s32DeviceSampleRate和s32SampleRate,s32SampleRate可以使用其他采样率，需要调用重采样函数。默认一样采样率。
 	aiAttr.soundCard.channels = 2;
-	aiAttr.soundCard.sampleRate = InputSampleRate;
+	aiAttr.soundCard.sampleRate = deviceSampleRate;
 	aiAttr.soundCard.bitWidth = AUDIO_BIT_WIDTH_16;
 	aiAttr.enBitwidth = AUDIO_BIT_WIDTH_16;
-	aiAttr.enSamplerate = (AUDIO_SAMPLE_RATE_E)OutputSampleRate;
+	aiAttr.enSamplerate = (AUDIO_SAMPLE_RATE_E)outputSampleRate;
 	aiAttr.enSoundmode = AUDIO_SOUND_MODE_MONO;
 	aiAttr.u32PtNumPerFrm = u32FrameCnt;
 	//以下参数无特殊需求，无需变动，保持默认值即可
@@ -207,7 +207,7 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate, RK_S32 u3
 
 	//使用声音增强功能，默认开启
 	if (vqeEnable)
-		test_init_ai_vqe(OutputSampleRate);
+		test_init_ai_vqe(deviceSampleRate);
 
 	result = RK_MPI_AI_EnableChn(aiDevId, aiChn);
 	if (result != 0) {
@@ -217,9 +217,9 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate, RK_S32 u3
 
 	//重采样功能
 	if (needResample == RK_TRUE) {
-		RK_LOGI("need to resample %d -> %d", InputSampleRate, OutputSampleRate);
+		RK_LOGI("need to resample %d -> %d", deviceSampleRate, outputSampleRate);
 		result =
-		    RK_MPI_AI_EnableReSmp(aiDevId, aiChn, (AUDIO_SAMPLE_RATE_E)OutputSampleRate);
+		    RK_MPI_AI_EnableReSmp(aiDevId, aiChn, (AUDIO_SAMPLE_RATE_E)outputSampleRate);
 		if (result != 0) {
 			RK_LOGE("ai enable channel fail, reason = %x, aiChn = %d", result, aiChn);
 			return RK_FAILURE;
@@ -233,17 +233,19 @@ __FAILED:
 	return RK_FAILURE;
 }
 
-static RK_CHAR optstr[] = "?::d:r:o:v:m:";
+static RK_CHAR optstr[] = "?::r:R:t:o:v:l:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
-	printf("\t%s [-r 8000] -o /tmp/ai.pcm\n", name);
-	printf("\t-r: sample rate, Default:16000\n");
+	printf("\t%s [-r 16000] -o /tmp/ai.pcm\n", name);
+	printf("\t-r: device sample rate, Default:16000\n");
+	printf("\t-R: output sample rate, Default:16000\n");
 	printf("\t-o: output path, Default:\"/tmp/ai.pcm\"\n");
 	printf("\t-v: vqe enable, Default:1\n");
 }
 
 int main(int argc, char *argv[]) {
-	RK_S32 u32SampleRate = 16000;
+	RK_S32 s32DeviceSampleRate = 16000;
+	RK_S32 u32OutPutSampleRate = 16000;
 	RK_S32 ret = 0;
 	RK_S32 vqeEnable = 1;
 	RK_U32 u32FrameCnt = 1024;
@@ -253,7 +255,10 @@ int main(int argc, char *argv[]) {
 	while ((c = getopt(argc, argv, optstr)) != -1) {
 		switch (c) {
 		case 'r':
-			u32SampleRate = atoi(optarg);
+			s32DeviceSampleRate = atoi(optarg);
+			break;
+		case 'R':
+			u32OutPutSampleRate = atoi(optarg);
 			break;
 		case 'o':
 			pOutPath = optarg;
@@ -268,7 +273,8 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	printf("#SampleRate: %d\n", u32SampleRate);
+	printf("#Device SampleRate: %d\n", s32DeviceSampleRate);
+	printf("#Output SampleRate: %d\n", u32OutPutSampleRate);
 	printf("#Frame Count: %d\n", u32FrameCnt);
 	printf("#Output Path: %s\n", pOutPath);
 	printf("#Vqe enable: %d\n", vqeEnable);
@@ -285,7 +291,7 @@ int main(int argc, char *argv[]) {
 
 	RK_MPI_SYS_Init();
 
-	open_device_ai(u32SampleRate, u32SampleRate, u32FrameCnt, vqeEnable);
+	open_device_ai(s32DeviceSampleRate, u32OutPutSampleRate, u32FrameCnt, vqeEnable);
 
 	pthread_t read_thread;
 	pthread_create(&read_thread, NULL, GetMediaBuffer, NULL);
