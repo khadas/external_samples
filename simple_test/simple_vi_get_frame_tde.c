@@ -512,6 +512,7 @@ int main(int argc, char *argv[]) {
 	RK_S32 s32DevId = 0;
 	RK_S32 s32PipeId = 0;
 	pthread_t vi_thread_id;
+	int ret = -1;
 #ifdef RKAIQ
 	rk_aiq_working_mode_t hdr_mode = RK_AIQ_WORKING_MODE_NORMAL;
 	RK_BOOL bMultictx = RK_FALSE;
@@ -519,7 +520,7 @@ int main(int argc, char *argv[]) {
 
 	if (argc < 2) {
 		print_usage(argv[0]);
-		return 0;
+		return -1;
 	}
 
 	signal(SIGINT, sigterm_handler);
@@ -555,7 +556,7 @@ int main(int argc, char *argv[]) {
 		case '?':
 		default:
 			print_usage(argv[0]);
-			return 0;
+			return -1;
 		}
 	}
 
@@ -605,7 +606,7 @@ int main(int argc, char *argv[]) {
 		RK_LOGE("RK_MPI_VI_Close failed with %#x!\n", s32Ret);
 		g_exit_result = RK_FALSE;
 	}
-
+	ret = 0;
 __FAILED:
 	RK_MPI_SYS_Exit();
 	if (iq_file_dir) {
@@ -618,6 +619,7 @@ __FAILED:
 __CTX_ALLOC_FAILED:
 	return g_exit_result;
 #endif
+	return ret;
 }
 
 #ifdef __cplusplus

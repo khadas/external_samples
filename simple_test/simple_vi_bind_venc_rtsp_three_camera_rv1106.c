@@ -433,6 +433,7 @@ int main(int argc, char *argv[]) {
 	RK_S32 encode = 0;
 	char *iq_dir = "/etc/iqfiles";
 	int c;
+	int ret = -1;
 
 	while ((c = getopt_long(argc, argv, optstr, long_options, NULL)) != -1) {
 		switch (c) {
@@ -472,7 +473,7 @@ int main(int argc, char *argv[]) {
 			break;
 		default:
 			print_usage(argv[0]);
-			return 0;
+			return -1;
 		}
 	}
 
@@ -603,7 +604,7 @@ int main(int argc, char *argv[]) {
 	vi_deinit(0, 1);
 	vi_deinit(1, 1);
 	vi_deinit(2, 1);
-
+	ret = 0;
 __FAILED:
 	RK_MPI_SYS_Exit();
 
@@ -611,5 +612,5 @@ __FAILED:
 	SIMPLE_COMM_ISP_Stop(1);
 	SIMPLE_COMM_ISP_Stop(2);
 
-	return 0;
+	return ret;
 }

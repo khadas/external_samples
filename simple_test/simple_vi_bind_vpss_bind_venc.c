@@ -267,6 +267,7 @@ int main(int argc, char *argv[]) {
 	RK_CHAR *pCodecName = "H264";
 	RK_S32 s32chnlId = 0;
 	int c;
+	int ret = -1;
 
 	while ((c = getopt(argc, argv, optstr)) != -1) {
 		switch (c) {
@@ -300,7 +301,7 @@ int main(int argc, char *argv[]) {
 				pCodecName = "MJPEG";
 			} else {
 				printf("ERROR: Invalid encoder type.\n");
-				return 0;
+				return -1;
 			}
 			break;
 		case 'o':
@@ -309,7 +310,7 @@ int main(int argc, char *argv[]) {
 		case '?':
 		default:
 			print_usage(argv[0]);
-			return 0;
+			return -1;
 		}
 	}
 
@@ -372,7 +373,7 @@ int main(int argc, char *argv[]) {
 		usleep(50000);
 	}
 	pthread_join(main_thread, NULL);
-
+	ret = 0;
 __FAILED:
 
 	s32Ret = RK_MPI_SYS_UnBind(&stvpssChn, &stvencChn);
@@ -406,5 +407,5 @@ __FAILED:
 	RK_LOGE("test running exit:%d", s32Ret);
 	RK_MPI_SYS_Exit();
 
-	return 0;
+	return ret;
 }

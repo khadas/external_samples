@@ -183,6 +183,7 @@ int main(int argc, char *argv[]) {
 	int savefile = 0;
 	RK_S32 s32chnlId = 0;
 	int c;
+	int ret = -1;
 	VI_SAVE_FILE_INFO_S stDebugFile;
 
 	while ((c = getopt(argc, argv, optstr)) != -1) {
@@ -205,7 +206,7 @@ int main(int argc, char *argv[]) {
 		case '?':
 		default:
 			print_usage(argv[0]);
-			return 0;
+			return -1;
 		}
 	}
 
@@ -244,10 +245,10 @@ int main(int argc, char *argv[]) {
 
 	s32Ret = RK_MPI_VI_DisableDev(0);
 	RK_LOGE("RK_MPI_VI_DisableDev %x", s32Ret);
-
+	ret = 0;
 __FAILED:
 	RK_LOGE("test running exit:%d", s32Ret);
 	RK_MPI_SYS_Exit();
 
-	return 0;
+	return ret;
 }

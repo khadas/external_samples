@@ -141,7 +141,7 @@ int main(int argc, char *argv[]) {
 		case '?':
 		default:
 			print_usage(argv[0]);
-			return 0;
+			return -1;
 		}
 	}
 
@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
 		ao_file = fopen(pInPath, "rb");
 		if (!ao_file) {
 			printf("ERROR: open file: %s fail, exit\n", pInPath);
-			return 0;
+			return -1;
 		}
 	}
 

@@ -259,7 +259,7 @@ static void print_usage(const RK_CHAR *name) {
 int main(int argc, char *argv[]) {
 	RK_S32 s32Ret = RK_FAILURE;
 	int c;
-
+	int ret = -1;
 	while ((c = getopt(argc, argv, optstr)) != -1) {
 		switch (c) {
 		case 'w':
@@ -280,7 +280,7 @@ int main(int argc, char *argv[]) {
 		case '?':
 		default:
 			print_usage(argv[0]);
-			return 0;
+			return -1;
 		}
 	}
 
@@ -314,10 +314,10 @@ int main(int argc, char *argv[]) {
 	RK_LOGE("RK_MPI_VI_DisableDev %x", s32Ret);
 
 	vo_deinit(VoLayer, VoDev, VoChn);
-
+	ret = 0;
 __FAILED:
 	RK_LOGE("test running exit:%d", s32Ret);
 	RK_MPI_SYS_Exit();
 
-	return 0;
+	return ret;
 }

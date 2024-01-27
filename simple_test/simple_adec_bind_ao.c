@@ -192,13 +192,13 @@ int main(int argc, char *argv[]) {
 				pCodecName = "g726";
 			} else {
 				printf("ERROR: Invalid encoder type.\n");
-				return 0;
+				return -1;
 			}
 			break;
 		case '?':
 		default:
 			print_usage(argv[0]);
-			return 0;
+			return -1;
 		}
 	}
 
@@ -212,7 +212,7 @@ int main(int argc, char *argv[]) {
 		adec_file = fopen(pInPath, "rb");
 		if (!adec_file) {
 			printf("ERROR: open file: %s fail, exit\n", pInPath);
-			return 0;
+			return -1;
 		}
 	}
 

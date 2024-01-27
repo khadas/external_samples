@@ -457,6 +457,7 @@ int main(int argc, char *argv[]) {
 	RK_S32 s32chnlId = 0;
 	char *iq_dir = "/etc/iqfiles";
 	RK_S32 c;
+	int ret = -1;
 
 	while ((c = getopt(argc, argv, optstr)) != -1) {
 		switch (c) {
@@ -485,13 +486,13 @@ int main(int argc, char *argv[]) {
 				pCodecName = "H265";
 			} else {
 				RK_LOGE("ERROR: Invalid encoder type.\n");
-				return 0;
+				return -1;
 			}
 			break;
 		case '?':
 		default:
 			print_usage(argv[0]);
-			return 0;
+			return -1;
 		}
 	}
 
@@ -580,25 +581,24 @@ int main(int argc, char *argv[]) {
 	s32Ret = RK_MPI_VENC_StopRecvFrame(0);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_VENC_StopRecvFrame 0 fail %x", s32Ret);
-		return RK_FAILURE;
+		return -1;
 	}
 
 	s32Ret = RK_MPI_VENC_DestroyChn(0);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_VDEC_DestroyChn fail %x", s32Ret);
-		return RK_FAILURE;
+		return -1;
 	}
 
 	s32Ret = RK_MPI_VI_DisableDev(0);
 	RK_LOGW("RK_MPI_VI_DisableDev %x", s32Ret);
-
+	ret = 0;
 __FAILED:
 	RK_LOGE("test running exit:%d", s32Ret);
 	RK_MPI_SYS_Exit();
-
 #ifdef RKAIQ
 	SIMPLE_COMM_ISP_Stop(0);
 #endif
 
-	return 0;
+	return ret;
 }

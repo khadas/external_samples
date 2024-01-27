@@ -269,7 +269,7 @@ int main(int argc, char *argv[]) {
 		case '?':
 		default:
 			print_usage(argv[0]);
-			return 0;
+			return -1;
 		}
 	}
 
@@ -283,7 +283,7 @@ int main(int argc, char *argv[]) {
 		save_file = fopen(pOutPath, "w");
 		if (!save_file) {
 			printf("ERROR: open file: %s fail, exit\n", pOutPath);
-			return 0;
+			return -1;
 		}
 	}
 
@@ -312,7 +312,7 @@ int main(int argc, char *argv[]) {
 		    RK_MPI_AMIX_SetControl(0, "I2STDM Digital Loopback Mode", (char *)"Disabled");
 		if (ret != RK_SUCCESS) {
 			RK_LOGE("ai set I2STDM Digital Loopback Mode fail, reason = %x", ret);
-			return RK_FAILURE;
+			return -1;
 		}
 	}
 
