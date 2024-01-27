@@ -76,6 +76,7 @@ all:
 simple_build: $(OBJECTS)
 	@mkdir -p $(SIMPLE_OUT_DIR)/bin
 	@mv -f $(OBJECTS) $(SIMPLE_OUT_DIR)/bin
+	@cp simple_cmd.txt $(SIMPLE_OUT_DIR)/bin/
 	$(call MAROC_COPY_PKG_TO_MEDIA_OUTPUT, $(RK_MEDIA_OUTPUT)/bin, $(SIMPLE_OUT_DIR)/bin)
 
 simple_adec_bind_ao: simple_adec_bind_ao.c
