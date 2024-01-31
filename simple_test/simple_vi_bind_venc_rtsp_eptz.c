@@ -442,7 +442,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-w | --width: VI width, Default:1920\n");
 	printf("\t-h | --heght: VI height, Default:1080\n");
 	printf("\t-a | --aiq: iq file path, Default:/etc/iqfiles\n");
-	printf("\t-c | --frame_cnt: frame number of output, Default:150\n");
+	printf("\t-c | --frame_cnt: frame number of output, Default:-1\n");
 	printf("\t-I | --camid: camera ctx id, Default 0. "
 	       "0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
 	printf("\t-e | --encode: encode type, Default:h264, Value:h264, h265\n");

@@ -54,7 +54,7 @@ static RK_RESOLUTION_ST test_res[] = {
     {{512, 288}, "512 x 288"},   //
     {{480, 320}, "480 x 320"},   // 320p
     {{320, 240}, "320 x 240"},   // 240p
-    {{2304, 1296}, "2304x1296"}, // 300w
+                                 //{{2304, 1296}, "2304x1296"}, // 300w
                                  // {{2560, 1440}, "2560x1440"},	// 400w
                                  // {{2880, 1616}, "2880x1616"},	// 500w
 };
@@ -103,10 +103,11 @@ static void *GetMediaBuffer0(void *arg) {
 				RK_LOGE("RK_MPI_VENC_ReleaseStream fail %x", s32Ret);
 			}
 			loopCount++;
-		}
+		} else
+		   continue;
 
 		// change resolution
-		if (loopCount % 100 == 0) {
+		if ((loopCount % 100) == 0) {
 			printf("===change resolution===\n");
 			if (idx >= resCnt)
 				idx = 0;
@@ -165,7 +166,7 @@ static void *GetMediaBuffer0(void *arg) {
 		}
 		usleep(10 * 1000);
 
-		if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt)) {
+		if ((g_s32FrameCnt >= 0) && (loopCount >= g_s32FrameCnt)) {
 			quit = true;
 			break;
 		}
@@ -302,7 +303,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t%s -I 0 -w 1920 -h 1080 -o /tmp/venc.h264\n", name);
 	printf("\t-w | --width: VI width, Default:1920\n");
 	printf("\t-h | --heght: VI height, Default:1080\n");
-	printf("\t-c | --frame_cnt: frame number of output, Default:150\n");
+	printf("\t-c | --frame_cnt: frame number of output, Default:-1\n");
 	printf("\t-I | --camid: camera ctx id, Default 0. "
 	       "0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
 	printf("\t-e | --encode: encode type, Default:h264, Value:h264, h265, mjpeg\n");

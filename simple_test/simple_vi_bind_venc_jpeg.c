@@ -192,13 +192,12 @@ int vi_chn_init(int channelId, int width, int height) {
 	return ret;
 }
 
-static RK_CHAR optstr[] = "?::w:h:c:I:e:";
+static RK_CHAR optstr[] = "?::w:h:I:e:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s -I 0 -w 1920 -h 1080 \n", name);
 	printf("\t-w | --width: VI width, Default:1920\n");
 	printf("\t-h | --heght: VI height, Default:1080\n");
-	printf("\t-c | --frame_cnt: frame number of output, Default:-1\n");
 	printf("\t-I | --camid: camera ctx id, Default 0. "
 	       "0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
 }
