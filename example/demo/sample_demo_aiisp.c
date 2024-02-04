@@ -856,8 +856,8 @@ static RK_S32 iva_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
 	TRACE_BEGIN();
 	/* Init iva */
 	ctx->iva.pModelDataPath = pArgs->pIvaModelPath;
-	ctx->iva.u32ImageHeight = pArgs->u32IvsWidth;
-	ctx->iva.u32ImageWidth = pArgs->u32IvsHeight;
+	ctx->iva.u32ImageWidth = pArgs->u32IvsWidth;
+	ctx->iva.u32ImageHeight = pArgs->u32IvsHeight;
 	ctx->iva.u32DetectStartX = 0;
 	ctx->iva.u32DetectStartY = 0;
 	ctx->iva.u32DetectWidth = pArgs->u32IvsWidth;
