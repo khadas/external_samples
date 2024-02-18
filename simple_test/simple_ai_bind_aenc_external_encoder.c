@@ -112,9 +112,11 @@ RK_S32 RKAduioMp3EncoderEncode(RK_VOID *pEncoder, RK_VOID *pEncParam) {
 	RK_U32 copySize = 0;
 
 	// if input buffer is NULL, this means eos(end of stream)
-	if (inData == NULL) {
+	if (inData == NULL)
 		pParam->u64OutTimeStamp = inPts;
-	}
+
+	if (pParam->u32InLen == 0)
+		return AENC_ENCODER_EOS;
 
 	inbufSize = 2 * ctx->pMp3Enc->frame_size;
 	copySize = (pParam->u32InLen > inbufSize) ? inbufSize : pParam->u32InLen;
