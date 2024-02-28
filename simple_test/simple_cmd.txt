@@ -248,3 +248,16 @@ killall simple_vi_bind_venc_jpeg
 sleep 1
 checkmd5sum /tmp/test_jpeg0.jpeg
 rm /tmp/test*
+
+simple_vi_bind_venc_chn_sharebuf_rv1106&
+sleep 1
+killall simple_vi_bind_venc_chn_sharebuf_rv1106
+
+simple_vi_bind_venc_chn_sharebuf_rv1106 -c 10 -o /tmp/venc.h264
+checkmd5sum /tmp/venc.h264
+
+simple_vi_bind_venc_chn_sharebuf_rv1106 -c 10 -o /tmp/venc.h264 -x 960 -y 540 -X 0 -Y 0
+checkmd5sum /tmp/venc.h264
+
+simple_vi_bind_venc_chn_sharebuf_rv1106 -c 10 -o /tmp/venc.h264 -w 960 -h 540 -W 960 -H 1080 -x 0 -y 0 -X 0 -Y 540
+checkmd5sum /tmp/venc.h264

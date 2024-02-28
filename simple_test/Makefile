@@ -115,6 +115,9 @@ simple_vi_bind_ivs: simple_vi_bind_ivs.c
 simple_vi_bind_venc: simple_vi_bind_venc.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
+simple_vi_bind_venc_chn_sharebuf_rv1106: simple_vi_bind_venc_chn_sharebuf_rv1106.c
+	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+
 simple_vi_bind_venc_change_resolution_rv1106: simple_vi_bind_venc_change_resolution_rv1106.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
