@@ -124,6 +124,9 @@ simple_vi_bind_venc_change_resolution_rv1106: simple_vi_bind_venc_change_resolut
 simple_vi_bind_venc_rtsp: simple_vi_bind_venc_rtsp.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
 
+simple_vi_bind_venc_rtsp_dev_chn_sharebuf_rv1106: simple_vi_bind_venc_rtsp_dev_chn_sharebuf_rv1106.c
+	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
+
 simple_vi_bind_venc_rtsp_three_camera_rv1106: simple_vi_bind_venc_rtsp_three_camera_rv1106.c
 	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
 
