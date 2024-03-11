@@ -76,9 +76,11 @@ RK_S32 init_ai_aed() {
 	RK_S32 result;
 
 	AI_AED_CONFIG_S stAiAedConfig, stAiAedConfig2;
+	memset(&stAiAedConfig, 0, sizeof(AI_AED_CONFIG_S));
+	memset(&stAiAedConfig2, 0, sizeof(AI_AED_CONFIG_S));
 
 	stAiAedConfig.fSnrDB = 10.0f;
-	stAiAedConfig.fLsdDB = -25.0f;
+	stAiAedConfig.fLsdDB = -35.0f;
 	stAiAedConfig.s32Policy = 1;
 
 	result = RK_MPI_AI_SetAedAttr(s32DevId, s32ChnIndex, &stAiAedConfig);
@@ -114,11 +116,41 @@ RK_S32 init_ai_aed() {
 static RK_S32 init_ai_bcd() {
 	int s32DevId = 0;
 	int s32ChnIndex = 0;
+	int s32DeviceChannel = 2;
 	RK_S32 result;
 
 	AI_BCD_CONFIG_S stAiBcdConfig, stAiBcdConfig2;
+	memset(&stAiBcdConfig, 0, sizeof(AI_BCD_CONFIG_S));
+	memset(&stAiBcdConfig2, 0, sizeof(AI_BCD_CONFIG_S));
 
-	stAiBcdConfig.mFrameLen = 100;
+	stAiBcdConfig.mFrameLen = 60;
+	stAiBcdConfig.mConfirmProb = 0.85f;
+        switch (s32DeviceChannel) {
+        case 4:
+            // just for example: 2mic + 2ref
+            stAiBcdConfig.stSedCfg.s64RecChannelType = 0x03;
+            break;
+        case 6:
+            // just for example: 4mic + 2ref
+            stAiBcdConfig.stSedCfg.s64RecChannelType = 0x0f;
+            break;
+        case 8:
+            // just for example: 6mic + 2ref
+            stAiBcdConfig.stSedCfg.s64RecChannelType = 0x3f;
+            break;
+        default:
+            // by default is 1mic + 1ref, it will be set by internal if is not specified.
+            // stAiBcdConfig.stSedCfg.s64RecChannelType = 0x01;
+            break;
+        }
+
+	// stAiBcdConfig.stSedCfg.s32FrameLen = 90; // by default is 90 if is not specified.
+	if (stAiBcdConfig.stSedCfg.s64RecChannelType != 0 ||
+		stAiBcdConfig.stSedCfg.s32FrameLen != 0)
+		stAiBcdConfig.stSedCfg.bUsed = RK_TRUE;
+
+	char *pBcdModelPath = "/oem/usr/share/vqefiles/rkaudio_model_sed_bcd.rknn";
+	memcpy(stAiBcdConfig.aModelPath, pBcdModelPath, strlen(pBcdModelPath));
 
 	result = RK_MPI_AI_SetBcdAttr(s32DevId, s32ChnIndex, &stAiBcdConfig);
 	if (result != RK_SUCCESS) {
@@ -143,84 +175,6 @@ static RK_S32 init_ai_bcd() {
 	result = RK_MPI_AI_EnableBcd(s32DevId, s32ChnIndex);
 	if (result != RK_SUCCESS) {
 		RK_LOGE("%s: EnableBcd(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
-		        s32ChnIndex, result);
-		return result;
-	}
-
-	return RK_SUCCESS;
-}
-
-static RK_S32 init_ai_buz() {
-	int s32DevId = 0;
-	int s32ChnIndex = 0;
-	RK_S32 result;
-
-	AI_BUZ_CONFIG_S stAiBuzConfig, stAiBuzConfig2;
-
-	stAiBuzConfig.mFrameLen = 100;
-
-	result = RK_MPI_AI_SetBuzAttr(s32DevId, s32ChnIndex, &stAiBuzConfig);
-	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: SetBuzAttr(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
-		        s32ChnIndex, result);
-		return result;
-	}
-
-	result = RK_MPI_AI_GetBuzAttr(s32DevId, s32ChnIndex, &stAiBuzConfig2);
-	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: SetBuzAttr(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
-		        s32ChnIndex, result);
-		return result;
-	}
-
-	result = memcmp(&stAiBuzConfig, &stAiBuzConfig2, sizeof(AI_BUZ_CONFIG_S));
-	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: set/get aed config is different: %d", __FUNCTION__, result);
-		return result;
-	}
-
-	result = RK_MPI_AI_EnableBuz(s32DevId, s32ChnIndex);
-	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: EnableBuz(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
-		        s32ChnIndex, result);
-		return result;
-	}
-
-	return RK_SUCCESS;
-}
-
-static RK_S32 init_ai_gbs() {
-	int s32DevId = 0;
-	int s32ChnIndex = 0;
-	RK_S32 result;
-
-	AI_GBS_CONFIG_S stAiGbsConfig, stAiGbsConfig2;
-
-	stAiGbsConfig.mFrameLen = 30;
-
-	result = RK_MPI_AI_SetGbsAttr(s32DevId, s32ChnIndex, &stAiGbsConfig);
-	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: SetGbsAttr(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
-		        s32ChnIndex, result);
-		return result;
-	}
-
-	result = RK_MPI_AI_GetGbsAttr(s32DevId, s32ChnIndex, &stAiGbsConfig2);
-	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: SetGbsAttr(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
-		        s32ChnIndex, result);
-		return result;
-	}
-
-	result = memcmp(&stAiGbsConfig, &stAiGbsConfig2, sizeof(AI_GBS_CONFIG_S));
-	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: set/get aed config is different: %d", __FUNCTION__, result);
-		return result;
-	}
-
-	result = RK_MPI_AI_EnableGbs(s32DevId, s32ChnIndex);
-	if (result != RK_SUCCESS) {
-		RK_LOGE("%s: EnableGbs(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
 		        s32ChnIndex, result);
 		return result;
 	}
@@ -375,18 +329,6 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate, RK_U32 u3
 		result = init_ai_bcd();
 		if (result != 0) {
 			RK_LOGE("ai bcd init fail, reason = %x, aiChn = %d", result, aiChn);
-			return RK_FAILURE;
-		}
-
-		result = init_ai_buz();
-		if (result != 0) {
-			RK_LOGE("ai buz init fail, reason = %x, aiChn = %d", result, aiChn);
-			return RK_FAILURE;
-		}
-
-		result = init_ai_gbs();
-		if (result != 0) {
-			RK_LOGE("ai gbs init fail, reason = %x, aiChn = %d", result, aiChn);
 			return RK_FAILURE;
 		}
 	}
@@ -741,8 +683,6 @@ int main(int argc, char *argv[]) {
 	if (s32AiSed) {
 		params.s32AedEnable = 1;
 		params.s32BcdEnable = 1;
-		params.s32BuzEnable = 1;
-		params.s32GbsEnable = 1;
 	}
 
 	signal(SIGINT, sigterm_handler);
@@ -855,12 +795,6 @@ int main(int argc, char *argv[]) {
 		}
 
 		if (s32AiSed) {
-			ret = RK_MPI_AI_DisableBuz(0, 0);
-			if (ret != RK_SUCCESS) {
-				RK_LOGE("%s: RK_MPI_AI_DisableBuz failed with %#x", __FUNCTION__, ret);
-				return ret;
-			}
-
 			ret = RK_MPI_AI_DisableBcd(0, 0);
 			if (ret != RK_SUCCESS) {
 				RK_LOGE("%s: RK_MPI_AI_DisableBcd failed with %#x", __FUNCTION__, ret);
@@ -870,12 +804,6 @@ int main(int argc, char *argv[]) {
 			ret = RK_MPI_AI_DisableAed(0, 0);
 			if (ret != RK_SUCCESS) {
 				RK_LOGE("%s: RK_MPI_AI_DisableAed failed with %#x", __FUNCTION__, ret);
-				return ret;
-			}
-
-			ret = RK_MPI_AI_DisableGbs(0, 0);
-			if (ret != RK_SUCCESS) {
-				RK_LOGE("%s: RK_MPI_AI_DisableGbs failed with %#x", __FUNCTION__, ret);
 				return ret;
 			}
 		}
