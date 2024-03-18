@@ -119,7 +119,7 @@ RK_S32 open_device_ao(RK_S32 s32SampleRate, RK_S32 channel, RK_S32 u32FrameCnt) 
 	return RK_SUCCESS;
 }
 
-RK_S32 init_mpi_adec(RK_S32 s32SampleRate) {
+RK_S32 init_mpi_adec(RK_S32 s32SampleRate, RK_S32 channel) {
 	printf("\n=======%s=======\n", __func__);
 	RK_S32 s32ret = 0;
 	ADEC_CHN AdChn = 0;
@@ -127,7 +127,7 @@ RK_S32 init_mpi_adec(RK_S32 s32SampleRate) {
 	memset(&pstChnAttr, 0, sizeof(ADEC_CHN_ATTR_S));
 
 	pstChnAttr.stCodecAttr.enType = (RK_CODEC_ID_E)code_type;
-	pstChnAttr.stCodecAttr.u32Channels = 1; // default 1
+	pstChnAttr.stCodecAttr.u32Channels = channel; // default 1
 	pstChnAttr.stCodecAttr.u32SampleRate = s32SampleRate;
 	pstChnAttr.stCodecAttr.u32BitPerCodedSample = 4;
 
@@ -151,7 +151,7 @@ static RK_S32 adec_data_free(void *opaque) {
 	return 0;
 }
 
-static RK_CHAR optstr[] = "?::d:r:i:t:";
+static RK_CHAR optstr[] = "?::d:r:i:t:c:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s -r 8000 -t g726 -i /tmp/aenc.g726\n", name);
@@ -222,7 +222,7 @@ int main(int argc, char *argv[]) {
 	if (open_device_ao(u32SampleRate, u32Channel, u32FrameCnt))
 		return -1;
 
-	if (init_mpi_adec(u32SampleRate))
+	if (init_mpi_adec(u32SampleRate, u32Channel))
 		return -1;
 
 	// adec bind ao
