@@ -277,7 +277,7 @@ static RK_S32 vi_dev_init() {
 			return RK_FAILURE;
 		}
 		// 1-3.bind dev/pipe
-		stBindPipe.u32Num = pipeId;
+		stBindPipe.u32Num = 1;
 		stBindPipe.PipeId[0] = pipeId;
 		s32Ret = RK_MPI_VI_SetDevBindPipe(devId, &stBindPipe);
 		if (s32Ret != RK_SUCCESS) {
