@@ -21,6 +21,7 @@ ifeq ($(HAVE_AVS), y)
 endif
 ifeq ($(CONFIG_RK_IVA),y)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_dual_camera.c -o sample_demo_dual_camera $(LD_FLAGS) -lrockiva
+	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_dual_camera_wrap.c -o sample_demo_dual_camera_wrap $(LD_FLAGS) -lrockiva
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_vi_venc.c -o sample_demo_vi_venc $(LD_FLAGS) -lrockiva
 else
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_vi_venc.c -o sample_demo_vi_venc $(LD_FLAGS)
@@ -39,6 +40,7 @@ ifeq ($(HAVE_AVS),y)
 endif
 ifeq ($(CONFIG_RK_IVA),y)
 	@mv -f sample_demo_dual_camera $(SAMPLE_OUT_DIR)/bin
+	@mv -f sample_demo_dual_camera_wrap $(SAMPLE_OUT_DIR)/bin
 endif
 
 clean:
