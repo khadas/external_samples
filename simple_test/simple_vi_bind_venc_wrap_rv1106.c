@@ -315,9 +315,11 @@ int main(int argc, char *argv[]) {
 	RK_U32 u32DeBreath = 0;
 	int c;
 	int ret = -1;
+
 	VI_SAVE_FILE_INFO_S stDebugFile;
 
 	RK_U32 u32DstCodec = RK_VIDEO_ID_HEVC;
+	g_u32WrapLine = u32Height / 4;
 	g_bWrapEn = RK_TRUE;
 
 	while ((c = getopt_long(argc, argv, optstr, long_options, NULL)) != -1) {
