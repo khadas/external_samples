@@ -25,6 +25,37 @@ static void sigterm_handler(int sig) {
 
 static FILE *ao_file;
 
+RK_S32 init_ao_vqe(RK_S32 vqeEnable) {
+    RK_S32 ret = RK_SUCCESS;
+	AO_VQE_CONFIG_S vqe_config;
+	char *pVqeCfgPath = NULL;
+	if (vqeEnable == 1)
+		pVqeCfgPath = "/oem/usr/share/vqefiles/config_aoagc.json";//agc
+	else
+		pVqeCfgPath = "/oem/usr/share/vqefiles/config_aovqe.json";//anr howl
+
+	memset(&vqe_config, 0, sizeof(AO_VQE_CONFIG_S));
+	if (pVqeCfgPath != RK_NULL) {
+		vqe_config.enCfgMode = AIO_VQE_CONFIG_LOAD_FILE;
+		memcpy(vqe_config.aCfgFile, pVqeCfgPath, strlen(pVqeCfgPath));
+	}
+
+	RK_LOGD("enCfgMode = %d", vqe_config.enCfgMode);
+	ret = RK_MPI_AO_SetVqeAttr(0, 0, &vqe_config);
+	if (ret) {
+		RK_LOGE("ao set vqe attr fail, aoChn = %d, reason = %X", 0, ret);
+		return ret;
+	}
+
+	ret = RK_MPI_AO_EnableVqe(0, 0);
+	if (ret) {
+		RK_LOGE("ao enable vqe fail, aoChn = %d, reason = %X", 0, ret);
+		return ret;
+	}
+
+    return RK_SUCCESS;
+}
+
 RK_S32 ao_set_other(RK_S32 s32SetVolume) {
 	printf("\n=======%s=======\n", __func__);
 	int s32DevId = 0;
@@ -35,8 +66,6 @@ RK_S32 ao_set_other(RK_S32 s32SetVolume) {
 	RK_MPI_AO_GetVolume(s32DevId, &volume);
 	RK_LOGI("test info : get volume = %d", volume);
 
-	RK_MPI_AO_SetTrackMode(s32DevId, AUDIO_TRACK_OUT_STEREO);
-
 	AUDIO_TRACK_MODE_E trackMode;
 	RK_MPI_AO_GetTrackMode(s32DevId, &trackMode);
 	RK_LOGI("test info : get track mode = %d", trackMode);
@@ -45,7 +74,7 @@ RK_S32 ao_set_other(RK_S32 s32SetVolume) {
 }
 
 RK_S32 open_device_ao(RK_S32 s32DeviceSampleRate, RK_S32 s32InputSampleRate,
-                      RK_S32 u32FrameCnt) {
+                      RK_S32 channel, RK_S32 u32FrameCnt, RK_S32 vqeEnable) {
 	printf("\n=======%s=======\n", __func__);
 	RK_S32 result = 0;
 	AUDIO_DEV aoDevId = 0;
@@ -73,7 +102,15 @@ RK_S32 open_device_ao(RK_S32 s32DeviceSampleRate, RK_S32 s32InputSampleRate,
 	aoAttr.enBitwidth = AUDIO_BIT_WIDTH_16;
 	aoAttr.enSamplerate = (AUDIO_SAMPLE_RATE_E)s32InputSampleRate;
 
-	aoAttr.enSoundmode = AUDIO_SOUND_MODE_MONO;
+	if (channel == 1)
+		aoAttr.enSoundmode = AUDIO_SOUND_MODE_MONO;
+	else if (channel == 2)
+		aoAttr.enSoundmode = AUDIO_SOUND_MODE_STEREO;
+	else {
+		RK_LOGE("unsupport = %d", channel);
+		return RK_FAILURE;
+	}
+
 	aoAttr.u32PtNumPerFrm = u32FrameCnt; // 1024
 	//以下参数没有特殊需要，无需修改
 	aoAttr.u32FrmNum = 4;
@@ -89,6 +126,14 @@ RK_S32 open_device_ao(RK_S32 s32DeviceSampleRate, RK_S32 s32InputSampleRate,
 		RK_LOGE("ao set channel params, aoChn = %d", aoChn);
 		return RK_FAILURE;
 	}
+
+	if (channel == 1)
+		RK_MPI_AO_SetTrackMode(aoDevId, AUDIO_TRACK_OUT_STEREO);
+	else
+		RK_MPI_AO_SetTrackMode(aoDevId, AUDIO_TRACK_NORMAL);
+
+	if (vqeEnable)
+		init_ao_vqe(vqeEnable);
 	/*==============================================================================*/
 	result = RK_MPI_AO_EnableChn(aoDevId, aoChn);
 	if (result != 0) {
@@ -110,7 +155,7 @@ RK_S32 open_device_ao(RK_S32 s32DeviceSampleRate, RK_S32 s32InputSampleRate,
 	return RK_SUCCESS;
 }
 
-static RK_CHAR optstr[] = "?::d:r:i:t:R:";
+static RK_CHAR optstr[] = "?::d:r:i:t:R:c:v:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s -r 16000 -R 16000 -i /tmp/16000.pcm\n",
@@ -123,7 +168,9 @@ static void print_usage(const RK_CHAR *name) {
 int main(int argc, char *argv[]) {
 	RK_S32 s32DeviceSampleRate = 16000; // device samplerate
 	RK_S32 s32InputSampleRate = 16000; // input pcm samplerate
+	RK_S32 u32Channel = 1;
 	RK_U32 u32FrameCnt = 1024;
+	RK_S32 vqeEnable = 1;
 	RK_CHAR *pInPath = "/tmp/16000.pcm";
 	int c;
 
@@ -135,8 +182,14 @@ int main(int argc, char *argv[]) {
 		case 'R':
 			s32InputSampleRate = atoi(optarg);
 			break;
+		case 'c':
+			u32Channel = atoi(optarg);
+			break;
 		case 'i':
 			pInPath = optarg;
+			break;
+		case 'v':
+			vqeEnable = atoi(optarg);
 			break;
 		case '?':
 		default:
@@ -147,8 +200,10 @@ int main(int argc, char *argv[]) {
 
 	printf("#Device SampleRate: %d\n", s32DeviceSampleRate);
 	printf("#Input SampleRate: %d\n", s32InputSampleRate);
+	printf("#Input Channel: %d\n", u32Channel);
 	printf("#Frame Count: %d\n", u32FrameCnt);
 	printf("#Input Path: %s\n", pInPath);
+	printf("#Vqe enable: %d\n", vqeEnable);
 
 	if (pInPath) {
 		ao_file = fopen(pInPath, "rb");
@@ -161,7 +216,7 @@ int main(int argc, char *argv[]) {
 	signal(SIGINT, sigterm_handler);
 
 	RK_MPI_SYS_Init();
-	open_device_ao(s32DeviceSampleRate, s32InputSampleRate, u32FrameCnt);
+	open_device_ao(s32DeviceSampleRate, s32InputSampleRate, u32Channel, u32FrameCnt, vqeEnable);
 
 	printf("%s initial finish\n", __func__);
 
@@ -178,7 +233,11 @@ int main(int argc, char *argv[]) {
 		frame.u32Len = srcSize;
 		frame.u64TimeStamp = timeStamp++;
 		frame.enBitWidth = AUDIO_BIT_WIDTH_16;
-		frame.enSoundMode = AUDIO_SOUND_MODE_MONO;
+		if (u32Channel == 1)
+			frame.enSoundMode = AUDIO_SOUND_MODE_MONO;
+		else if (u32Channel == 2)
+			frame.enSoundMode = AUDIO_SOUND_MODE_STEREO;
+
 		frame.bBypassMbBlk = RK_FALSE;
 
 		MB_EXT_CONFIG_S extConfig;
@@ -208,6 +267,9 @@ int main(int argc, char *argv[]) {
 		ao_file = RK_NULL;
 	}
 	free(srcData);
+
+	if (vqeEnable)
+		RK_MPI_AO_DisableVqe(0, 0);
 
 	RK_MPI_AO_DisableReSmp(0, 0);
 	RK_MPI_AO_DisableChn(0, 0);
