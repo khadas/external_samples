@@ -113,6 +113,75 @@ RK_S32 test_init_ai_vqe(RK_S32 s32SampleRate) {
 	return RK_SUCCESS;
 }
 
+static RK_S32 init_ai_bcd() {
+	int s32DevId = 0;
+	int s32ChnIndex = 0;
+	int s32DeviceChannel = 2;
+	RK_S32 result;
+
+	AI_BCD_CONFIG_S stAiBcdConfig, stAiBcdConfig2;
+	memset(&stAiBcdConfig, 0, sizeof(AI_BCD_CONFIG_S));
+	memset(&stAiBcdConfig2, 0, sizeof(AI_BCD_CONFIG_S));
+
+	stAiBcdConfig.mFrameLen = 60;
+	stAiBcdConfig.mConfirmProb = 0.85f;
+        switch (s32DeviceChannel) {
+        case 4:
+            // just for example: 2mic + 2ref
+            stAiBcdConfig.stSedCfg.s64RecChannelType = 0x03;
+            break;
+        case 6:
+            // just for example: 4mic + 2ref
+            stAiBcdConfig.stSedCfg.s64RecChannelType = 0x0f;
+            break;
+        case 8:
+            // just for example: 6mic + 2ref
+            stAiBcdConfig.stSedCfg.s64RecChannelType = 0x3f;
+            break;
+        default:
+            // by default is 1mic + 1ref, it will be set by internal if is not specified.
+            // stAiBcdConfig.stSedCfg.s64RecChannelType = 0x01;
+            break;
+        }
+
+	// stAiBcdConfig.stSedCfg.s32FrameLen = 90; // by default is 90 if is not specified.
+	if (stAiBcdConfig.stSedCfg.s64RecChannelType != 0 ||
+		stAiBcdConfig.stSedCfg.s32FrameLen != 0)
+		stAiBcdConfig.stSedCfg.bUsed = RK_TRUE;
+
+	char *pBcdModelPath = "/oem/usr/share/vqefiles/rkaudio_model_sed_bcd.rknn";
+	memcpy(stAiBcdConfig.aModelPath, pBcdModelPath, strlen(pBcdModelPath));
+
+	result = RK_MPI_AI_SetBcdAttr(s32DevId, s32ChnIndex, &stAiBcdConfig);
+	if (result != RK_SUCCESS) {
+		RK_LOGE("%s: SetBcdAttr(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
+		        s32ChnIndex, result);
+		return result;
+	}
+
+	result = RK_MPI_AI_GetBcdAttr(s32DevId, s32ChnIndex, &stAiBcdConfig2);
+	if (result != RK_SUCCESS) {
+		RK_LOGE("%s: SetBcdAttr(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
+		        s32ChnIndex, result);
+		return result;
+	}
+
+	result = memcmp(&stAiBcdConfig, &stAiBcdConfig2, sizeof(AI_BCD_CONFIG_S));
+	if (result != RK_SUCCESS) {
+		RK_LOGE("%s: set/get aed config is different: %d", __FUNCTION__, result);
+		return result;
+	}
+
+	result = RK_MPI_AI_EnableBcd(s32DevId, s32ChnIndex);
+	if (result != RK_SUCCESS) {
+		RK_LOGE("%s: EnableBcd(%d,%d) failed with %#x", __FUNCTION__, s32DevId,
+		        s32ChnIndex, result);
+		return result;
+	}
+
+	return RK_SUCCESS;
+}
+
 RK_S32 ai_set_other(RK_S32 s32SetVolume) {
 	printf("\n=======%s=======\n", __func__);
 	int s32DevId = 0;
@@ -129,7 +198,7 @@ RK_S32 ai_set_other(RK_S32 s32SetVolume) {
 }
 
 RK_S32 open_device_ai(RK_S32 deviceSampleRate, RK_S32 outputSampleRate, RK_S32 u32FrameCnt,
-                      RK_S32 vqeEnable) {
+                      RK_S32 vqeEnable, RK_S32 bcdEnable) {
 	printf("\n=======%s=======\n", __func__);
 	AIO_ATTR_S aiAttr;
 	AI_CHN_PARAM_S pstParams;
@@ -209,6 +278,14 @@ RK_S32 open_device_ai(RK_S32 deviceSampleRate, RK_S32 outputSampleRate, RK_S32 u
 	if (vqeEnable)
 		test_init_ai_vqe(deviceSampleRate);
 
+	if (bcdEnable) {
+		result = init_ai_bcd();
+		if (result != 0) {
+			RK_LOGE("ai bcd init fail, reason = %x, aiChn = %d", result, aiChn);
+			return RK_FAILURE;
+		}
+	}
+
 	result = RK_MPI_AI_EnableChn(aiDevId, aiChn);
 	if (result != 0) {
 		RK_LOGE("ai enable channel fail, aiChn = %d, reason = %x", aiChn, result);
@@ -233,7 +310,7 @@ __FAILED:
 	return RK_FAILURE;
 }
 
-static RK_CHAR optstr[] = "?::r:R:t:o:v:l:";
+static RK_CHAR optstr[] = "?::r:R:t:o:v:b:l:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s [-r 16000] -o /tmp/ai.pcm\n", name);
@@ -248,6 +325,7 @@ int main(int argc, char *argv[]) {
 	RK_S32 u32OutPutSampleRate = 16000;
 	RK_S32 ret = 0;
 	RK_S32 vqeEnable = 1;
+	RK_S32 bcdEnable = 1;
 	RK_U32 u32FrameCnt = 1024;
 	RK_CHAR *pOutPath = (RK_CHAR *)"/tmp/ai.pcm";
 	int c;
@@ -266,6 +344,9 @@ int main(int argc, char *argv[]) {
 		case 'v':
 			vqeEnable = atoi(optarg);
 			break;
+		case 'b':
+			bcdEnable = atoi(optarg);
+			break;
 		case '?':
 		default:
 			print_usage(argv[0]);
@@ -278,6 +359,7 @@ int main(int argc, char *argv[]) {
 	printf("#Frame Count: %d\n", u32FrameCnt);
 	printf("#Output Path: %s\n", pOutPath);
 	printf("#Vqe enable: %d\n", vqeEnable);
+	printf("#Bcd enable: %d\n", bcdEnable);
 
 	if (pOutPath) {
 		save_file = fopen(pOutPath, "w");
@@ -291,7 +373,7 @@ int main(int argc, char *argv[]) {
 
 	RK_MPI_SYS_Init();
 
-	open_device_ai(s32DeviceSampleRate, u32OutPutSampleRate, u32FrameCnt, vqeEnable);
+	open_device_ai(s32DeviceSampleRate, u32OutPutSampleRate, u32FrameCnt, vqeEnable, bcdEnable);
 
 	pthread_t read_thread;
 	pthread_create(&read_thread, NULL, GetMediaBuffer, NULL);
@@ -303,6 +385,9 @@ int main(int argc, char *argv[]) {
 	}
 
 	pthread_join(read_thread, NULL);
+
+	if (bcdEnable)
+		RK_MPI_AI_DisableBcd(0, 0);
 
 	if (vqeEnable) {
 		RK_MPI_AI_DisableVqe(0, 0);
