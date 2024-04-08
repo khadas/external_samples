@@ -1,5 +1,20 @@
 #!/bin/sh
-killall nginx
+set -x
+
+dump_log(){
+	local log_dir cnt
+	log_dir=$1
+	cnt=$2
+	mkdir -p $log_dir
+	(cat /dev/mpi/vlog; cat /dev/mpi/valloc; cat /dev/mpi/vmcu; cat /dev/mpi/vrgn; cat /dev/mpi/vsys; echo ==========================================; cat /dev/mpi/vlog; cat /dev/mpi/valloc; cat /dev/mpi/vmcu; cat /dev/mpi/vrgn; cat /dev/mpi/vsys;) |tee > $log_dir/dev-mpi-$cnt.log
+	cat /proc/vcodec/enc/venc_info &> $log_dir/proc-vcodec-enc-venc_info-$cnt-1
+	cat /proc/vcodec/enc/venc_info &> $log_dir/proc-vcodec-enc-venc_info-$cnt-2
+}
+if mount|grep "\/mnt\/sdcard";then
+	has_sdcard="/mnt/sdcard"
+fi
+
+killall nginx || echo "Not found nginx"
 sleep 10
 counter=0
 while [ $counter -lt 10000 ]
@@ -20,6 +35,17 @@ do
     rkipc -a /oem/usr/share/iqfiles &
     sleep 5
     counter=$(( counter + 1 ))
+	echo ""
+	echo ""
+	echo "----------------------------------------"
+	echo "$0 counter [$counter]"
+	if [ -n "$has_sdcard" ];then
+		log1_dir=$has_sdcard/kill_pid/log1_$counter
+		dump_log $log1_dir $counter
+	fi
+	echo "----------------------------------------"
+	echo ""
+	echo ""
 done
 
 killall nginx
@@ -42,4 +68,15 @@ do
     rkipc -a /oem/usr/share/iqfiles &
     sleep 5
     counter=$(( counter + 1 ))
+	echo ""
+	echo ""
+	echo "----------------------------------------"
+	echo "$0 counter [$counter]"
+	if [ -n "$has_sdcard" ];then
+		log2_dir=$has_sdcard/kill_pid/log2_$counter
+		dump_log $log2_dir $counter
+	fi
+	echo "----------------------------------------"
+	echo ""
+	echo ""
 done
