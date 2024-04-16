@@ -1,6 +1,20 @@
 #!/bin/sh
 set -x
 
+__chk_cma_free()
+{
+	local f
+	if [ ! -f "/proc/rk_dma_heap/alloc_bitmap" ];then
+		echo "[$0] not found /proc/rk_dma_heap/alloc_bitmap, ignore"
+		return
+	fi
+	f=`head  /proc/rk_dma_heap/alloc_bitmap |grep Used|awk '{print $2}'`
+	if [ $f -gt 12 ];then
+		echo "[$0] free cma error"
+		exit 2
+	fi
+}
+
 dump_log(){
 	local log_dir cnt
 	log_dir=$1
@@ -32,6 +46,7 @@ do
             echo "rkipc active"
         fi
     done
+	__chk_cma_free
     rkipc -a /oem/usr/share/iqfiles &
     sleep 5
     counter=$(( counter + 1 ))
@@ -65,6 +80,7 @@ do
             echo "killall rkipc active"
         fi
     done
+	__chk_cma_free
     rkipc -a /oem/usr/share/iqfiles &
     sleep 5
     counter=$(( counter + 1 ))

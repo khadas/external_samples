@@ -1,5 +1,19 @@
 #!/bin/sh
 
+set -x
+__chk_cma_free()
+{
+	local f
+	if [ ! -f "/proc/rk_dma_heap/alloc_bitmap" ];then
+		echo "[$0] not found /proc/rk_dma_heap/alloc_bitmap, ignore"
+		return
+	fi
+	f=`head  /proc/rk_dma_heap/alloc_bitmap |grep Used|awk '{print $2}'`
+	if [ $f -gt 12 ];then
+		echo "[$0] free cma error"
+		exit 2
+	fi
+}
 print_help()
 {
     echo "example: <test_mod=on> $0 <test_result_path> <test_loop> <test_frame> <ifEnableWrap>"
@@ -62,6 +76,7 @@ test_case()
             echo -e "--------------------------------------- <sample_venc_stresstest> venc resolution switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
     if [ "$ENCODE_TYPE" = "on" ]; then
@@ -77,6 +92,7 @@ test_case()
             echo -e "--------------------------------------- <sample_venc_stresstest> encode type switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
     if [ "$SMART_P" = "on" ]; then
@@ -92,6 +108,7 @@ test_case()
             echo -e "--------------------------------------- <sample_venc_stresstest> smartp mode switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
     if [ "$SVC" = "on" ]; then
@@ -107,6 +124,7 @@ test_case()
             echo -e "--------------------------------------- <sample_venc_stresstest> SVC mode switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
     if [ "$MOTION" = "on" ]; then
@@ -122,6 +140,7 @@ test_case()
             echo -e "--------------------------------------- <sample_venc_stresstest> motion deblur switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
     if [ "$IDR" = "on" ]; then
@@ -137,6 +156,7 @@ test_case()
             echo -e "--------------------------------------- <sample_venc_stresstest> force IDR switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
     if [ "$ROTATION" = "on" ]; then
@@ -152,6 +172,7 @@ test_case()
             echo -e "--------------------------------------- <sample_venc_stresstest> venc chn rotation test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
     sleep 1

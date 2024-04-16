@@ -1,5 +1,19 @@
 #!/bin/sh
 
+set -x
+__chk_cma_free()
+{
+	local f
+	if [ ! -f "/proc/rk_dma_heap/alloc_bitmap" ];then
+		echo "[$0] not found /proc/rk_dma_heap/alloc_bitmap, ignore"
+		return
+	fi
+	f=`head  /proc/rk_dma_heap/alloc_bitmap |grep Used|awk '{print $2}'`
+	if [ $f -gt 12 ];then
+		echo "[$0] free cma error"
+		exit 2
+	fi
+}
 print_help()
 {
     echo "example: <test_mod=on> $0 <test_result_path> <test_loop> <test_frame> <ifEnableWrap>"
@@ -62,6 +76,7 @@ test_case()
             echo -e "--------------------------------------- <sample_rgn_stresstest> rgn detach attach test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
     sleep 3

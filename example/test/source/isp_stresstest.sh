@@ -1,5 +1,6 @@
 #!/bin/sh
 
+set -x
 print_help()
 {
     echo "example: <test_mod=on> $0 <test_result_path> <test_loop> <test_frame> <vi_frame_switch_test_loop> <iq_file_path>"
@@ -50,6 +51,20 @@ if [ ! -n "$5" ]; then
     echo "----------------- warning!!!!, lack iqfilePath"
 fi
 
+__chk_cma_free()
+{
+	local f
+	if [ ! -f "/proc/rk_dma_heap/alloc_bitmap" ];then
+		echo "[$0] not found /proc/rk_dma_heap/alloc_bitmap, ignore"
+		return
+	fi
+	f=`head  /proc/rk_dma_heap/alloc_bitmap |grep Used|awk '{print $2}'`
+	if [ $f -gt 12 ];then
+		echo "[$0] free cma error"
+		exit 2
+	fi
+}
+
 test_case()
 {
     if [ "$PN_MODE" = "on" ]; then
@@ -67,6 +82,8 @@ test_case()
         fi
     fi
 
+	__chk_cma_free
+
     if [ "$HDR" = "on" ]; then
         #2 HDR mode test
         echo -e "--------------------------------------- <sample_isp_stresstest> HDR mode test start -------------------------------------------\n"
@@ -81,6 +98,8 @@ test_case()
             exit 1
         fi
     fi
+
+	__chk_cma_free
 
     if [ "$FRAMERATE" = "on" ]; then
         #3 framerate switch test
@@ -97,6 +116,8 @@ test_case()
         fi
     fi
 
+	__chk_cma_free
+
     if [ "$LDCH" = "on" ]; then
         #4 LDCH mode test
         echo -e "--------------------------------------- <sample_isp_stresstest> LDCH mode test start -------------------------------------------\n"
@@ -111,6 +132,9 @@ test_case()
             exit 1
         fi
     fi
+
+
+	__chk_cma_free
 
     if [ "$IQFILE" = "on" ]; then
         #5 iqfile switch test
@@ -127,6 +151,8 @@ test_case()
         fi
     fi
 
+	__chk_cma_free
+
     if [ "$ISP_RESTART" = "on" ]; then
 
         #6 isp_deinit_init test
@@ -142,6 +168,8 @@ test_case()
             exit 1
         fi
     fi
+
+	__chk_cma_free
 
     sleep 3
     echo 3 > /proc/sys/vm/drop_caches

@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -x
+
 #test loop
 test_loop=10000
 

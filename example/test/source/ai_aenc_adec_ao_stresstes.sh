@@ -1,5 +1,21 @@
 #!/bin/sh
 
+set -x
+
+__chk_cma_free()
+{
+	local f
+	if [ ! -f "/proc/rk_dma_heap/alloc_bitmap" ];then
+		echo "[$0] not found /proc/rk_dma_heap/alloc_bitmap, ignore"
+		return
+	fi
+	f=`head  /proc/rk_dma_heap/alloc_bitmap |grep Used|awk '{print $2}'`
+	if [ $f -gt 12 ];then
+		echo "[$0] free cma error"
+		exit 2
+	fi
+}
+
 print_help()
 {
     echo "example: $0  <test_loop>"
@@ -53,8 +69,9 @@ test_case()
         else
             echo "-------------------------<sample_ai_aenc_adec_ao_stresstest 8k g711a> failure" > /tmp/sample_ai_aenc_adec_ao_stresstest.log
             echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> failure -------------------------------------------\n\n\n"
-            exit 0
+            exit 1
         fi
+		__chk_cma_free
     elif [ $test_mode == 1 ]; then
         echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest 16k g711a> start -------------------------------------------\n"
         echo -e "<sample_ai_aenc_adec_ao_stresstest -r 16000 -t g711a -v 1>\n"
@@ -65,8 +82,9 @@ test_case()
         else
             echo "-------------------------<sample_ai_aenc_adec_ao_stresstest 16k g711a> failure" > /tmp/sample_ai_aenc_adec_ao_stresstest.log
             echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> failure -------------------------------------------\n\n\n"
-            exit 0
+            exit 1
         fi
+		__chk_cma_free
     elif [ $test_mode == 2 ]; then
         echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest 8k g711u> start -------------------------------------------\n"
         echo -e "<sample_ai_aenc_adec_ao_stresstest -r 8000 -t g711u -v 1>\n"
@@ -77,8 +95,9 @@ test_case()
         else
             echo "-------------------------<sample_ai_aenc_adec_ao_stresstest> failure 8k g711u" > /tmp/sample_ai_aenc_adec_ao_stresstest.log
             echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> failure -------------------------------------------\n\n\n"
-            exit 0
+            exit 1
         fi
+		__chk_cma_free
     elif [ $test_mode == 3 ]; then
         echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest 16k g711u> start -------------------------------------------\n"
         echo -e "<sample_ai_aenc_adec_ao_stresstest -r 16000 -t g711u -v 1>\n"
@@ -89,8 +108,9 @@ test_case()
         else
             echo "-------------------------<sample_ai_aenc_adec_ao_stresstest 16k g711u> failure" > /tmp/sample_ai_aenc_adec_ao_stresstest.log
             echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> failure -------------------------------------------\n\n\n"
-            exit 0
+            exit 1
         fi
+		__chk_cma_free
     elif [ $test_mode == 4 ]; then
         echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest 8k g726> start -------------------------------------------\n"
         echo -e "<sample_ai_aenc_adec_ao_stresstest -r 8000 -t g726 -v 1>\n"
@@ -101,8 +121,9 @@ test_case()
         else
             echo "-------------------------<sample_ai_aenc_adec_ao_stresstest 8k g726> failure" > /tmp/sample_ai_aenc_adec_ao_stresstest.log
             echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> failure -------------------------------------------\n\n\n"
-            exit 0
+            exit 1
         fi
+		__chk_cma_free
     elif [ $test_mode == 5 ]; then
         echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest 16k g711a loop $test_loop> start -------------------------------------------\n"
         echo -e "<sample_ai_aenc_adec_ao_stresstest  -r 16000 -t g711a -v 1 -s 1 -l $test_loop>\n"
@@ -113,8 +134,9 @@ test_case()
         else
             echo "-------------------------<sample_ai_aenc_adec_ao_stresstest 16k g711a loop $test_loop> failure" > /tmp/sample_ai_aenc_adec_ao_stresstest.log
             echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> failure -------------------------------------------\n\n\n"
-            exit 0
+            exit 1
         fi
+		__chk_cma_free
     else
         echo -e "---------------------------------------test_mode($test_mode) is invalid parameter, parameter range is [0,5]-------------------------------------------\n"
     fi

@@ -1,5 +1,21 @@
 #!/bin/sh
 
+set -x
+
+__chk_cma_free()
+{
+	local f
+	if [ ! -f "/proc/rk_dma_heap/alloc_bitmap" ];then
+		echo "[$0] not found /proc/rk_dma_heap/alloc_bitmap, ignore"
+		return
+	fi
+	f=`head  /proc/rk_dma_heap/alloc_bitmap |grep Used|awk '{print $2}'`
+	if [ $f -gt 12 ];then
+		echo "[$0] free cma error"
+		exit 2
+	fi
+}
+
 print_help()
 {
     echo "example: <test_mod=on> $0 <test_result_path> <test_loop> <test_frame> <ordinary_stream_test_framecount> <sensor_width> <sensor_height>"
@@ -81,6 +97,7 @@ test_case()
             echo -e "--------------------------------------- <sample_demo_aiisp_stresstest> isp p/n mode switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
     if [ "$HDR" = "on" ]; then
@@ -96,6 +113,7 @@ test_case()
             echo -e "--------------------------------------- <sample_demo_aiisp_stresstest> isp hdr mode switch switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
     if [ "$FRAMERATE" = "on" ]; then
@@ -111,6 +129,7 @@ test_case()
             echo -e "--------------------------------------- <sample_demo_aiisp_stresstest> isp framerate switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
     if [ "$AIISP" = "on" ]; then
@@ -126,6 +145,7 @@ test_case()
             echo -e "--------------------------------------- <sample_demo_aiisp_stresstest> aiisp mode switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
 
@@ -142,6 +162,7 @@ test_case()
             echo -e "--------------------------------------- <sample_demo_aiisp_stresstest> vpss_chn0_resolution switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
     if [ "$VPSS_VENC_CHN0_RESOLUTION" = "on" ]; then
@@ -157,6 +178,7 @@ test_case()
             echo -e "--------------------------------------- <sample_demo_aiisp_stresstest> vpss_venc_chn0_resolution switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
         if [ "$ENCODE_TYPE" = "on" ]; then
@@ -172,6 +194,7 @@ test_case()
             echo -e "--------------------------------------- <sample_demo_aiisp_stresstest> encode type switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
     if [ "$VPSS_RGN_INIT_DEINIT" = "on" ]; then
@@ -187,6 +210,7 @@ test_case()
             echo -e "--------------------------------------- <sample_demo_aiisp_stresstest> vpss rgn init and deinit test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
     if [ "$VENC_RGN_INIT_DEINIT" = "on" ]; then
@@ -202,6 +226,7 @@ test_case()
             echo -e "--------------------------------------- <sample_demo_aiisp_stresstest> venc rgn init and deinit test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
     if [ "$ORDINARY" = "on" ]; then
         #ordinary stream test
@@ -216,6 +241,7 @@ test_case()
             echo -e "--------------------------------------- <sample_demo_aiisp_stresstest> ordinary stream test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
     if [ "$RESTART" = "on" ]; then
@@ -231,6 +257,7 @@ test_case()
             echo -e "--------------------------------------- <sample_demo_aiisp_stresstest> media_deinit_init test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
     if [ "$AIISP_FORCE" = "on" ]; then
@@ -246,6 +273,7 @@ test_case()
             echo -e "--------------------------------------- <sample_demo_aiisp_stresstest> aiisp force switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
+		__chk_cma_free
     fi
 
     sleep 1
