@@ -22,6 +22,22 @@ __chk_cma_free()
 	fi
 }
 
+test_cmd()
+{
+	if [ -z "$*" ];then
+		echo "not found cmd, return"
+		return
+	fi
+	__echo_test_cmd_msg "TEST    [$*]"
+	eval $*
+	__chk_cma_free
+	if [ $? -eq 0 ]; then
+		__echo_test_cmd_msg "SUCCESS [$*]"
+	else
+		__echo_test_cmd_msg "FAILURE [$*]"
+		exit 1
+	fi
+}
 print_help()
 {
     echo "example: <test_mod=on> $0 <test_result_path> <test_loop> <test_frame> <ifEnableWrap> <ifEnableSmartP> <ordinary_stream_test_framecount> <vi_framerate_switch_loop> <sensor_width> <sensor_height>"
@@ -102,212 +118,77 @@ test_case()
 
     if [ "$PN_MODE" = "on" ]; then
         #isp p/n mode switch
-        __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> isp p/n mode switch test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1 --wrap $ifOpenWrap
-        if [ $? -eq 0 ]; then
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> isp p/n mode switch test success -------------------------------------------\n\n\n"
-        else
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> isp p/n mode switch test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1 --wrap $ifOpenWrap
     fi
 
     if [ "$HDR" = "on" ]; then
         #isp hdr mode switch test
-        __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> isp hdr mode switch switch test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 2 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 2 --wrap $ifOpenWrap
-        if [ $? -eq 0 ]; then
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> isp hdr mode switch switch test success -------------------------------------------\n\n\n"
-        else
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> isp hdr mode switch switch test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 2 --wrap $ifOpenWrap
     fi
 
     if [ "$FRAMERATE" = "on" ]; then
         #isp framerate switch test
-        __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> isp framerate switch test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $vi_framerate_switch_loop --mode_test_type 3 --wrap $ifOpenWrap\n>"
-        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $vi_framerate_switch_loop --mode_test_type 3 --wrap $ifOpenWrap
-        if [ $? -eq 0 ]; then
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> isp framerate switch test success -------------------------------------------\n\n\n"
-        else
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> isp framerate switch test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $vi_framerate_switch_loop --mode_test_type 3 --wrap $ifOpenWrap
     fi
 
     if [ "$LDCH" = "on" ]; then
         #isp LDCH switch test
-        __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> isp LDCH switch test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 4 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 4 --wrap $ifOpenWrap
-        if [ $? -eq 0 ]; then
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> isp LDCH  switch test success -------------------------------------------\n\n\n"
-        else
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> isp LDCH  switch test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 4 --wrap $ifOpenWrap
     fi
 
     if [ "$RESOLUTION" = "on" ]; then
         #venc resolution switch test
-        __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 5 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 5 --wrap $ifOpenWrap
-        if [ $? -eq 0 ]; then
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch test success -------------------------------------------\n\n\n"
-        else
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 5 --wrap $ifOpenWrap
     fi
 
     if [ "$ENCODE_TYPE" = "on" ]; then
         # encode type switch test
-        __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> encode type switch test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 6 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 6 --wrap $ifOpenWrap
-        if [ $? -eq 0 ]; then
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> encode type switch test success -------------------------------------------\n\n\n"
-        else
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> encode type switch test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 6 --wrap $ifOpenWrap
     fi
 
     if [ "$SMART_P" = "on" ]; then
         #smartp mode switch test
-        __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> smartp mode switch test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 7 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 7 --wrap $ifOpenWrap
-        if [ $? -eq 0 ]; then
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> smartp mode switch test success -------------------------------------------\n\n\n"
-        else
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> smartp mode switch test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 7 --wrap $ifOpenWrap
     fi
 
     if [ "$SVC" = "on" ]; then
         #SVC mode switch test
-        __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> SVC mode switch test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 8 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 8 --wrap $ifOpenWrap
-        if [ $? -eq 0 ]; then
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> SVC mode switch test success -------------------------------------------\n\n\n"
-        else
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> SVC mode switch test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 8 --wrap $ifOpenWrap
     fi
 
     if [ "$MOTION" = "on" ]; then
         #motion deblur switch test
-        __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> motion deblur switch test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 9 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 9 --wrap $ifOpenWrap
-        if [ $? -eq 0 ]; then
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> motion deblur switch test success -------------------------------------------\n\n\n"
-        else
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> motion deblur switch test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 9 --wrap $ifOpenWrap
     fi
 
     if [ "$IDR" = "on" ]; then
         #force IDR switch test
-        __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> force IDR switch test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 10 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 10 --wrap $ifOpenWrap
-        if [ $? -eq 0 ]; then
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> force IDR switch test success -------------------------------------------\n\n\n"
-        else
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> force IDR switch test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 10 --wrap $ifOpenWrap
     fi
 
     if [ "$ROTATION" = "on" ]; then
         #venc chn rotation switch test
-        __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> venc chn rotation test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 11 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 11 --wrap $ifOpenWrap
-        if [ $? -eq 0 ]; then
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> venc chn rotation test success -------------------------------------------\n\n\n"
-        else
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> venc chn rotation test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 11 --wrap $ifOpenWrap
     fi
 
     if [ "$DETACH_ATTACH" = "on" ]; then
         #rgn detach/attach switch test
-        __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> rgn detach/attach test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 12 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 12 --wrap $ifOpenWrap
-        if [ $? -eq 0 ]; then
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> rgn detach/attach test success -------------------------------------------\n\n\n"
-        else
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> rgn detach/attach test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 12 --wrap $ifOpenWrap
     fi
 
     if [ "$ORDINARY" = "on" ]; then
         #ordinary stream test
-        __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> ordinary stream test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l $ordinary_stream_test_framecount --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 0 --wrap $ifOpenWrap>\n"
-        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l $ordinary_stream_test_framecount --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 0 --wrap $ifOpenWrap
-        if [ $? -eq 0 ]; then
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> ordinary stream test success -------------------------------------------\n\n\n"
-        else
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> ordinary stream test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l $ordinary_stream_test_framecount --inputBmp1Path /userdata/160x96.bmp --inputBmp2Path /userdata/192x96.bmp --smartP $smartP --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 0 --wrap $ifOpenWrap
     fi
 
     if [ "$RESOLUTION_RV1126" = "on" ]; then
         #venc resolution switch for_RV1126 test
-        __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_demo_vi_venc_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 13>\n"
-        sample_demo_vi_venc_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 13 --vi_chnid 0
-        if [ $? -eq 0 ]; then
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test success -------------------------------------------\n\n\n"
-        else
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> venc resolution switch for_RV1126 test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_demo_vi_venc_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 13 --vi_chnid 0
     fi
 
     if [ "$RESTART" = "on" ]; then
         #media_deinit_init test
-        __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> media_deinit_init test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 14 --wrap $ifOpenWrap --smartP $smartP>\n"
-        sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 14 --wrap $ifOpenWrap --smartP $smartP
-        if [ $? -eq 0 ]; then
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> media_deinit_init test success -------------------------------------------\n\n\n"
-        else
-            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_venc_stresstest> media_deinit_init test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_demo_vi_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 14 --wrap $ifOpenWrap --smartP $smartP
     fi
 
     sleep 1

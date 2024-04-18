@@ -21,6 +21,22 @@ __chk_cma_free()
 		exit 2
 	fi
 }
+test_cmd()
+{
+	if [ -z "$*" ];then
+		echo "not found cmd, return"
+		return
+	fi
+	__echo_test_cmd_msg "TEST    [$*]"
+	eval $*
+	__chk_cma_free
+	if [ $? -eq 0 ]; then
+		__echo_test_cmd_msg "SUCCESS [$*]"
+	else
+		__echo_test_cmd_msg "FAILURE [$*]"
+		exit 1
+	fi
+}
 print_help()
 {
     echo "example: <test_mod=on> $0 <test_result_path> <test_loop> <test_frame> <ifEnableWrap>"
@@ -72,16 +88,7 @@ test_case()
 {
     if [ "$DETACH_ATTACH" = "on" ]; then
         #rgn detach attach test
-        __echo_test_cmd_msg "--------------------------------------- <sample_rgn_stresstest> rgn detach attach test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_rgn_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1 --wrap $ifOpenWrap >\n"
-        sample_rgn_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1 --wrap $ifOpenWrap
-        if [ $? -eq 0 ]; then
-            __echo_test_cmd_msg "--------------------------------------- <sample_rgn_stresstest> rgn detach attach test success -------------------------------------------\n\n\n"
-        else
-            __echo_test_cmd_msg "--------------------------------------- <sample_rgn_stresstest> rgn detach attach test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_rgn_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1 --wrap $ifOpenWrap
     fi
 
     sleep 3

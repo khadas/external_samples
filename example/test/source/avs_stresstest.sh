@@ -22,6 +22,24 @@ __chk_cma_free()
 		exit 2
 	fi
 }
+
+test_cmd()
+{
+	if [ -z "$*" ];then
+		echo "not found cmd, return"
+		return
+	fi
+	__echo_test_cmd_msg "TEST    [$*]"
+	eval $*
+	__chk_cma_free
+	if [ $? -eq 0 ]; then
+		__echo_test_cmd_msg "SUCCESS [$*]"
+	else
+		__echo_test_cmd_msg "FAILURE [$*]"
+		exit 1
+	fi
+}
+
 print_help()
 {
     echo "example: <test_mod=on> $0 <test_result_path> <test_loop> <test_frame> <vi_chnid> <vi_buff_cnt> <vi_resolution> <avs_resolution>"
@@ -101,35 +119,14 @@ test_case()
 {
     if [ "$RESTART" = "on" ]; then
         #1. avs_deinit_ubind_test
-        __echo_test_cmd_msg "--------------------------------------- <sample_avs_stresstest> avs_deinit_ubind_test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_avs_stresstest --vi_size $vi_resolution --avs_size $avs_resolution -a /etc/iqfiles/ --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
-        sample_avs_stresstest --vi_size $vi_resolution --avs_size $avs_resolution -a /etc/iqfiles/ --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $frame_count
-        if [ $? -eq 0 ]; then
-            echo "-------------------------1 <sample_avs_stresstest> avs_deinit_ubind_test success" >> $test_result_path
-            __echo_test_cmd_msg "--------------------------------------- <sample_avs_stresstest> avs_deinit_ubind_test success -------------------------------------------\n\n\n"
-        else
-            echo "-------------------------1 <sample_avs_stresstest> avs_deinit_ubind_test failure" >> $test_result_path
-            __echo_test_cmd_msg "--------------------------------------- <sample_avs_stresstest> avs_deinit_ubind_test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_avs_stresstest --vi_size $vi_resolution --avs_size $avs_resolution -a /etc/iqfiles/ --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $frame_count
     fi
 
     if [ "$RESOLUTION" = "on" ]; then
         #2. avs_resolution_test
-        __echo_test_cmd_msg "--------------------------------------- <sample_avs_stresstest> avs_resolution_test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_avs_stresstest --vi_size $vi_resolution --avs_size $avs_resolution -a /etc/iqfiles/ --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
-        sample_avs_stresstest --vi_size $vi_resolution --avs_size $avs_resolution -a /etc/iqfiles/ --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $frame_count
-        if [ $? -eq 0 ]; then
-            echo "-------------------------2 <sample_avs_stresstest> avs_resolution_test success" >> $test_result_path
-            __echo_test_cmd_msg "--------------------------------------- <sample_avs_stresstest> avs_resolution_test success -------------------------------------------\n\n\n"
-        else
-            echo "-------------------------2 <sample_avs_stresstest> avs_resolution_test failure" >> $test_result_path
-            __echo_test_cmd_msg "--------------------------------------- <sample_avs_stresstest> avs_resolution_test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_avs_stresstest --vi_size $vi_resolution --avs_size $avs_resolution -a /etc/iqfiles/ --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $frame_count
     fi
+
     sleep 3
     echo 3 > /proc/sys/vm/drop_caches
     cat /proc/meminfo | grep MemAvailable >> $test_result_path

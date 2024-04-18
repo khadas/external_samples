@@ -21,6 +21,22 @@ __chk_cma_free()
 		exit 2
 	fi
 }
+test_cmd()
+{
+	if [ -z "$*" ];then
+		echo "not found cmd, return"
+		return
+	fi
+	__echo_test_cmd_msg "TEST    [$*]"
+	eval $*
+	__chk_cma_free
+	if [ $? -eq 0 ]; then
+		__echo_test_cmd_msg "SUCCESS [$*]"
+	else
+		__echo_test_cmd_msg "FAILURE [$*]"
+		exit 1
+	fi
+}
 print_help()
 {
     echo "example: <test_mod> $0 <test_result_path> <test_loop> <test_frame>"
@@ -63,30 +79,12 @@ test_case()
 {
     if [ "$RESTART" = "on" ]; then
         #1. vpss_deinit_ubind_test
-        __echo_test_cmd_msg "--------------------------------------- <sample_vpss_stresstest> vpss_deinit_ubind_test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_vpss_stresstest --vi_size 1920x1080 --vpss_size 1920x1080 -a /etc/iqfiles/ --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
-        sample_vpss_stresstest --vi_size 1920x1080 --vpss_size 1920x1080 -a /etc/iqfiles/ --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $frame_count
-        if [ $? -eq 0 ]; then
-            __echo_test_cmd_msg "---------------------------------------1 <sample_vpss_stresstest> vpss_deinit_ubind_test success -------------------------------------------\n\n\n"
-        else
-            __echo_test_cmd_msg "---------------------------------------1 <sample_vpss_stresstest> vpss_deinit_ubind_test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_vpss_stresstest --vi_size 1920x1080 --vpss_size 1920x1080 -a /etc/iqfiles/ --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $frame_count
     fi
 
     if [ "$RESOLUTION" = "on" ]; then
         #2. vpss_resolution_test
-        __echo_test_cmd_msg "--------------------------------------- <sample_vpss_stresstest> vpss_resolution_test start -------------------------------------------\n"
-        __echo_test_cmd_msg "<sample_vpss_stresstest --vi_size 1920x1080 --vpss_size 1920x1080 -a /etc/iqfiles/ --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
-        sample_vpss_stresstest --vi_size 1920x1080 --vpss_size 1920x1080 -a /etc/iqfiles/ --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $frame_count
-        if [ $? -eq 0 ]; then
-            __echo_test_cmd_msg "---------------------------------------2 <sample_vpss_stresstest> vpss_resolution_test success -------------------------------------------\n\n\n"
-        else
-            __echo_test_cmd_msg "---------------------------------------2 <sample_vpss_stresstest> vpss_resolution_test failure -------------------------------------------\n\n\n"
-            exit 1
-        fi
-		__chk_cma_free
+        test_cmd sample_vpss_stresstest --vi_size 1920x1080 --vpss_size 1920x1080 -a /etc/iqfiles/ --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $frame_count
     fi
 
     sleep 3
