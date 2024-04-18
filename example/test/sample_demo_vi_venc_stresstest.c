@@ -557,6 +557,7 @@ static RK_S32 frameRate_switchTest(SAMPLE_VI_CTX_S *ctx) {
 	RK_S32 s32Ret = RK_FAILURE;
 	VI_CHN_ATTR_S pstChnAttr;
 
+		printf ( "[debug] %s:%d\n", __func__, __LINE__ );
 	memset(&pstChnAttr, 0, sizeof(VI_CHN_ATTR_S));
 	s32Ret = RK_MPI_VI_GetChnAttr(ctx->u32PipeId, ctx->s32ChnId, &pstChnAttr);
 	if (s32Ret != RK_SUCCESS) {
@@ -2020,6 +2021,7 @@ static void *sample_demo_stresstest(void *pArgs) {
 			pCTestModel = "hdrMode_stressTest";
 			break;
 		case 3:
+		printf ( "[debug] %s:%d\n", __func__, __LINE__ );
 			s32Ret = frameRate_switchTest(&ctx->vi[0]);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("frameRate_switchTest failure %X", s32Ret);

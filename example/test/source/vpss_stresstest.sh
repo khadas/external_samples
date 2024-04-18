@@ -1,6 +1,13 @@
 #!/bin/sh
 
 set -x
+__echo_test_cmd_msg()
+{
+	echo -e "$1" | tee -a $test_result_path
+	if [ $? -ne 0 ]; then
+		echo -e "$1"
+	fi
+}
 __chk_cma_free()
 {
 	local f
@@ -56,15 +63,13 @@ test_case()
 {
     if [ "$RESTART" = "on" ]; then
         #1. vpss_deinit_ubind_test
-        echo -e "--------------------------------------- <sample_vpss_stresstest> vpss_deinit_ubind_test start -------------------------------------------\n"
-        echo -e "<sample_vpss_stresstest --vi_size 1920x1080 --vpss_size 1920x1080 -a /etc/iqfiles/ --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_vpss_stresstest> vpss_deinit_ubind_test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_vpss_stresstest --vi_size 1920x1080 --vpss_size 1920x1080 -a /etc/iqfiles/ --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
         sample_vpss_stresstest --vi_size 1920x1080 --vpss_size 1920x1080 -a /etc/iqfiles/ --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $frame_count
         if [ $? -eq 0 ]; then
-            echo "-------------------------1 <sample_vpss_stresstest> vpss_deinit_ubind_test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_vpss_stresstest> vpss_deinit_ubind_test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------1 <sample_vpss_stresstest> vpss_deinit_ubind_test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------1 <sample_vpss_stresstest> vpss_deinit_ubind_test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_vpss_stresstest> vpss_deinit_ubind_test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------1 <sample_vpss_stresstest> vpss_deinit_ubind_test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -72,15 +77,13 @@ test_case()
 
     if [ "$RESOLUTION" = "on" ]; then
         #2. vpss_resolution_test
-        echo -e "--------------------------------------- <sample_vpss_stresstest> vpss_resolution_test start -------------------------------------------\n"
-        echo -e "<sample_vpss_stresstest --vi_size 1920x1080 --vpss_size 1920x1080 -a /etc/iqfiles/ --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_vpss_stresstest> vpss_resolution_test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_vpss_stresstest --vi_size 1920x1080 --vpss_size 1920x1080 -a /etc/iqfiles/ --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
         sample_vpss_stresstest --vi_size 1920x1080 --vpss_size 1920x1080 -a /etc/iqfiles/ --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $frame_count
         if [ $? -eq 0 ]; then
-            echo "-------------------------2 <sample_vpss_stresstest> vpss_resolution_test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_vpss_stresstest> vpss_resolution_test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------2 <sample_vpss_stresstest> vpss_resolution_test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------2 <sample_vpss_stresstest> vpss_resolution_test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_vpss_stresstest> vpss_resolution_test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------2 <sample_vpss_stresstest> vpss_resolution_test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free

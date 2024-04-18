@@ -1,6 +1,13 @@
 #!/bin/sh
 
 set -x
+__echo_test_cmd_msg()
+{
+	echo -e "$1" | tee -a $test_result_path
+	if [ $? -ne 0 ]; then
+		echo -e "$1"
+	fi
+}
 __chk_cma_free()
 {
 	local f
@@ -112,15 +119,15 @@ test_case()
 {
     if [ "$RESTART" = "on" ]; then
         #1. media_deinit_init test
-        echo -e "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> media_deinit_init test start -------------------------------------------\n"
-        echo -e "<sample_demo_vi_avs_venc_stresstest --vi_size $vi_resolution --avs_chn0_size $avs_chn0_resolution --avs_chn1_size $avs_chn1_resolution --chn_id $vi_chnid --vi_chn_buf_cnt $vi_buff_cnt -a /etc/iqfiles/ -e h265cbr -b 4096 -n 2 --test_type 1 --test_loop $test_loop --test_frame $frame_count>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> media_deinit_init test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_demo_vi_avs_venc_stresstest --vi_size $vi_resolution --avs_chn0_size $avs_chn0_resolution --avs_chn1_size $avs_chn1_resolution --chn_id $vi_chnid --vi_chn_buf_cnt $vi_buff_cnt -a /etc/iqfiles/ -e h265cbr -b 4096 -n 2 --test_type 1 --test_loop $test_loop --test_frame $frame_count>\n"
         sample_demo_vi_avs_venc_stresstest --vi_size $vi_resolution --avs_chn0_size $avs_chn0_resolution --avs_chn1_size $avs_chn1_resolution --chn_id $vi_chnid --vi_chn_buf_cnt $vi_buff_cnt -a /etc/iqfiles/ -e h265cbr -b 4096 -n 2 --test_type 1 --test_loop $test_loop --test_frame $frame_count
         if [ $? -eq 0 ]; then
             echo "-------------------------1 <sample_demo_vi_avs_venc_stresstest> media_deinit_init test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> media_deinit_init test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> media_deinit_init test success -------------------------------------------\n\n\n"
         else 
             echo "-------------------------1 <sample_demo_vi_avs_venc_stresstest> media_deinit_init test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> media_deinit_init test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> media_deinit_init test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -128,15 +135,15 @@ test_case()
 
     if [ "$RESOLUTION" = "on" ]; then
         #2. avs_resolution_test
-        echo -e "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> avs_resolution_test start -------------------------------------------\n"
-        echo -e "<sample_demo_vi_avs_venc_stresstest --vi_size $vi_resolution --avs_chn0_size $avs_chn0_resolution --avs_chn1_size $avs_chn1_resolution --chn_id $vi_chnid --vi_chn_buf_cnt $vi_buff_cnt -a /etc/iqfiles/ -e h265cbr -b 4096 -n 2 --test_type 2 --test_loop $test_loop --test_frame $frame_count>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> avs_resolution_test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_demo_vi_avs_venc_stresstest --vi_size $vi_resolution --avs_chn0_size $avs_chn0_resolution --avs_chn1_size $avs_chn1_resolution --chn_id $vi_chnid --vi_chn_buf_cnt $vi_buff_cnt -a /etc/iqfiles/ -e h265cbr -b 4096 -n 2 --test_type 2 --test_loop $test_loop --test_frame $frame_count>\n"
         sample_demo_vi_avs_venc_stresstest --vi_size $vi_resolution --avs_chn0_size $avs_chn0_resolution --avs_chn1_size $avs_chn1_resolution --chn_id $vi_chnid --vi_chn_buf_cnt $vi_buff_cnt -a /etc/iqfiles/ -e h265cbr -b 4096 -n 2 --test_type 2 --test_loop $test_loop --test_frame $frame_count
         if [ $? -eq 0 ]; then
             echo "-------------------------2 <sample_demo_vi_avs_venc_stresstest> avs_resolution_test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> avs_resolution_test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> avs_resolution_test success -------------------------------------------\n\n\n"
         else
             echo "-------------------------2 <sample_demo_vi_avs_venc_stresstest> avs_resolution_test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> avs_resolution_test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> avs_resolution_test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -144,15 +151,15 @@ test_case()
 
     if [ "$ORDINARY" = "on" ]; then
         #3. ordinary stream test
-        echo -e "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> ordinary stream test start -------------------------------------------\n"
-        echo -e "<sample_demo_vi_avs_venc_stresstest --vi_size $vi_resolution --avs_chn0_size $avs_chn0_resolution --avs_chn1_size $avs_chn1_resolution --chn_id $vi_chnid --vi_chn_buf_cnt $vi_buff_cnt -a /etc/iqfiles/ -e h265cbr -b 4096 -n 2 -l $ordinary_stream_test_framecount>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> ordinary stream test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_demo_vi_avs_venc_stresstest --vi_size $vi_resolution --avs_chn0_size $avs_chn0_resolution --avs_chn1_size $avs_chn1_resolution --chn_id $vi_chnid --vi_chn_buf_cnt $vi_buff_cnt -a /etc/iqfiles/ -e h265cbr -b 4096 -n 2 -l $ordinary_stream_test_framecount>\n"
         sample_demo_vi_avs_venc_stresstest --vi_size $vi_resolution --avs_chn0_size $avs_chn0_resolution --avs_chn1_size $avs_chn1_resolution --chn_id $vi_chnid --vi_chn_buf_cnt $vi_buff_cnt -a /etc/iqfiles/ -e h265cbr -b 4096 -n 2 -l $ordinary_stream_test_framecount
         if [ $? -eq 0 ]; then
             echo "-------------------------3 <sample_demo_vi_avs_venc_stresstest> ordinary stream test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> ordinary stream test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> ordinary stream test success -------------------------------------------\n\n\n"
         else
             echo "-------------------------3 <sample_demo_vi_avs_venc_stresstest> ordinary stream test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> ordinary stream test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_vi_avs_venc_stresstest> ordinary stream test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free

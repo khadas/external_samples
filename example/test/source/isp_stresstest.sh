@@ -1,6 +1,13 @@
 #!/bin/sh
 
 set -x
+__echo_test_cmd_msg()
+{
+	echo -e "$1" | tee -a $test_result_path
+	if [ $? -ne 0 ]; then
+		echo -e "$1"
+	fi
+}
 print_help()
 {
     echo "example: <test_mod=on> $0 <test_result_path> <test_loop> <test_frame> <vi_frame_switch_test_loop> <iq_file_path>"
@@ -69,15 +76,13 @@ test_case()
 {
     if [ "$PN_MODE" = "on" ]; then
         #1 PN mode switch
-        echo -e "--------------------------------------- <sample_isp_stresstest> PN mode switch test start -------------------------------------------\n"
-        echo -e "<sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --chn_id 1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1 >\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_isp_stresstest> PN mode switch test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --chn_id 1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1 >\n"
         sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --chn_id 1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1
         if [ $? -eq 0 ]; then
-            echo "-------------------------1 <sample_isp_stresstest> isp p/n mode switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_isp_stresstest> PN mode switch test_result success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------1 <sample_isp_stresstest> PN mode switch test_result success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------1 <sample_isp_stresstest> isp p/n mode switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_isp_stresstest> PN mode switch test_result failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------1 <sample_isp_stresstest> PN mode switch test_result failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
@@ -86,15 +91,13 @@ test_case()
 
     if [ "$HDR" = "on" ]; then
         #2 HDR mode test
-        echo -e "--------------------------------------- <sample_isp_stresstest> HDR mode test start -------------------------------------------\n"
-        echo -e "<sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --chn_id 1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 2 >\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_isp_stresstest> HDR mode test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --chn_id 1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 2 >\n"
         sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --chn_id 1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 2
         if [ $? -eq 0 ]; then
-            echo "-------------------------2 <sample_isp_stresstest> isp HDR mode switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_isp_stresstest> HDR mode test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------2 <sample_isp_stresstest> HDR mode test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------2 <sample_isp_stresstest> isp HDR mode switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_isp_stresstest> HDR mode test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------2 <sample_isp_stresstest> HDR mode test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
@@ -103,15 +106,13 @@ test_case()
 
     if [ "$FRAMERATE" = "on" ]; then
         #3 framerate switch test
-        echo -e "--------------------------------------- <sample_isp_stresstest> frameRate_switch_test start -------------------------------------------\n"
-        echo -e "<sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --chn_id 1 --test_frame_count $frame_count --mode_test_loop $vi_framerate_switch_loop --mode_test_type 3 >\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_isp_stresstest> frameRate_switch_test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --chn_id 1 --test_frame_count $frame_count --mode_test_loop $vi_framerate_switch_loop --mode_test_type 3 >\n"
         sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --chn_id 1 --test_frame_count $frame_count --mode_test_loop $vi_framerate_switch_loop --mode_test_type 3
         if [ $? -eq 0 ]; then
-            echo "-------------------------3 <sample_isp_stresstest> isp framerate switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_isp_stresstest> frameRate_switch_test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------3 <sample_isp_stresstest> frameRate_switch_test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------3 <sample_isp_stresstest> isp framerate mode switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_isp_stresstest> frameRate_switch_test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------3 <sample_isp_stresstest> frameRate_switch_test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
@@ -120,15 +121,13 @@ test_case()
 
     if [ "$LDCH" = "on" ]; then
         #4 LDCH mode test
-        echo -e "--------------------------------------- <sample_isp_stresstest> LDCH mode test start -------------------------------------------\n"
-        echo -e "<sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --chn_id 1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 4 >\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_isp_stresstest> LDCH mode test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --chn_id 1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 4 >\n"
         sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --chn_id 1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 4
         if [ $? -eq 0 ]; then
-            echo "-------------------------4 <sample_isp_stresstest> isp LDCH mode switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_isp_stresstest> LDCH mode test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------4 <sample_isp_stresstest> LDCH mode test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------4 <sample_isp_stresstest> isp LDCH mode switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_isp_stresstest> LDCH mode test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------4 <sample_isp_stresstest> LDCH mode test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
@@ -138,15 +137,13 @@ test_case()
 
     if [ "$IQFILE" = "on" ]; then
         #5 iqfile switch test
-        echo -e "--------------------------------------- <sample_isp_stresstest> iqfile switch test start -------------------------------------------\n"
-        echo -e "<sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --chn_id 1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 5 --iqfilePath $iqfilePath>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_isp_stresstest> iqfile switch test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --chn_id 1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 5 --iqfilePath $iqfilePath>\n"
         sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --chn_id 1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 5 --iqfilePath $iqfilePath
         if [ $? -eq 0 ]; then
-            echo "-------------------------5 <sample_isp_stresstest> isp iqfile switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_isp_stresstest> iqfile switch test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------5 <sample_isp_stresstest> iqfile switch test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------5 <sample_isp_stresstest> isp iqfile switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_isp_stresstest> iqfile switch test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------5 <sample_isp_stresstest> iqfile switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi
@@ -156,15 +153,13 @@ test_case()
     if [ "$ISP_RESTART" = "on" ]; then
 
         #6 isp_deinit_init test
-        echo -e "--------------------------------------- <sample_isp_stresstest> isp_deinit_init test start -------------------------------------------\n"
-        echo -e "<sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --chn_id 1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 6 >\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_isp_stresstest> isp_deinit_init test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --chn_id 1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 6 >\n"
         sample_isp_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --chn_id 1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 6
         if [ $? -eq 0 ]; then
-            echo "-------------------------6 <sample_isp_stresstest> isp_deinit_init test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_isp_stresstest> isp_deinit_init test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------6 <sample_isp_stresstest> isp_deinit_init test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------6 <sample_isp_stresstest> isp_deinit_init test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_isp_stresstest> isp_deinit_init test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------6 <sample_isp_stresstest> isp_deinit_init test failure -------------------------------------------\n\n\n"
             exit 1
         fi
     fi

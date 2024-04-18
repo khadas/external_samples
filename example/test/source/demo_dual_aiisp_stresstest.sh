@@ -1,6 +1,13 @@
 #!/bin/sh
 
 set -x
+__echo_test_cmd_msg()
+{
+	echo -e "$1" | tee -a $test_result_path
+	if [ $? -ne 0 ]; then
+		echo -e "$1"
+	fi
+}
 __chk_cma_free()
 {
 	local f
@@ -85,15 +92,15 @@ test_case()
 
     if [ "$PN_MODE" = "on" ]; then
         #isp p/n mode switch
-        echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> isp p/n mode switch test start -------------------------------------------\n"
-        echo -e "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ -e h264cbr -b 4096 -i /userdata/160x96.bmp -I /userdata/192x96.bmp --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> isp p/n mode switch test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ -e h264cbr -b 4096 -i /userdata/160x96.bmp -I /userdata/192x96.bmp --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1>\n"
         sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ -e h264cbr -b 4096 -i /userdata/160x96.bmp -I /userdata/192x96.bmp --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1
         if [ $? -eq 0 ]; then
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> isp p/n mode switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> isp p/n mode switch test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> isp p/n mode switch test success -------------------------------------------\n\n\n"
         else
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> isp p/n mode switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> isp p/n mode switch test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> isp p/n mode switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -101,15 +108,15 @@ test_case()
 
     if [ "$HDR" = "on" ]; then
         #isp hdr mode switch test
-        echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> isp hdr mode switch switch test start -------------------------------------------\n"
-        echo -e "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/  -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 2 >\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> isp hdr mode switch switch test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/  -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 2 >\n"
         sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/  -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 2 
         if [ $? -eq 0 ]; then
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> isp hdr mode switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> isp hdr mode switch switch test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> isp hdr mode switch switch test success -------------------------------------------\n\n\n"
         else
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> isp hdr mode switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> isp hdr mode switch switch test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> isp hdr mode switch switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -117,15 +124,15 @@ test_case()
 
     if [ "$FRAMERATE" = "on" ]; then
         #isp framerate switch test
-        echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> isp framerate switch test start -------------------------------------------\n"
-        echo -e "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/  -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 3 \n>"
+        __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> isp framerate switch test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/  -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 3 \n>"
         sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/  -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop  $test_loop --mode_test_type 3 
         if [ $? -eq 0 ]; then
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> isp framerate switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> isp framerate switch test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> isp framerate switch test success -------------------------------------------\n\n\n"
         else
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> isp framerate switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> isp framerate switch test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> isp framerate switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -133,15 +140,15 @@ test_case()
 
     if [ "$AIISP" = "on" ]; then
         #aiisp mode switch test
-        echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> aiisp mode switch test start -------------------------------------------\n"
-        echo -e "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/  -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 4 \n>"
+        __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> aiisp mode switch test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/  -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 4 \n>"
         sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/  -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop  $test_loop --mode_test_type 4
         if [ $? -eq 0 ]; then
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> aiisp mode switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> aiisp mode switch test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> aiisp mode switch test success -------------------------------------------\n\n\n"
         else
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> aiisp mode switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> aiisp mode switch test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> aiisp mode switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -150,15 +157,15 @@ test_case()
 
     if [ "$VPSS_CHN0_RESOLUTION" = "on" ]; then
         #venc_chn0_resolution switch test
-        echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> vpss_chn0_resolution_switch_test  start -------------------------------------------\n"
-        echo -e "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ -i /userdata/160x96.bmp -I /userdata/192x96.bmp --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 5 >\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> vpss_chn0_resolution_switch_test  start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ -i /userdata/160x96.bmp -I /userdata/192x96.bmp --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 5 >\n"
         sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 5 
         if [ $? -eq 0 ]; then
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> vpss_chn0_resolution switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> vpss_chn0_resolution switch test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> vpss_chn0_resolution switch test success -------------------------------------------\n\n\n"
         else
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> vpss_chn0_resolution switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> vpss_chn0_resolution switch test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> vpss_chn0_resolution switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -166,15 +173,15 @@ test_case()
 
     if [ "$VPSS_VENC_CHN0_RESOLUTION" = "on" ]; then
         #vpss_venc_chn0_resolution switch test
-        echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> vpss_venc_chn0_resolution switch test start -------------------------------------------\n"
-        echo -e "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/  -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 6 >\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> vpss_venc_chn0_resolution switch test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/  -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 6 >\n"
         sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/  -i /userdata/160x96.bmp -I /userdata/192x96.bmp --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 6 
         if [ $? -eq 0 ]; then
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> vpss_venc_chn0_resolution switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> vpss_venc_chn0_resolution switch test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> vpss_venc_chn0_resolution switch test success -------------------------------------------\n\n\n"
         else
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> vpss_venc_chn0_resolution switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> vpss_venc_chn0_resolution switch test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> vpss_venc_chn0_resolution switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -182,15 +189,15 @@ test_case()
 
         if [ "$ENCODE_TYPE" = "on" ]; then
         # encode type switch test
-        echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> encode type switch test start -------------------------------------------\n"
-        echo -e "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/  -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 7 >\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> encode type switch test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/  -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 7 >\n"
         sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/  -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 7
         if [ $? -eq 0 ]; then
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> venc encode type switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> encode type switch test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> encode type switch test success -------------------------------------------\n\n\n"
         else
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> venc encode type switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> encode type switch test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> encode type switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -198,45 +205,45 @@ test_case()
 
     if [ "$RGN_INIT_DEINIT" = "on" ]; then
         #rgn init and deinit test
-        echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> venc rgn init and deinit test start -------------------------------------------\n"
-        echo -e "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/  -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 8 >\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> venc rgn init and deinit test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/  -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 8 >\n"
         sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/  -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 8 
         if [ $? -eq 0 ]; then
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> rgn init and deinit test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> rgn init and deinit test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> rgn init and deinit test success -------------------------------------------\n\n\n"
         else
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> rgn init and deinit test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> rgn init and deinit test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> rgn init and deinit test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
     fi
     if [ "$RESTART" = "on" ]; then
         #media_deinit_init test
-        echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> media_deinit_init test start -------------------------------------------\n"
-        echo -e "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 9  >\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> media_deinit_init test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 9  >\n"
         sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 9  
         if [ $? -eq 0 ]; then
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> media_deinit_init test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> media_deinit_init test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> media_deinit_init test success -------------------------------------------\n\n\n"
         else
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> media_deinit_init test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> media_deinit_init test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> media_deinit_init test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
     fi
     if [ "$ORDINARY" = "on" ]; then
         #ordinary stream test
-        echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> ordinary stream test start -------------------------------------------\n"
-        echo -e "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ -l $ordinary_stream_test_framecount -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 0 >\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> ordinary stream test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ -l $ordinary_stream_test_framecount -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 0 >\n"
         sample_demo_dual_aiisp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ -l $ordinary_stream_test_framecount -i /userdata/160x96.bmp -I /userdata/192x96.bmp  --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 0 
         if [ $? -eq 0 ]; then
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> ordinary stream test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> ordinary stream test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> ordinary stream test success -------------------------------------------\n\n\n"
         else
             echo "-------------------------<sample_demo_dual_aiisp_stresstest> ordinary stream test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_demo_dual_aiisp_stresstest> ordinary stream test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_demo_dual_aiisp_stresstest> ordinary stream test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free

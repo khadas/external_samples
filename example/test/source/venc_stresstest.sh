@@ -1,6 +1,14 @@
 #!/bin/sh
 
 set -x
+
+__echo_test_cmd_msg()
+{
+	echo -e "$1" | tee -a $test_result_path
+	if [ $? -ne 0 ]; then
+		echo -e "$1"
+	fi
+}
 __chk_cma_free()
 {
 	local f
@@ -65,15 +73,13 @@ test_case()
 {
     if [ "$RESOLUTION" = "on" ]; then
         #venc resolution switch test
-        echo -e "--------------------------------------- <sample_venc_stresstest> venc resolution switch test start -------------------------------------------\n"
-        echo -e "<sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_venc_stresstest> venc resolution switch test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
         sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $frame_count
         if [ $? -eq 0 ]; then
-            echo "-------------------------5 <sample_venc_stresstest> venc resolution switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_venc_stresstest> venc resolution switch test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------5 <sample_venc_stresstest> venc resolution switch test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------5 <sample_venc_stresstest> venc resolution switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_venc_stresstest> venc resolution switch test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------5 <sample_venc_stresstest> venc resolution switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -81,15 +87,13 @@ test_case()
 
     if [ "$ENCODE_TYPE" = "on" ]; then
         # encode type switch test
-        echo -e "--------------------------------------- <sample_venc_stresstest> encode type switch test start -------------------------------------------\n"
-        echo -e "<sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_venc_stresstest> encode type switch test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
         sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $frame_count
         if [ $? -eq 0 ]; then
-            echo "-------------------------6 <sample_venc_stresstest> encode type switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_venc_stresstest> encode type switch test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------6 <sample_venc_stresstest> encode type switch test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------6 <sample_venc_stresstest> encode type switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_venc_stresstest> encode type switch test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------6 <sample_venc_stresstest> encode type switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -97,15 +101,13 @@ test_case()
 
     if [ "$SMART_P" = "on" ]; then
         #smartp mode switch test
-        echo -e "--------------------------------------- <sample_venc_stresstest> smartp mode switch test start -------------------------------------------\n"
-        echo -e "<sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 3 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_venc_stresstest> smartp mode switch test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 3 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
         sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 3 --mode_test_loop $test_loop --test_frame_count $frame_count
         if [ $? -eq 0 ]; then
-            echo "-------------------------7 <sample_venc_stresstest> smartp mode switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_venc_stresstest> smartp mode switch test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------7 <sample_venc_stresstest> smartp mode switch test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------7 <sample_venc_stresstest> smartp mode switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_venc_stresstest> smartp mode switch test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------7 <sample_venc_stresstest> smartp mode switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -113,15 +115,13 @@ test_case()
 
     if [ "$SVC" = "on" ]; then
         #SVC mode switch test
-        echo -e "--------------------------------------- <sample_venc_stresstest> SVC mode switch test start -------------------------------------------\n"
-        echo -e "<sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 4 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_venc_stresstest> SVC mode switch test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 4 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
         sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 4 --mode_test_loop $test_loop --test_frame_count $frame_count
         if [ $? -eq 0 ]; then
-            echo "-------------------------8 <sample_venc_stresstest> SVC mode switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_venc_stresstest> SVC mode switch test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------8 <sample_venc_stresstest> SVC mode switch test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------8 <sample_venc_stresstest> SVC mode switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_venc_stresstest> SVC mode switch test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------8 <sample_venc_stresstest> SVC mode switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -129,15 +129,13 @@ test_case()
 
     if [ "$MOTION" = "on" ]; then
         #motion deblur switch test
-        echo -e "<sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 5 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
-        echo -e "--------------------------------------- <sample_venc_stresstest> motion deblur switch test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 5 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_venc_stresstest> motion deblur switch test start -------------------------------------------\n"
         sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 5 --mode_test_loop $test_loop --test_frame_count $frame_count
         if [ $? -eq 0 ]; then
-            echo "-------------------------9 <sample_venc_stresstest> motion deblur switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_venc_stresstest> motion deblur switch test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------9 <sample_venc_stresstest> motion deblur switch test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------9 <sample_venc_stresstest> motion deblur switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_venc_stresstest> motion deblur switch test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------9 <sample_venc_stresstest> motion deblur switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -145,15 +143,13 @@ test_case()
 
     if [ "$IDR" = "on" ]; then
         #force IDR switch test
-        echo -e "--------------------------------------- <sample_venc_stresstest> force IDR switch test start -------------------------------------------\n"
-        echo -e "<sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 6 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_venc_stresstest> force IDR switch test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 6 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
         sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 6 --mode_test_loop $test_loop --test_frame_count $frame_count
         if [ $? -eq 0 ]; then
-            echo "-------------------------10 <sample_venc_stresstest> force IDR switch test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_venc_stresstest> force IDR switch test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------10 <sample_venc_stresstest> force IDR switch test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------10 <sample_venc_stresstest> force IDR switch test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_venc_stresstest> force IDR switch test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------10 <sample_venc_stresstest> force IDR switch test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -161,15 +157,13 @@ test_case()
 
     if [ "$ROTATION" = "on" ]; then
         #venc chn rotation switch test
-        echo -e "--------------------------------------- <sample_venc_stresstest> venc chn rotation test start -------------------------------------------\n"
-        echo -e "<sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 7 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_venc_stresstest> venc chn rotation test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 7 --mode_test_loop $test_loop --test_frame_count $frame_count>\n"
         sample_venc_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ --wrap $ifOpenWrap --mode_test_type 7 --mode_test_loop $test_loop --test_frame_count $frame_count
         if [ $? -eq 0 ]; then
-            echo "-------------------------11 <sample_venc_stresstest> venc chn rotation test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_venc_stresstest> venc chn rotation test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------11 <sample_venc_stresstest> venc chn rotation test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------11 <sample_venc_stresstest> venc chn rotation test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_venc_stresstest> venc chn rotation test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------11 <sample_venc_stresstest> venc chn rotation test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free

@@ -33,6 +33,13 @@ fi
 # get script path
 file_path=$(dirname $0)
 
+__echo_test_cmd_msg()
+{
+	echo -e "$1" | tee -a $test_result_path
+	if [ $? -ne 0 ]; then
+		echo -e "$1"
+	fi
+}
 isp_stresstest()
 {
     # ./script test_type if_open test_loop test_frame iq_file
@@ -47,7 +54,7 @@ isp_stresstest()
     eval $1 $file_path/isp_stresstest.sh $test_result_path $test_loop $test_frame $vi_framerate_switch_loop $iqfilePath
     
     if [ $? != 0 ]; then
-        echo "$1 $file_path/isp_stresstest.sh $test_result_path $test_loop $test_frame $vi_framerate_switch_loop $iqfilePath   -----test failure"
+        __echo_test_cmd_msg "$1 $file_path/isp_stresstest.sh $test_result_path $test_loop $test_frame $vi_framerate_switch_loop $iqfilePath   -----test failure"
         exit 1
     fi
 
@@ -66,7 +73,7 @@ venc_stresstest()
 
     eval $1 $file_path/venc_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap
      if [ $? != 0 ]; then
-        echo "$1 $file_path/venc_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap ----------test failure"
+        __echo_test_cmd_msg "$1 $file_path/venc_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap ----------test failure"
         exit 1
     fi
 
@@ -86,7 +93,7 @@ rgn_stresstest()
 
     eval $1 $file_path/rgn_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap
      if [ $? != 0 ]; then
-        echo "$1 $file_path/rgn_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap ----------test failure"
+        __echo_test_cmd_msg "$1 $file_path/rgn_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap ----------test failure"
         exit 1
     fi
 
@@ -106,7 +113,7 @@ vpss_stresstest()
 
     eval $1 $file_path/vpss_stresstest.sh $test_result_path $test_loop $test_frame
      if [ $? != 0 ]; then
-        echo "$1 $file_path/vpss_stresstest.sh $test_result_path $test_loop $test_frame----------test failure"
+        __echo_test_cmd_msg "$1 $file_path/vpss_stresstest.sh $test_result_path $test_loop $test_frame----------test failure"
         exit 1
     fi
 
@@ -131,7 +138,7 @@ demo_vi_venc_stresstest()
 
     eval $1 $file_path/demo_vi_venc_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap $ifEnableSmartP $ordinary_stream_test_framecount $vi_framerate_switch_loop $sensor_width $sensor_height
     if [ $? != 0 ]; then
-        echo -e "$1 $file_path/demo_vi_venc_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap $ifEnableSmartP $ordinary_stream_test_framecount  $vi_framerate_switch_loop $sensor_width $sensor_height ----------test failure"
+        __echo_test_cmd_msg "$1 $file_path/demo_vi_venc_stresstest.sh $test_result_path $test_loop $test_frame $ifEnableWrap $ifEnableSmartP $ordinary_stream_test_framecount  $vi_framerate_switch_loop $sensor_width $sensor_height ----------test failure"
         exit 1
     fi
 

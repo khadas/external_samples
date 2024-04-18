@@ -1,6 +1,13 @@
 #!/bin/sh
 
 set -x
+__echo_test_cmd_msg()
+{
+	echo -e "$1" | tee -a $test_result_path
+	if [ $? -ne 0 ]; then
+		echo -e "$1"
+	fi
+}
 __chk_cma_free()
 {
 	local f
@@ -65,15 +72,13 @@ test_case()
 {
     if [ "$DETACH_ATTACH" = "on" ]; then
         #rgn detach attach test
-        echo -e "--------------------------------------- <sample_rgn_stresstest> rgn detach attach test start -------------------------------------------\n"
-        echo -e "<sample_rgn_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1 --wrap $ifOpenWrap >\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_rgn_stresstest> rgn detach attach test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_rgn_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1 --wrap $ifOpenWrap >\n"
         sample_rgn_stresstest -w 1920 -h 1080 -a /etc/iqfiles/ -l -1 --test_frame_count $frame_count --mode_test_loop $test_loop --mode_test_type 1 --wrap $ifOpenWrap
         if [ $? -eq 0 ]; then
-            echo "-------------------------<sample_rgn_stresstest> rgn detach attach test success" >> $test_result_path
-            echo -e "--------------------------------------- <sample_rgn_stresstest> rgn detach attach test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_rgn_stresstest> rgn detach attach test success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------<sample_rgn_stresstest> rgn detach attach test failure" >> $test_result_path
-            echo -e "--------------------------------------- <sample_rgn_stresstest> rgn detach attach test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_rgn_stresstest> rgn detach attach test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free

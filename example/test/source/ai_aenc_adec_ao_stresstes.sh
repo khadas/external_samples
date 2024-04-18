@@ -2,6 +2,13 @@
 
 set -x
 
+__echo_test_cmd_msg()
+{
+	echo -e "$1" | tee -a $test_result_path
+	if [ $? -ne 0 ]; then
+		echo -e "$1"
+	fi
+}
 __chk_cma_free()
 {
 	local f
@@ -60,85 +67,85 @@ done
 test_case()
 {
     if [ $test_mode == 0 ]; then
-        echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest 8k g711a> start -------------------------------------------\n"
-        echo -e "<sample_ai_aenc_adec_ao_stresstest -r 8000 -t g711a -v 1>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest 8k g711a> start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_ai_aenc_adec_ao_stresstest -r 8000 -t g711a -v 1>\n"
         sample_ai_aenc_adec_ao_stresstest -r 8000 -t g711a -v 1
         if [ $? -eq 0 ]; then
             echo "-------------------------<sample_ai_aenc_adec_ao_stresstest 8k g711a> success" > /tmp/sample_ai_aenc_adec_ao_stresstest.log
-            echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> success -------------------------------------------\n\n\n"
         else
             echo "-------------------------<sample_ai_aenc_adec_ao_stresstest 8k g711a> failure" > /tmp/sample_ai_aenc_adec_ao_stresstest.log
-            echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
     elif [ $test_mode == 1 ]; then
-        echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest 16k g711a> start -------------------------------------------\n"
-        echo -e "<sample_ai_aenc_adec_ao_stresstest -r 16000 -t g711a -v 1>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest 16k g711a> start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_ai_aenc_adec_ao_stresstest -r 16000 -t g711a -v 1>\n"
         sample_ai_aenc_adec_ao_stresstest -r 16000 -t g711a -v 1
         if [ $? -eq 0 ]; then
             echo "-------------------------<sample_ai_aenc_adec_ao_stresstest 16k g711a> success" > /tmp/sample_ai_aenc_adec_ao_stresstest.log
-            echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> success -------------------------------------------\n\n\n"
         else
             echo "-------------------------<sample_ai_aenc_adec_ao_stresstest 16k g711a> failure" > /tmp/sample_ai_aenc_adec_ao_stresstest.log
-            echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
     elif [ $test_mode == 2 ]; then
-        echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest 8k g711u> start -------------------------------------------\n"
-        echo -e "<sample_ai_aenc_adec_ao_stresstest -r 8000 -t g711u -v 1>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest 8k g711u> start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_ai_aenc_adec_ao_stresstest -r 8000 -t g711u -v 1>\n"
         sample_ai_aenc_adec_ao_stresstest -r 8000 -t g711u -v 1
         if [ $? -eq 0 ]; then
             echo "-------------------------<sample_ai_aenc_adec_ao_stresstest> success 8k g711u" > /tmp/sample_ai_aenc_adec_ao_stresstest.log
-            echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> success -------------------------------------------\n\n\n"
         else
             echo "-------------------------<sample_ai_aenc_adec_ao_stresstest> failure 8k g711u" > /tmp/sample_ai_aenc_adec_ao_stresstest.log
-            echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
     elif [ $test_mode == 3 ]; then
-        echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest 16k g711u> start -------------------------------------------\n"
-        echo -e "<sample_ai_aenc_adec_ao_stresstest -r 16000 -t g711u -v 1>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest 16k g711u> start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_ai_aenc_adec_ao_stresstest -r 16000 -t g711u -v 1>\n"
         sample_ai_aenc_adec_ao_stresstest -r 16000 -t g711u -v 1
         if [ $? -eq 0 ]; then
             echo "-------------------------<sample_ai_aenc_adec_ao_stresstest 16k g711u> success" > /tmp/sample_ai_aenc_adec_ao_stresstest.log
-            echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> success -------------------------------------------\n\n\n"
         else
             echo "-------------------------<sample_ai_aenc_adec_ao_stresstest 16k g711u> failure" > /tmp/sample_ai_aenc_adec_ao_stresstest.log
-            echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
     elif [ $test_mode == 4 ]; then
-        echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest 8k g726> start -------------------------------------------\n"
-        echo -e "<sample_ai_aenc_adec_ao_stresstest -r 8000 -t g726 -v 1>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest 8k g726> start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_ai_aenc_adec_ao_stresstest -r 8000 -t g726 -v 1>\n"
         sample_ai_aenc_adec_ao_stresstest -r 8000 -t g726 -v 1
         if [ $? -eq 0 ]; then
             echo "-------------------------<sample_ai_aenc_adec_ao_stresstest 8k g726> success" > /tmp/sample_ai_aenc_adec_ao_stresstest.log
-            echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> success -------------------------------------------\n\n\n"
         else
             echo "-------------------------<sample_ai_aenc_adec_ao_stresstest 8k g726> failure" > /tmp/sample_ai_aenc_adec_ao_stresstest.log
-            echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
     elif [ $test_mode == 5 ]; then
-        echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest 16k g711a loop $test_loop> start -------------------------------------------\n"
-        echo -e "<sample_ai_aenc_adec_ao_stresstest  -r 16000 -t g711a -v 1 -s 1 -l $test_loop>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest 16k g711a loop $test_loop> start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_ai_aenc_adec_ao_stresstest  -r 16000 -t g711a -v 1 -s 1 -l $test_loop>\n"
         sample_ai_aenc_adec_ao_stresstest -r 16000 -t g711a -v 1 -s 1 -l $test_loop
         if [ $? -eq 0 ]; then
             echo "-------------------------<sample_ai_aenc_adec_ao_stresstest 16k g711a loop $test_loop> success" > /tmp/sample_ai_aenc_adec_ao_stresstest.log
-            echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> success -------------------------------------------\n\n\n"
         else
             echo "-------------------------<sample_ai_aenc_adec_ao_stresstest 16k g711a loop $test_loop> failure" > /tmp/sample_ai_aenc_adec_ao_stresstest.log
-            echo -e "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_ai_aenc_adec_ao_stresstest> failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
     else
-        echo -e "---------------------------------------test_mode($test_mode) is invalid parameter, parameter range is [0,5]-------------------------------------------\n"
+        __echo_test_cmd_msg "---------------------------------------test_mode($test_mode) is invalid parameter, parameter range is [0,5]-------------------------------------------\n"
     fi
 }
 

@@ -1,6 +1,20 @@
 #!/bin/sh
 
 set -x
+__echo_test_cmd_msg()
+{
+	echo -e "$1" | tee -a $test_result_path
+	if [ $? -ne 0 ]; then
+		echo -e "$1"
+	fi
+}
+__echo_test_cmd_msg()
+{
+	echo -e "$1" | tee -a $test_result_path
+	if [ $? -ne 0 ]; then
+		echo -e "$1"
+	fi
+}
 __chk_cma_free()
 {
 	local f
@@ -100,15 +114,13 @@ test_case()
 {
     if [ "$PN_MODE" = "on" ]; then
         #1: PN mode switch
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> PN mode switch test start -------------------------------------------\n"
-        echo -e "<sample_mulit_isp_stresstest -a /etc/iqfiles/ -c 2 --vi_size $vi_resolution --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --modeTestType 1 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_mulit_isp_stresstest> PN mode switch test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_mulit_isp_stresstest -a /etc/iqfiles/ -c 2 --vi_size $vi_resolution --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --modeTestType 1 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode>\n"
         sample_mulit_isp_stresstest -a /etc/iqfiles/ -c 2 --vi_size $vi_resolution --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --modeTestType 1 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode
         if [ $? -eq 0 ]; then
-            echo "-------------------------1 <sample_mulit_isp_stresstest> PN mode switch test success " >> $test_result_path
-            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> PN mode switch test_result success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------1 <sample_mulit_isp_stresstest> PN mode switch test_result success -------------------------------------------\n\n\n"
         else
-            echo "-------------------------1 <sample_mulit_isp_stresstest> PN mode switch test failure " >> $test_result_path
-            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> PN mode switch test_result failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "---------------------------------------1 <sample_mulit_isp_stresstest> PN mode switch test_result failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -116,15 +128,15 @@ test_case()
 
     if [ "$HDR" = "on" ]; then
         #2: hdr mode switch test
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> hdr_mode_switch_test start -------------------------------------------\n"
-        echo -e "<sample_mulit_isp_stresstest -a /etc/iqfiles/ -c 2 --vi_size $vi_resolution --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --modeTestType 2 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_mulit_isp_stresstest> hdr_mode_switch_test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_mulit_isp_stresstest -a /etc/iqfiles/ -c 2 --vi_size $vi_resolution --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --modeTestType 2 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode>\n"
         sample_mulit_isp_stresstest -a /etc/iqfiles/ -c 2 --vi_size $vi_resolution --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --modeTestType 2 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode
         if [ $? -eq 0 ]; then
             echo "-------------------------2 <sample_mulit_isp_stresstest> HDR mode switch test success " >> $test_result_path
-            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> hdr_mode_switch_test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_mulit_isp_stresstest> hdr_mode_switch_test success -------------------------------------------\n\n\n"
         else
             echo "-------------------------2 <sample_mulit_isp_stresstest> HDR mode switch test failure " >> $test_result_path
-            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> hdr_mode_switch_test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_mulit_isp_stresstest> hdr_mode_switch_test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -132,15 +144,15 @@ test_case()
 
     if [ "$FRAMERATE" = "on" ]; then
         #3: frameRate switch test
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> frameRate_switch_test start -------------------------------------------\n"
-        echo -e "<sample_mulit_isp_stresstest -a /etc/iqfiles/ -c 2 --vi_size $vi_resolution --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --modeTestType 3 --modeTestLoop $vi_framerate_switch_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_mulit_isp_stresstest> frameRate_switch_test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_mulit_isp_stresstest -a /etc/iqfiles/ -c 2 --vi_size $vi_resolution --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --modeTestType 3 --modeTestLoop $vi_framerate_switch_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode>\n"
         sample_mulit_isp_stresstest -a /etc/iqfiles/ -c 2 --vi_size $vi_resolution --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --modeTestType 3 --modeTestLoop $vi_framerate_switch_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode
         if [ $? -eq 0 ]; then
             echo "-------------------------3 <sample_mulit_isp_stresstest> isp frameRate switch test success " >> $test_result_path
-            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> frameRate_switch_test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_mulit_isp_stresstest> frameRate_switch_test success -------------------------------------------\n\n\n"
         else
             echo "-------------------------3 <sample_mulit_isp_stresstest> isp frameRate switch test failure " >> $test_result_path
-            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> frameRate_switch_test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_mulit_isp_stresstest> frameRate_switch_test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -148,15 +160,15 @@ test_case()
 
     if [ "$LDCH" = "on" ]; then
         #4: LDCH mode test
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> LDCH mode test start -------------------------------------------\n"
-        echo -e "<sample_mulit_isp_stresstest -a /etc/iqfiles/ -c 2 --vi_size $vi_resolution --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --modeTestType 4 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_mulit_isp_stresstest> LDCH mode test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_mulit_isp_stresstest -a /etc/iqfiles/ -c 2 --vi_size $vi_resolution --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --modeTestType 4 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode>\n"
         sample_mulit_isp_stresstest -a /etc/iqfiles/ -c 2 --vi_size $vi_resolution --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --modeTestType 4 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode
         if [ $? -eq 0 ]; then
             echo "-------------------------4 <sample_mulit_isp_stresstest> LDCH mode switch test success " >> $test_result_path
-            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> LDCH mode test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_mulit_isp_stresstest> LDCH mode test success -------------------------------------------\n\n\n"
         else
             echo "-------------------------4 <sample_mulit_isp_stresstest> LDCH mode switch test failure " >> $test_result_path
-            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> LDCH mode test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_mulit_isp_stresstest> LDCH mode test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
@@ -164,15 +176,15 @@ test_case()
 
     if [ "$RESTART" = "on" ]; then
         #4: isp_deinit_init test
-        echo -e "--------------------------------------- <sample_mulit_isp_stresstest> isp_deinit_init test start -------------------------------------------\n"
-        echo -e "<sample_mulit_isp_stresstest -a /etc/iqfiles/ -c 2 --vi_size $vi_resolution --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --modeTestType 5 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode>\n"
+        __echo_test_cmd_msg "--------------------------------------- <sample_mulit_isp_stresstest> isp_deinit_init test start -------------------------------------------\n"
+        __echo_test_cmd_msg "<sample_mulit_isp_stresstest -a /etc/iqfiles/ -c 2 --vi_size $vi_resolution --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --modeTestType 5 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode>\n"
         sample_mulit_isp_stresstest -a /etc/iqfiles/ -c 2 --vi_size $vi_resolution --vi_chnid $vi_chnid --vi_buffcnt $vi_buff_cnt --modeTestType 5 --modeTestLoop $test_loop --testFrameCount $frame_count --ispLaunchMode $isp_group_mode
         if [ $? -eq 0 ]; then
             echo "-------------------------5 <sample_mulit_isp_stresstest> isp_deinit_init switch test success " >> $test_result_path
-            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> isp_deinit_init test success -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_mulit_isp_stresstest> isp_deinit_init test success -------------------------------------------\n\n\n"
         else
             echo "-------------------------5 <sample_mulit_isp_stresstest> isp_deinit_init switch test failure " >> $test_result_path
-            echo -e "--------------------------------------- <sample_mulit_isp_stresstest> isp_deinit_init test failure -------------------------------------------\n\n\n"
+            __echo_test_cmd_msg "--------------------------------------- <sample_mulit_isp_stresstest> isp_deinit_init test failure -------------------------------------------\n\n\n"
             exit 1
         fi
 		__chk_cma_free
