@@ -32,6 +32,12 @@ else
     ifEnableHDR=on
 fi
 
+if [ "$rk_dbg_only" = "1" ];then
+	test_loop=10
+	vi_framerate_switch_loop=50
+	ordinary_stream_test_framecount=450
+fi
+
 __echo_test_cmd_msg()
 {
 	echo -e "$1" | tee -a $test_result_path

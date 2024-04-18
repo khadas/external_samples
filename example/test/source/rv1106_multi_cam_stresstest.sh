@@ -38,6 +38,12 @@ else
     ifEnableHDR=on
 fi
 
+if [ "$rk_dbg_only" = "1" ];then
+	test_loop=10
+	vi_framerate_switch_loop=50
+	ordinary_stream_test_framecount=450
+fi
+
 # get script path
 script_path=$(dirname $0)
 
