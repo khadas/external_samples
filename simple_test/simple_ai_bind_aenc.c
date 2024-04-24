@@ -197,6 +197,7 @@ RK_S32 init_mpi_aenc(RK_S32 s32SampleRate, RK_S32 channel) {
 
 	pstChnAttr.enType = enCodecId;
 	pstChnAttr.u32BufCount = 4;
+	pstChnAttr.u32Depth    = 4;
 
 	s32ret = RK_MPI_AENC_CreateChn(0, &pstChnAttr);
 	if (s32ret) {
@@ -219,8 +220,8 @@ int main(int argc, char *argv[]) {
 	RK_S32 u32SampleRate = 8000;
 	RK_S32 u32Channel = 1;
 	RK_U32 u32FrameCnt = 1024;
-	RK_CHAR *pOutPath = "/tmp/aenc.g726";
-	RK_CHAR *pCodecName = "g726";
+	RK_CHAR *pOutPath = (RK_CHAR *)"/tmp/aenc.g726";
+	RK_CHAR *pCodecName = (RK_CHAR *)"g726";
 	int ret = 0;
 	int c;
 
@@ -238,13 +239,13 @@ int main(int argc, char *argv[]) {
 		case 't':
 			if (!strcmp(optarg, "g711a")) {
 				code_type = RK_AUDIO_ID_PCM_ALAW;
-				pCodecName = "g711a";
+				pCodecName = (RK_CHAR *)"g711a";
 			} else if (!strcmp(optarg, "g711u")) {
 				code_type = RK_AUDIO_ID_PCM_MULAW;
-				pCodecName = "g711u";
+				pCodecName = (RK_CHAR *)"g711u";
 			} else if (!strcmp(optarg, "g726")) {
 				code_type = RK_AUDIO_ID_ADPCM_G726;
-				pCodecName = "g726";
+				pCodecName = (RK_CHAR *)"g726";
 			} else {
 				printf("ERROR: Invalid encoder type.\n");
 				return -1;
