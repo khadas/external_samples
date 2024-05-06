@@ -66,7 +66,9 @@ $(error ### $(CURRENT_DIR): PKG_BIN is NULL, Please Check !!!)
 endif
 
 COMM_DIR := $(CURRENT_DIR)/common
-COMM_SRC := $(wildcard $(COMM_DIR)/*.c)
+COMM_SRC := $(wildcard $(COMM_DIR)/sample_*.c)
+COMM_SRC += $(wildcard $(COMM_DIR)/loadbmp.c)
+COMM_SRC += $(wildcard $(COMM_DIR)/fillimage.c)
 ifeq ($(RK_MEDIA_CHIP), rv1126)
 COMM_SRC += $(wildcard $(COMM_DIR)/isp2.x/*.c)
 endif
@@ -75,6 +77,9 @@ COMM_SRC += $(wildcard $(COMM_DIR)/isp3.x/*.c)
 endif
 ifeq ($(RK_MEDIA_CHIP), rk3576)
 COMM_SRC += $(wildcard $(COMM_DIR)/isp3.9/*.c)
+endif
+ifeq ($(CONFIG_FREETYPE),y)
+COMM_SRC += $(wildcard $(COMM_DIR)/font_factory.c)
 endif
 COMM_OBJ := $(COMM_SRC:%.c=%.o)
 
@@ -108,6 +113,7 @@ endif
 
 ifeq ($(RK_MEDIA_CHIP), rk3576)
 INC_FLAGS += -I$(COMM_DIR)/isp3.9
+INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/freetype2
 SAMPLE_CFLAGS += -DISP_HW_V39 -DRK3576 -DUAPI2 -DRKAIQ_GRP
 endif
 

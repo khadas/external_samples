@@ -1,5 +1,27 @@
 #!/bin/sh
 
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+echo "example:"
+echo "CAMERA_ID=0 WIDTH=3840 HEIGHT=2160 rk3576_stresstest.sh"
+echo "option list:"
+echo "    WIDTH: camera sensor width, default: 2560"
+echo "    HEIGHT: camera sensor height, default: 1440"
+echo "    CAMERA_ID: camera index, defalut: 0"
+echo "    PN_MODE: enable pn-mode switch test, default: on"
+echo "    AIISP: enable aiisp deinit-init test, default: on"
+echo "    HDR: enable HDR switch test, default: on"
+echo "    FRAMERATE: enable fps switch from 1 to 25 test, default: on"
+echo "    RESOLUTION : enable resolution switch test, default: on"
+echo "    ENCODE_TYPE: enable switch encode type between h264 and h265 test, default: on"
+echo "    SMART_P: enable smart p switch test, default: off"
+echo "    MOTION: enable md switch test, default: off"
+echo "    SVC: enable svc switch test, default: off"
+echo "    RESTART: enable all pipe restart test, default: on"
+echo "    ROTATION: enable switch rotation degree test, default: on"
+echo "    DETACH_ATTACH: enable rgn detach attach test, default: on"
+exit 0
+fi
+
 set -x
 #test loop
 test_loop=10000
@@ -13,40 +35,66 @@ test_result_path=/tmp/rk3576_test_result.log
 #vi framerate switch loop
 vi_framerate_switch_loop=5000
 
-#rv1103 set wrap
-ifEnableWrap=0
-
-# samartP mode
-ifEnableSmartP=0
-
-#ordinary_stream_test_framecount
-ordinary_stream_test_framecount=450000
-
 # get script path
 script_file_path=$(dirname $0)
 
-if [ "$1" = "os04a10" ]; then
-    echo "-----------Now your sensor model: os04a10"
-    sensor_width=2688
-    sensor_height=1520
-    iqfilePath=/etc/iqfiles/os04a10_CMK-OT1607-FV1_M12-40IRC-4MP-F16.xml
-    echo "sensor_width: $sensor_width, sensor_height: $sensor_height, iqfilePath: $iqfilePath"
-elif [ "$1" = "imx464" ]; then
-    echo "-----------Now your sensor model: imx464"
-    sensor_width=2560
-    sensor_height=1440
-    iqfilePath=/etc/iqfiles/imx464_CMK-OT1980-PX1_SHG102.json
-    echo "sensor_width: $sensor_width, sensor_height: $sensor_height, iqfilePath: $iqfilePath"
-elif [ "$1" = "imx415" ]; then
-    echo "-----------Now your sensor model: imx415"
-    sensor_width=3840
-    sensor_height=2160
-    iqfilePath=/etc/iqfiles/imx415_YT10092_IR0147-36IRC-8M-F20.xml
-    echo "sensor_width: $sensor_width, sensor_height: $sensor_height, iqfilePath: $iqfilePath"
-else
-    echo "------- error, must input sensor model: os04a10, imx464, imx415 ----"
-    echo "example: $0 os04a10"
-    exit 0
+#set environment variables
+if [ -z $PN_MODE ]; then
+    PN_MODE=on
+fi
+if [ -z $HDR ]; then
+    HDR=on
+fi
+if [ -z $FRAMERATE ]; then
+    FRAMERATE=on
+fi
+if [ -z $LDCH ]; then
+    LDCH=off
+fi
+if [ -z $RESOLUTION ]; then
+    RESOLUTION=on
+fi
+if [ -z $LDCH ]; then
+    LDCH=on
+fi
+if [ -z $AIISP ]; then
+    AIISP=on
+fi
+if [ -z $ENCODE_TYPE ]; then
+    ENCODE_TYPE=on
+fi
+if [ -z $SMART_P ]; then
+    SMART_P=off
+fi
+if [ -z $SVC ]; then
+    SVC=off
+fi
+if [ -z $MOTION ]; then
+    MOTION=off
+fi
+if [ -z $IDR ]; then
+    IDR=on
+fi
+if [ -z $ROTATION ]; then
+    ROTATION=on
+fi
+if [ -z $DETACH_ATTACH ]; then
+    DETACH_ATTACH=on
+fi
+if [ -z $RESTART ]; then
+    RESTART=on
+fi
+if [ -z $WIDTH ]; then
+    WIDTH=3840
+fi
+if [ -z $HEIGHT ]; then
+    HEIGHT=2160
+fi
+if [ -z $CAMERA_ID ]; then
+    CAMERA_ID=0
+fi
+if [ -z $IQ_PATH ]; then
+    IQ_PATH=/etc/iqfiles
 fi
 
 __echo_test_cmd_msg()
@@ -100,22 +148,40 @@ isp_stresstest()
     echo "-----------------enter isp stresstest-----------------" >> $test_result_path
 
     #1 PN mode switch
-    test_cmd sample_isp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --chn_id 1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 1
+    if [ "$PN_MODE" = "on" ]; then
+        test_cmd sample_isp_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH -I $CAMERA_ID \
+            --chn_id 1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 1
+    fi
 
     #2 HDR mode test
-    test_cmd sample_isp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --chn_id 1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 2
+    if [ "$HDR" = "on" ]; then
+        test_cmd sample_isp_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH -I $CAMERA_ID \
+            --chn_id 1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 2
+    fi
 
     #3 framerate switch test
-    test_cmd sample_isp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --chn_id 1 --test_frame_count $test_frame --mode_test_loop $vi_framerate_switch_loop --mode_test_type 3
+    if [ "$FRAMERATE" = "on" ]; then
+        test_cmd sample_isp_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH -I $CAMERA_ID \
+            --chn_id 1 --test_frame_count $test_frame --mode_test_loop $vi_framerate_switch_loop --mode_test_type 3
+    fi
 
     #4 LDCH mode test
-    test_cmd sample_isp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --chn_id 1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 4
+    if [ "$LDCH" = "on" ]; then
+        test_cmd sample_isp_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH -I $CAMERA_ID \
+             --chn_id 1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 4
+    fi
 
     #6 isp_deinit_init test
-    test_cmd sample_isp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --chn_id 1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 6
+    if [ "$RESTART" = "on" ]; then
+        test_cmd sample_isp_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH -I $CAMERA_ID \
+             --chn_id 1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 6
+    fi
 
-    #6 aiisp_deinit_init test
-    test_cmd sample_isp_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --chn_id 1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 7
+    #7 aiisp_deinit_init test
+    if [ "$AIISP" = "on" ]; then
+        test_cmd sample_isp_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH -I $CAMERA_ID \
+             --chn_id 1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 7
+    fi
 
     sleep 3
     echo 3 > /proc/sys/vm/drop_caches
@@ -135,25 +201,39 @@ venc_stresstest()
     echo "-----------------enter venc stresstest-----------------" >> $test_result_path
 
     #venc resolution switch test
-    test_cmd sample_venc_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --wrap 0 --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $test_frame
+    if [ "$RESOLUTION" = "on" ]; then
+        test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $test_frame
+    fi
 
-    # encode type switch test
-    test_cmd sample_venc_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --wrap 0 --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $test_frame
+    # encode type switch tes
+    if [ "$ENCODE_TYPE" = "on" ]; then
+        test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $test_frame
+    fi
 
     #smartp mode switch test
-    test_cmd sample_venc_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --wrap 0 --mode_test_type 3 --mode_test_loop $test_loop --test_frame_count $test_frame
+    if [ "$SMART_P" = "on" ]; then
+        test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 3 --mode_test_loop $test_loop --test_frame_count $test_frame
+    fi
 
     #SVC mode switch test
-    test_cmd sample_venc_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --wrap 0 --mode_test_type 4 --mode_test_loop $test_loop --test_frame_count $test_frame
+    if [ "$SVC" = "on" ]; then
+        test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 4 --mode_test_loop $test_loop --test_frame_count $test_frame
+    fi
 
     #motion deblur switch test
-    test_cmd sample_venc_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --wrap 0 --mode_test_type 5 --mode_test_loop $test_loop --test_frame_count $test_frame
+    if [ "$MOTION" = "on" ]; then
+        test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 5 --mode_test_loop $test_loop --test_frame_count $test_frame
+    fi
 
     #force IDR switch test
-    test_cmd sample_venc_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --wrap 0 --mode_test_type 6 --mode_test_loop $test_loop --test_frame_count $test_frame
+    if [ "$IDR" = "on" ]; then
+        test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 6 --mode_test_loop $test_loop --test_frame_count $test_frame
+    fi
 
     #venc chn rotation switch test
-	test_cmd sample_venc_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ --wrap 0 --mode_test_type 7 --mode_test_loop $test_loop --test_frame_count $test_frame
+    if [ "$ROTATION" = "on" ]; then
+	    test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 7 --mode_test_loop $test_loop --test_frame_count $test_frame
+    fi
 
     sleep 1
     echo 3 > /proc/sys/vm/drop_caches
@@ -173,10 +253,14 @@ rgn_stresstest()
     echo "-----------------enter rgn stresstest-----------------" >> $test_result_path
 
     #rgn detach attach test
-    test_cmd sample_rgn_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ -l -1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 1
+    if [ "$DETACH_ATTACH" = "on" ]; then
+        test_cmd sample_rgn_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH -l -1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 1
+    fi
 
     #rgn detach attach test for hardware vpss
-    test_cmd sample_rgn_stresstest -w $sensor_width -h $sensor_height -a /etc/iqfiles/ -l -1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 2
+    if [ "$DETACH_ATTACH" = "on" ]; then
+        test_cmd sample_rgn_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH -l -1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 2
+    fi
 
     sleep 3
     echo 3 > /proc/sys/vm/drop_caches
@@ -197,34 +281,22 @@ vpss_stresstest()
     echo "-----------------enter vpss stresstest-----------------" >> $test_result_path
 
     #1. vpss_deinit_ubind_test
-    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a /etc/iqfiles/ --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $test_frame
+    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a IQ_PATH --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $test_frame
 
     #2. vpss_resolution_test
-    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a /etc/iqfiles/ --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $test_frame
+    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a IQ_PATH --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $test_frame
 
     #3. hardware vpss_deinit_ubind_test
-    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a /etc/iqfiles/ --mode_test_type 3 --mode_test_loop $test_loop --test_frame_count $test_frame
+    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a IQ_PATH --mode_test_type 3 --mode_test_loop $test_loop --test_frame_count $test_frame
 
     #4. hardware vpss_resolution_test
-    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a /etc/iqfiles/ --mode_test_type 4 --mode_test_loop $test_loop --test_frame_count $test_frame
+    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a IQ_PATH --mode_test_type 4 --mode_test_loop $test_loop --test_frame_count $test_frame
 
     echo "-----------------exit vpss stresstest-----------------" >> $test_result_path
 }
 
 demo_vi_venc_stresstest()
 {
-    # "example: $0 <test_result_path> <test_loop> <test_frame> <ifEnableWrap> <ifEnableSmartP> <ordinary_stream_test_framecount> <vi_framerate_switch_loop> <sensor_width> <sensor_height>"
-    #   mod: PN_MODE HDR FRAMERATE LDCH RESOLUTION ENCODE_TYPE SMART_P SVC MOTION IDR ROTATION DETACH_ATTACH ORDINARY RESOLUTION_RV1126
-    #   \$1 --------test_result_path: /tmp/xxxx.log\n
-    #   \$2 --------test_loop: 10000\n
-    #   \$3 --------test_frame: 10\n
-    #   \$4 --------ifEnableWrap: 0:close, 1:open\n
-    #   \$5 --------ifEnableSmartP: 0:close, 1:open\n
-    #   \$6 --------ordinary_stream_test_framecount: 450000\n
-    #   \$7 --------vi_framerate_switch_loop\n
-    #   \$8 --------sensor_width\n
-    #   \$9 --------sensor_height\n"
-
     echo "-----------------enter demo_vi_venc stresstest-----------------" >> $test_result_path
 
     echo "-----------------exit demo_vi_venc stresstest-----------------" >> $test_result_path
@@ -247,24 +319,19 @@ echo "start rk3576 stresstest" > $test_result_path
 echo "start record rk3576 meminfo" > /tmp/testLog.txt
 
 #1.isp stresstest
-test_mod="PN_MODE=on HDR=on FRAMERATE=on LDCH=on IQFILE=on ISP_RESTART=on"
-isp_stresstest "$test_mod"
+isp_stresstest
 
 #2.venc stresstest
-test_mod="ENCODE_TYPE=on SMART_P=off IDR=on"
-venc_stresstest "$test_mod"
+venc_stresstest
 
 #3.rgn stresstest
-test_mod="DETACH_ATTACH=on"
-rgn_stresstest "$test_mod"
+rgn_stresstest
 
 #4.vpss stresstest
-test_mod="RESTART=on RESOLUTION=on"
-vpss_stresstest "$test_mod"
+vpss_stresstest
 
 #5.demo vi venc stresstest
-test_mod="PN_MODE=on HDR=on FRAMERATE=on LDCH=on ENCODE_TYPE=on SMART_P=off IDR=on DETACH_ATTACH=on ORDINARY=on RESOLUTION_RV1126=on RESTART=on"
-demo_vi_venc_stresstest "$test_mod"
+demo_vi_venc_stresstest
 
 #print test result
 cat $test_result_path

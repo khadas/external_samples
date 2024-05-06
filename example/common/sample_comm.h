@@ -275,6 +275,42 @@ typedef struct _rkMpiIvaCtx {
 } SAMPLE_IVA_CTX_S;
 #endif
 
+#define WEB_VIEW_RECT_W 704
+#define WEB_VIEW_RECT_H 480
+#define MAX_WCH_BYTE 128
+
+typedef struct text_data {
+	wchar_t wch[MAX_WCH_BYTE];
+	unsigned int font_size;
+	unsigned int font_color;
+	unsigned int color_inverse;
+	const char *font_path;
+	char format[128];
+} text_data_s;
+
+typedef struct border_data {
+	int color_index;
+	int color_key;
+	int thick;
+	int display_style;
+} border_data_s;
+
+typedef struct osd_data {
+	int type;
+	union {
+		const char *image;
+		text_data_s text;
+		border_data_s border;
+	};
+	int width;
+	int height;
+	unsigned char *buffer;
+	unsigned int size;
+	int origin_x;
+	int origin_y;
+	int enable;
+} osd_data_s;
+
 /*******************************************************
     function announce
 *******************************************************/

@@ -8,6 +8,7 @@ else
 LD_FLAGS += -lrockit
 endif
 
+
 all:
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_ai_aenc_adec_ao_stresstest.c -o sample_ai_aenc_adec_ao_stresstest $(LD_FLAGS)
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_isp_stresstest.c -o sample_isp_stresstest $(LD_FLAGS) -lrkaiq
@@ -26,6 +27,9 @@ ifeq ($(CONFIG_RK_IVA) ,y)
 else
 	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_demo_vi_venc_stresstest.c -o sample_demo_vi_venc_stresstest $(LD_FLAGS) -lrockchip_mpp -lrkaiq -lrtsp
 endif
+ifeq ($(RK_MEDIA_CHIP), rk3576)
+	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_multi_cam_stresstest.c -o sample_multi_cam_stresstest $(LD_FLAGS) -lrockchip_mpp -lrkaiq -lrtsp -lrockiva -lfreetype
+endif
 
 
 install:
@@ -42,6 +46,9 @@ endif
 	@mv -f sample_demo_vi_venc_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_demo_aiisp_stresstest $(SAMPLE_OUT_DIR)/bin
 	@mv -f sample_demo_dual_aiisp_stresstest $(SAMPLE_OUT_DIR)/bin
+ifeq ($(RK_MEDIA_CHIP), rk3576)
+	@mv -f sample_multi_cam_stresstest $(SAMPLE_OUT_DIR)/bin
+endif
 	@mkdir -p $(SAMPLE_OUT_DIR)/install_to_userdata/
 	@cp   -f   source/ai_aenc_adec_ao_stresstes.sh     $(SAMPLE_OUT_DIR)/install_to_userdata
 	@cp   -f   source/160x96.bmp                       $(SAMPLE_OUT_DIR)/install_to_userdata
@@ -62,7 +69,10 @@ endif
 	@cp   -f   source/multi_isp_stresstest.sh          $(SAMPLE_OUT_DIR)/install_to_userdata
 	@cp   -f   source/rv1126_multi_cam_stresstest.sh   $(SAMPLE_OUT_DIR)/install_to_userdata
 	@cp   -f   source/kill_pid.sh                      $(SAMPLE_OUT_DIR)/install_to_userdata
+ifeq ($(RK_MEDIA_CHIP), rk3576)
 	@cp   -f   source/rk3576_stresstest.sh             $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/rk3576_multi_cam_stresstest.sh             $(SAMPLE_OUT_DIR)/install_to_userdata
+endif
 
 clean:
 	@echo "clean test"
