@@ -19,6 +19,12 @@ extern "C" {
 
 #include "sample_comm.h"
 
+#if defined(RK3588) || defined(RK3576)
+#define CIF_DEFAULIT_BUF_CNT 4
+#else
+#define CIF_DEFAULIT_BUF_CNT 2
+#endif
+
 #define MAX_AIQ_CTX 8
 static rk_aiq_sys_ctx_t *g_aiq_ctx[MAX_AIQ_CTX];
 static rk_aiq_camgroup_ctx_t *g_aiq_camgroup_ctx[MAX_AIQ_CTX];
@@ -261,7 +267,7 @@ RK_S32 SAMPLE_COMM_ISP_CamGroup_Init(RK_S32 CamGroupId, rk_aiq_working_mode_t WD
 		printf("pCamGroupCfg->sns_ent_nm_array[%d] is %s\n", i,
 		       pCamGroupCfg->sns_ent_nm_array[i]);
 		ret = rk_aiq_uapi2_sysctl_preInit_devBufCnt(
-		    aiq_static_info.sensor_info.sensor_name, "rkraw_rx", 2);
+		    aiq_static_info.sensor_info.sensor_name, "rkraw_rx", CIF_DEFAULIT_BUF_CNT);
 		if (ret != 0) {
 			printf("rk_aiq_uapi2_sysctl_preInit_devBufCnt failure\n");
 			return -1;
