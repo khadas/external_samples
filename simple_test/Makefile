@@ -1,10 +1,13 @@
 # Rockchip simple Makefile
+ifeq ($(COMPILE_FOR_BUILDROOT),)
 ifeq ($(MEDIA_PARAM), )
     MEDIA_PARAM:=../../Makefile.param
     include $(MEDIA_PARAM)
 endif
+endif
 
 SIMPLE_CC := $(RK_MEDIA_CROSS)-gcc
+SIMPLE_AR := $(RK_MEDIA_CROSS)-ar
 
 CURRENT_DIR := $(shell pwd)
 SIMPLE_OUT_DIR :=$(CURRENT_DIR)/out

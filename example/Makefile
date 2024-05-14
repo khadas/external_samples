@@ -1,7 +1,8 @@
-
+ifeq ($(COMPILE_FOR_BUILDROOT),)
 ifeq ($(MEDIA_PARAM), )
     MEDIA_PARAM:=../../Makefile.param
     include $(MEDIA_PARAM)
+endif
 endif
 
 export CONFIG_RK_SAMPLE=y
@@ -26,7 +27,6 @@ endif
 SAMPLE_CC := $(RK_MEDIA_CROSS)-gcc
 SAMPLE_AR := $(RK_MEDIA_CROSS)-ar
 
-
 PKG_NAME := sample
 PKG_BIN ?= out
 
@@ -40,6 +40,14 @@ endif
 
 ifeq ($(RK_MEDIA_CHIP), rv1106)
 PKG_CONF_OPTS += -DARCH64=OFF
+endif
+
+ifeq ($(RK_MEDIA_CHIP), rk3576)
+PKG_CONF_OPTS += -DARCH64=ON
+endif
+
+ifeq ($(RK_MEDIA_CHIP), rk3588)
+PKG_CONF_OPTS += -DARCH64=ON
 endif
 
 ifeq ($(CONFIG_RK_SAMPLE),y)
@@ -60,6 +68,9 @@ COMM_SRC += $(wildcard $(COMM_DIR)/isp2.x/*.c)
 endif
 ifeq ($(RK_MEDIA_CHIP), rv1106)
 COMM_SRC += $(wildcard $(COMM_DIR)/isp3.x/*.c)
+endif
+ifeq ($(RK_MEDIA_CHIP), rk3576)
+COMM_SRC += $(wildcard $(COMM_DIR)/isp3.9/*.c)
 endif
 COMM_OBJ := $(COMM_SRC:%.c=%.o)
 
@@ -89,6 +100,11 @@ endif
 ifeq ($(RK_MEDIA_CHIP), rv1106)
 INC_FLAGS += -I$(COMM_DIR)/isp3.x
 SAMPLE_CFLAGS += -DISP_HW_V30 -DRV1106 -DROCKIT_IVS -DROCKCOMBO -DUAPI2 -DRKAIQ_GRP
+endif
+
+ifeq ($(RK_MEDIA_CHIP), rk3576)
+INC_FLAGS += -I$(COMM_DIR)/isp3.9
+SAMPLE_CFLAGS += -DISP_HW_V39 -DRK3576 -DROCKIT_IVS -DROCKCOMBO -DUAPI2 -DRKAIQ_GRP
 endif
 
 ifeq ($(CONFIG_RK_IVA),y)

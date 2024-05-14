@@ -1,7 +1,8 @@
-
+ifeq ($(COMPILE_FOR_BUILDROOT),)
 ifeq ($(MEDIA_PARAM), )
     MEDIA_PARAM:=../Makefile.param
     include $(MEDIA_PARAM)
+endif
 endif
 
 ifneq ($(findstring $(RK_ENABLE_SAMPLE),n y),)
@@ -29,8 +30,13 @@ PKG_BUILD ?= build
 
 all: $(PKG_TARGET)
 ifeq ($(CONFIG_RK_SAMPLE),y)
+ifeq ($(COMPILE_FOR_BUILDROOT),y)
+	@make -C $(CURRENT_DIR)/simple_test/
+	@make -C $(CURRENT_DIR)/example/
+else
 	@make -C $(CURRENT_DIR)/simple_test/ -j$(RK_MEDIA_JOBS)
 	@make -C $(CURRENT_DIR)/example/ -j$(RK_MEDIA_JOBS)
+endif
 endif
 	@echo "build $(PKG_NAME) done";
 
