@@ -187,9 +187,6 @@ RK_S32 ai_set_other(RK_S32 s32SetVolume) {
 	int s32DevId = 0;
 
 	RK_MPI_AI_SetVolume(s32DevId, s32SetVolume);
-
-	//双声道，左声道为MIC拾⾳数据，右声道为播放的右声道的回采数据
-	RK_MPI_AI_SetTrackMode(s32DevId, AUDIO_TRACK_NORMAL);
 	AUDIO_TRACK_MODE_E trackMode;
 	RK_MPI_AI_GetTrackMode(s32DevId, &trackMode);
 	RK_LOGI("test info : get track mode = %d", trackMode);
@@ -260,6 +257,8 @@ RK_S32 open_device_ai(RK_S32 deviceSampleRate, RK_S32 outputSampleRate, RK_S32 u
 		goto __FAILED;
 	}
 
+	//双声道，左声道为MIC拾⾳数据，右声道为播放的右声道的回采数据
+	RK_MPI_AI_SetTrackMode(aiDevId, AUDIO_TRACK_FRONT_LEFT);
 	result = RK_MPI_AI_Enable(aiDevId);
 	if (result != RK_SUCCESS) {
 		RK_LOGE("ai enable fail, reason = %x", result);
@@ -360,6 +359,13 @@ int main(int argc, char *argv[]) {
 	printf("#Output Path: %s\n", pOutPath);
 	printf("#Vqe enable: %d\n", vqeEnable);
 	printf("#Bcd enable: %d\n", bcdEnable);
+
+	if (bcdEnable) {
+		if (s32DeviceSampleRate != 16000) {
+			printf("bcd enable, Device SampleRate must be 16000\n");
+			return -1;
+		}
+	}
 
 	if (pOutPath) {
 		save_file = fopen(pOutPath, "w");

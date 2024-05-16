@@ -149,7 +149,7 @@ static RK_S32 init_ai_bcd() {
 		stAiBcdConfig.stSedCfg.s32FrameLen != 0)
 		stAiBcdConfig.stSedCfg.bUsed = RK_TRUE;
 
-	char *pBcdModelPath = "/oem/usr/share/vqefiles/rkaudio_model_sed_bcd.rknn";
+	char *pBcdModelPath = (char *)"/oem/usr/share/vqefiles/rkaudio_model_sed_bcd.rknn";
 	memcpy(stAiBcdConfig.aModelPath, pBcdModelPath, strlen(pBcdModelPath));
 
 	result = RK_MPI_AI_SetBcdAttr(s32DevId, s32ChnIndex, &stAiBcdConfig);
@@ -255,9 +255,6 @@ RK_S32 ai_set_other(RK_S32 s32SetVolume) {
 	int s32DevId = 0;
 
 	RK_MPI_AI_SetVolume(s32DevId, s32SetVolume);
-
-	// 左声道，无需修改
-	RK_MPI_AI_SetTrackMode(s32DevId, AUDIO_TRACK_FRONT_LEFT);
 	AUDIO_TRACK_MODE_E trackMode;
 	RK_MPI_AI_GetTrackMode(s32DevId, &trackMode);
 	RK_LOGI("test info : get track mode = %d", trackMode);
@@ -336,6 +333,8 @@ RK_S32 open_device_ai(RK_S32 InputSampleRate, RK_S32 OutputSampleRate, RK_U32 u3
 	if (aiVqe)
 		init_ai_vqe(OutputSampleRate);
 
+	// 左声道，无需修改
+	RK_MPI_AI_SetTrackMode(aiDevId, AUDIO_TRACK_FRONT_LEFT);
 	result = RK_MPI_AI_EnableChn(aiDevId, aiChn);
 	if (result != 0) {
 		RK_LOGE("ai enable channel fail, aiChn = %d, reason = %x", aiChn, result);
@@ -379,6 +378,7 @@ RK_S32 init_mpi_aenc(RK_S32 s32SampleRate) {
 
 	pstChnAttr.enType = enCodecId;
 	pstChnAttr.u32BufCount = 4;
+	pstChnAttr.u32Depth    = 1;
 
 	s32ret = RK_MPI_AENC_CreateChn(0, &pstChnAttr);
 	if (s32ret) {
@@ -395,8 +395,6 @@ RK_S32 ao_set_other(RK_S32 s32SetVolume) {
 	RK_MPI_AO_SetVolume(s32DevId, s32SetVolume);
 	RK_MPI_AO_GetVolume(s32DevId, &volume);
 	RK_LOGI("test info : get volume = %d", volume);
-
-	RK_MPI_AO_SetTrackMode(s32DevId, AUDIO_TRACK_OUT_STEREO);
 
 	AUDIO_TRACK_MODE_E trackMode;
 	RK_MPI_AO_GetTrackMode(s32DevId, &trackMode);
@@ -441,6 +439,8 @@ RK_S32 open_device_ao(RK_S32 s32SampleRate, RK_U32 u32FrameCnt) {
 		RK_LOGE("ao set channel params, aoChn = %d", aoChn);
 		return RK_FAILURE;
 	}
+
+	RK_MPI_AO_SetTrackMode(aoDevId, AUDIO_TRACK_OUT_STEREO);
 	/*==============================================================================*/
 	result = RK_MPI_AO_EnableChn(aoDevId, aoChn);
 	if (result != 0) {
@@ -475,6 +475,7 @@ RK_S32 init_mpi_adec(RK_S32 s32SampleRate) {
 	pstChnAttr.enType = (RK_CODEC_ID_E)code_type;
 	pstChnAttr.enMode = ADEC_MODE_STREAM; // ADEC_MODE_PACK
 	pstChnAttr.u32BufCount = 4;
+	pstChnAttr.u32Depth    = 1;
 	pstChnAttr.u32BufSize = 50 * 1024;
 	s32ret = RK_MPI_ADEC_CreateChn(AdChn, &pstChnAttr);
 	if (s32ret) {
@@ -595,7 +596,7 @@ int main(int argc, char *argv[]) {
 	RK_S32 s32AiSed = 0;
 	RK_S32 loopCount = 1;
 	RK_U32 u32FrameCnt = 1024;
-	RK_CHAR *pCodecName = "g726";
+	RK_CHAR *pCodecName = (RK_CHAR *)"g726";
 	int ret = 0;
 	int c;
 	TEST_AI_CTX_S params;
@@ -637,13 +638,13 @@ int main(int argc, char *argv[]) {
 		case 't':
 			if (!strcmp(optarg, "g711a")) {
 				code_type = RK_AUDIO_ID_PCM_ALAW;
-				pCodecName = "g711a";
+				pCodecName = (RK_CHAR *)"g711a";
 			} else if (!strcmp(optarg, "g711u")) {
 				code_type = RK_AUDIO_ID_PCM_MULAW;
-				pCodecName = "g711u";
+				pCodecName = (RK_CHAR *)"g711u";
 			} else if (!strcmp(optarg, "g726")) {
 				code_type = RK_AUDIO_ID_ADPCM_G726;
-				pCodecName = "g726";
+				pCodecName = (RK_CHAR *)"g726";
 			} else {
 				printf("ERROR: Invalid encoder type.\n");
 				return 0;
