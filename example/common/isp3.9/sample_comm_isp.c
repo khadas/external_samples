@@ -16,63 +16,15 @@ extern "C" {
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <stdatomic.h>
 #include "sample_comm.h"
 #include "sample_comm_isp.h"
 
 #define MAX_AIQ_CTX 8
 static rk_aiq_sys_ctx_t *g_aiq_ctx[MAX_AIQ_CTX];
 static rk_aiq_camgroup_ctx_t *g_aiq_camgroup_ctx[MAX_AIQ_CTX];
-
-static pthread_mutex_t aiq_ctx_mutex[MAX_AIQ_CTX] = {
-    PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER,
-    PTHREAD_MUTEX_INITIALIZER};
-pthread_mutex_t lock[MAX_AIQ_CTX] = {PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER,
-                                     PTHREAD_MUTEX_INITIALIZER,
-                                     PTHREAD_MUTEX_INITIALIZER};
-static unsigned char gs_LDC_mode[MAX_AIQ_CTX] = {-1, -1, -1, -1};
-rk_aiq_cpsl_cfg_t g_cpsl_cfg[MAX_AIQ_CTX];
-rk_aiq_wb_gain_t gs_wb_auto_gain = {2.083900, 1.000000, 1.000000, 2.018500};
-RK_U32 g_2dnr_default_level = 50;
-RK_U32 g_3dnr_default_level = 50;
 RK_S32 g_devBufCnt[MAX_AIQ_CTX] = { 0 };
 rk_aiq_working_mode_t g_WDRMode[MAX_AIQ_CTX];
-
-typedef enum _SHUTTERSPEED_TYPE_E {
-	SHUTTERSPEED_1_25 = 0,
-	SHUTTERSPEED_1_30,
-	SHUTTERSPEED_1_75,
-	SHUTTERSPEED_1_100,
-	SHUTTERSPEED_1_120,
-	SHUTTERSPEED_1_150,
-	SHUTTERSPEED_1_250,
-	SHUTTERSPEED_1_300,
-	SHUTTERSPEED_1_425,
-	SHUTTERSPEED_1_600,
-	SHUTTERSPEED_1_1000,
-	SHUTTERSPEED_1_1250,
-	SHUTTERSPEED_1_1750,
-	SHUTTERSPEED_1_2500,
-	SHUTTERSPEED_1_3000,
-	SHUTTERSPEED_1_6000,
-	SHUTTERSPEED_1_10000,
-	SHUTTERSPEED_BUTT
-} SHUTTERSPEED_TYPE_E;
-
-typedef struct rk_SHUTTER_ATTR_S {
-	SHUTTERSPEED_TYPE_E enShutterSpeed;
-	float fExposureTime;
-} SHUTTER_ATTR_S;
-
-static SHUTTER_ATTR_S g_stShutterAttr[SHUTTERSPEED_BUTT] = {
-    {SHUTTERSPEED_1_25, 1.0 / 25.0},      {SHUTTERSPEED_1_30, 1.0 / 30.0},
-    {SHUTTERSPEED_1_75, 1.0 / 75.0},      {SHUTTERSPEED_1_100, 1.0 / 100.0},
-    {SHUTTERSPEED_1_120, 1.0 / 120.0},    {SHUTTERSPEED_1_150, 1.0 / 150.0},
-    {SHUTTERSPEED_1_250, 1.0 / 250.0},    {SHUTTERSPEED_1_300, 1.0 / 300.0},
-    {SHUTTERSPEED_1_425, 1.0 / 425.0},    {SHUTTERSPEED_1_600, 1.0 / 600.0},
-    {SHUTTERSPEED_1_1000, 1.0 / 1000.0},  {SHUTTERSPEED_1_1250, 1.0 / 1250.0},
-    {SHUTTERSPEED_1_1750, 1.0 / 1750.0},  {SHUTTERSPEED_1_2500, 1.0 / 2500.0},
-    {SHUTTERSPEED_1_3000, 1.0 / 3000.0},  {SHUTTERSPEED_1_6000, 1.0 / 6000.0},
-    {SHUTTERSPEED_1_10000, 1.0 / 10000.0}};
 
 typedef enum rk_HDR_MODE_E {
 	HDR_MODE_OFF,
@@ -80,7 +32,6 @@ typedef enum rk_HDR_MODE_E {
 	HDR_MODE_HDR3,
 } HDR_MODE_E;
 
-#include <stdatomic.h>
 static atomic_int g_sof_cnt = 0;
 static atomic_bool g_should_quit = false;
 
@@ -225,7 +176,7 @@ XCamReturn SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(int CamGrpId, uint8_t SetLdchM
 					ldchAttr.lut.u.buffer.size = isp_get_ldch_mesh_size(LdchMesh[i]);
 				} else {
 					char *pLastWord = NULL;
-					pLastWord = strrchr(LdchMesh[i], '/');
+					pLastWord = strrchr((char *)LdchMesh[i], '/');
 					if (!pLastWord) {
 						printf("---- error !!! the: %s path isn't to be parsed!!!!\n",
 						       (char *)LdchMesh[i]);
@@ -304,7 +255,7 @@ RK_S32 SAMPLE_COMM_ISP_CamGroup_Init(RK_S32 CamGroupId, rk_aiq_working_mode_t WD
 	}
 	/* set LDCH must before <camgroup prepare>*/
 	if (OpenLdch) {
-		SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(CamGroupId, OpenLdch, LdchMesh);
+		SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(CamGroupId, OpenLdch, (uint16_t **)LdchMesh);
 	}
 
 	ret = rk_aiq_uapi2_camgroup_prepare(g_aiq_camgroup_ctx[CamGroupId], WDRMode);
@@ -374,7 +325,6 @@ RK_S32 SAMPLE_COMM_ISP_SetFrameRate(RK_S32 CamId, RK_U32 uFps) {
 		return -1;
 	}
 	int ret;
-	char entry[128] = {'\0'};
 	ae_api_expSwAttr_t expSwAttr;
 	ret = rk_aiq_user_api2_ae_getExpSwAttr(g_aiq_ctx[CamId], &expSwAttr);
 	if (ret != 0)
@@ -487,9 +437,9 @@ RK_S32 SAMPLE_COMM_ISP_GetAINrParams(RK_S32 CamId, rk_ainr_param *param) {
 	return ret;
 }
 
-RK_S32 SAMPLE_COMM_ISP_EnablsAiisp(RK_S32 CamId, rk_aiq_aiisp_cb cb) {
+RK_S32 SAMPLE_COMM_ISP_EnablsAiisp(RK_S32 CamId) {
 	RK_S32 ret = RK_SUCCESS;
-	ret = rk_aiq_uapi2_sysctl_initAiisp(g_aiq_ctx[CamId], NULL, cb);
+	ret = rk_aiq_uapi2_sysctl_initAiisp(g_aiq_ctx[CamId], NULL, NULL);
 	if (ret != RK_SUCCESS) {
 		printf("rk_aiq_uapi2_sysctl_initAiisp failure %#X\n", ret);
 		return ret;

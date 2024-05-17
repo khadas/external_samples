@@ -184,12 +184,37 @@ READ_FILE_FAIL:
 	return RK_FAILURE;
 }
 
+static RK_BOOL bQuiltCheckFd = RK_FALSE;
+static pthread_t checkFd_thread_id;
+
+static void *checkFd(void *arg) {
+	int fd[3];
+	prctl(PR_SET_NAME, "check_fd_thread");
+	srand(time(0));
+	while (bQuiltCheckFd) {
+		for (int i = 0; i < 3; i++) {
+			fd[i] = open("/dev/null", O_RDONLY);
+			if (fd[i] == -1) {
+				fprintf(stderr, "Error opening file descriptor!\n");
+			}
+		}
+		unsigned int delay = rand() % 100;
+		usleep(delay * 1000);
+		for (int i = 0; i < 3; i++) {
+			if (close(fd[i]) == -1) {
+				printf("Error closing file descriptor!\n");
+				abort();
+			}
+		}
+		usleep(delay * 1000);
+	}
+	return NULL;
+}
+
 RK_VOID SAMPLE_COMM_CheckFd(RK_BOOL bStart) {
-	static RK_BOOL bQuiltCheckFd = RK_FALSE;
-	static pthread_t checkFd_thread_id;
 	if (bStart) {
 		if (bQuiltCheckFd)
-			return NULL;
+			return ;
 		else
 			bQuiltCheckFd = RK_TRUE;
 	} else {
@@ -199,36 +224,11 @@ RK_VOID SAMPLE_COMM_CheckFd(RK_BOOL bStart) {
 				printf("Failed to join thread!\n");
 			}
 		}
-		return NULL;
+		return ;
 	}
-
-	void *checkFd(void *arg) {
-		int fd[3];
-		prctl(PR_SET_NAME, "check_fd_thread");
-		srand(time(NULL));
-		while (bQuiltCheckFd) {
-			for (int i = 0; i < 3; i++) {
-				fd[i] = open("/dev/null", O_RDONLY);
-				if (fd[i] == -1) {
-					printf("Error opening file descriptor!\n");
-				}
-			}
-			unsigned int delay = rand() % 100;
-			usleep(delay * 1000);
-			for (int i = 0; i < 3; i++) {
-				if (close(fd[i]) == -1) {
-					printf("Error closing file descriptor!\n");
-					abort();
-				}
-			}
-			usleep(delay * 1000);
-		}
-		return NULL;
-	}
-
 	if (pthread_create(&checkFd_thread_id, NULL, checkFd, NULL) != 0) {
 		printf("Failed to create thread!\n");
-		return NULL;
+		return ;
 	}
 }
 

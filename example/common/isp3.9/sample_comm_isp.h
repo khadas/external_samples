@@ -78,7 +78,7 @@ XCamReturn SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(int CamGrpId, uint8_t SetLdchM
                                                   uint16_t **LdchMesh);
 RK_S32 SAMPLE_COMM_ISP_CamGroup_SetLDCH(RK_U32 CamId, RK_U32 u32Level, RK_BOOL bIfEnable);
 RK_S32 SAMPLE_COMM_ISP_GetAINrParams(RK_S32 CamId, rk_ainr_param *param);
-RK_S32 SAMPLE_COMM_ISP_EnablsAiisp(RK_S32 CamId, rk_aiq_aiisp_cb cb);
+RK_S32 SAMPLE_COMM_ISP_EnablsAiisp(RK_S32 CamId);
 #ifdef __cplusplus
 #if __cplusplus
 }

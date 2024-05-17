@@ -128,7 +128,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-f | --fps : isp output fps, Default: -1\n");
 	printf("\t-m | --mode_test_type : test type, 0:none, 1:P/N switch test, 2:HDR switch "
 	       "test, 3:frame rate switch test, 4: LDCH mode test 5: iqfile switch test. "
-	       "6: isp_deinit_init, Default: 0\n");
+	       "6: isp_deinit_init, 7: aiisp_deinit_init(just for rk3576), Default: 0\n");
 	printf("\t--pixel_format : camera Format, Value:nv12,nv16,uyvy,rgb565,xbgr8888. "
 	       "Default: "
 	       "nv12\n");
@@ -294,7 +294,36 @@ static void hdr_mode_switch_test(RK_S32 test_loop) {
 			program_handle_error(__func__, __LINE__);
 			break;
 		}
+#elif defined(RK3576)
+		gModeTest->bIfViTHreadQuit = RK_TRUE;
+		pthread_join(gModeTest->vi_thread_id, RK_NULL);
+		SAMPLE_COMM_VI_DestroyChn(&ctx->vi);
+		SAMPLE_COMM_ISP_Stop(gModeTest->s32CamId);
 
+		if (gModeTest->eHdrMode == RK_AIQ_WORKING_MODE_NORMAL) {
+			gModeTest->eHdrMode = RK_AIQ_WORKING_MODE_ISP_HDR2;
+		} else if (gModeTest->eHdrMode == RK_AIQ_WORKING_MODE_ISP_HDR2) {
+			gModeTest->eHdrMode = RK_AIQ_WORKING_MODE_NORMAL;
+		} else {
+			gModeTest->eHdrMode = RK_AIQ_WORKING_MODE_NORMAL;
+		}
+		s32Ret = SAMPLE_COMM_ISP_Init(gModeTest->s32CamId, gModeTest->eHdrMode,
+		                              gModeTest->bMultictx, gModeTest->pIqFileDir);
+		s32Ret |= SAMPLE_COMM_ISP_Run(gModeTest->s32CamId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("ISP init failure\n");
+			program_handle_error(__func__, __LINE__);
+			break;
+		}
+
+		s32Ret = SAMPLE_COMM_VI_CreateChn(&ctx->vi);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("VI init failure\n");
+			program_handle_error(__func__, __LINE__);
+			break;
+		}
+		gModeTest->bIfViTHreadQuit = RK_FALSE;
+		pthread_create(&gModeTest->vi_thread_id, 0, vi_get_stream, (void *)(&ctx->vi));
 #endif
 		wait_module_test_switch_success();
 
@@ -497,6 +526,81 @@ static void isp_deinit_init(RK_S32 test_loop) {
 	return;
 }
 
+#if defined(RK3576)
+static void aiisp_deinit_init(RK_S32 test_loop) {
+	RK_S32 s32Ret = RK_FAILURE;
+	RK_S32 test_count = 0;
+	RK_S32 s32DstWidth = 704;
+	RK_S32 s32DstHeight = 576;
+	RK_S32 s32SrcWidth = ctx->vi.u32Width;
+	RK_S32 s32SrcHeight = ctx->vi.u32Height;
+
+	while (!gModeTest->bModuleTestThreadQuit) {
+
+		/* VI deinit */
+		gModeTest->bIfViTHreadQuit = RK_TRUE;
+		pthread_join(gModeTest->vi_thread_id, RK_NULL);
+		/* Destroy VI */
+		SAMPLE_COMM_VI_DestroyChn(&ctx->vi);
+
+		/* isp deinit */
+		SAMPLE_COMM_ISP_Stop(gModeTest->s32CamId);
+
+		gModeTest->bIfViTHreadQuit = RK_FALSE;
+		if (ctx->vi.u32Width == s32SrcWidth) {
+			ctx->vi.u32Width = s32DstWidth;
+			ctx->vi.u32Height = s32DstHeight;
+		} else if (ctx->vi.u32Width == s32DstWidth) {
+			ctx->vi.u32Width = s32SrcWidth;
+			ctx->vi.u32Height = s32SrcHeight;
+		} else {
+			ctx->vi.u32Width = s32DstWidth;
+			ctx->vi.u32Height = s32DstHeight;
+		}
+
+		s32Ret = SAMPLE_COMM_ISP_Init(gModeTest->s32CamId, RK_AIQ_WORKING_MODE_NORMAL,
+		                              RK_TRUE, gModeTest->pIqFileDir);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("SAMPLE_COMM_ISP_Init failure\n");
+			program_handle_error(__func__, __LINE__);
+			break;
+		}
+		s32Ret = SAMPLE_COMM_ISP_EnablsAiisp(gModeTest->s32CamId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("SAMPLE_COMM_ISP_EnableAiisp failure\n");
+			program_handle_error(__func__, __LINE__);
+			break;
+		}
+		s32Ret = SAMPLE_COMM_ISP_Run(gModeTest->s32CamId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("SAMPLE_COMM_ISP_Run failure\n");
+			program_handle_error(__func__, __LINE__);
+			break;
+		}
+
+		SAMPLE_COMM_VI_CreateChn(&ctx->vi);
+
+		pthread_create(&gModeTest->vi_thread_id, 0, vi_get_stream, (void *)(&ctx->vi));
+
+		wait_module_test_switch_success();
+		test_count++;
+
+		RK_LOGE("-----------------------------aiisp_deinit_init switch success total:%d "
+		        "now count:%d",
+		        test_loop, test_count);
+		if (test_loop > 0 && test_count >= test_loop) {
+			RK_LOGE("--------------aiisp_deinit_init switch success test end total:%d",
+			        test_loop);
+			gModeTest->bModuleTestIfopen = RK_FALSE;
+			program_normal_exit(__func__, __LINE__);
+			break;
+		}
+	}
+	RK_LOGE("aiisp_deinit_init exit");
+	return;
+}
+#endif
+
 static void *sample_isp_stress_test(void *pArgs) {
 
 	prctl(PR_SET_NAME, "isp_stress_test");
@@ -524,6 +628,11 @@ static void *sample_isp_stress_test(void *pArgs) {
 	case 6:
 		isp_deinit_init(gModeTest->s32ModuleTestLoop);
 		break;
+#if defined(RK3576)
+	case 7:
+		aiisp_deinit_init(gModeTest->s32ModuleTestLoop);
+		break;
+#endif
 	default:
 		RK_LOGE("mode test type:%d is unsupported", gModeTest->s32ModuleTestType);
 	}
@@ -536,14 +645,14 @@ static RK_S32 global_param_init(void) {
 
 	ctx = (SAMPLE_MPI_CTX_S *)malloc(sizeof(SAMPLE_MPI_CTX_S));
 	if (ctx == RK_NULL) {
-		RK_LOGE("malloc for ctx failure");
+		printf("malloc for ctx failure");
 		return RK_FAILURE;
 	}
 	memset(ctx, 0, sizeof(SAMPLE_MPI_CTX_S));
 
 	gModeTest = (g_mode_test *)malloc(sizeof(g_mode_test));
 	if (gModeTest == RK_NULL) {
-		RK_LOGE("malloc for gModeTest failure");
+		printf("malloc for gModeTest failure");
 		return RK_FAILURE;
 	}
 	memset(gModeTest, 0, sizeof(g_mode_test));
@@ -555,7 +664,7 @@ static RK_S32 global_param_init(void) {
 	sem_init(&g_sem_module_test, 0, 0);
 
 	if (pthread_mutex_init(&g_frame_count_mutex, NULL) != 0) {
-		RK_LOGE("mutex init failure \n");
+		printf("mutex init failure \n");
 		return RK_FAILURE;
 	}
 
@@ -715,7 +824,7 @@ int main(int argc, char *argv[]) {
 		gModeTest->eHdrMode = eHdrMode;
 		gModeTest->bMultictx = bMultictx;
 		gModeTest->pIqFileDir = pIqFileDir;
-		RK_LOGE("eHdrMode: %d", eHdrMode);
+		printf("eHdrMode: %d", eHdrMode);
 		s32Ret = SAMPLE_COMM_ISP_Init(s32CamId, eHdrMode, bMultictx, pIqFileDir);
 #ifdef RV1126
 		if (gModeTest->s32ModuleTestType == 4) {
@@ -724,7 +833,7 @@ int main(int argc, char *argv[]) {
 #endif
 		s32Ret |= SAMPLE_COMM_ISP_Run(s32CamId);
 		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("ISP init failure");
+			printf("ISP init failure");
 			g_exit_result = RK_FAILURE;
 			goto __FAILED2;
 		}

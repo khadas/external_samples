@@ -112,7 +112,8 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-o | --output_path : vpss output file path. Default NULL\n");
 	printf("\t-f | --fps : vi framerate. Default: 15\n");
 	printf("\t-m | --mode_test_type : test type, 0: none, 1: vpss_deinit_ubind_test,"
-	       "2: vpss_resolution_switch_test. Default: 0\n");
+	       "2: vpss_resolution_switch_test. 3: hardware vpss_deinit_ubind_test"
+		   "4: hardware vpss_resolution_switch_test. Default: 0\n");
 	printf("\t--vi_size : set vi resolution WidthxHeight, default: 1920x1080\n");
 	printf("\t--vpss_size : set vpss resolution WidthxHeight, default: 1920x1080\n");
 	printf("\t--mode_test_loop : module test loop, default: -1\n");
@@ -386,6 +387,14 @@ static void *sample_vpss_stress_test(void *pArgs) {
 	case 2:
 		vpss_switch_resolution_test(gModeTest->s32ModuleTestLoop);
 		break;
+	case 3:
+		RK_LOGE("------------------vpss_destroy_ubind_test start for hardware vpss -----------------");
+		vpss_destroy_ubind_test(gModeTest->s32ModuleTestLoop);
+		break;
+	case 4:
+		RK_LOGE("------------------vpss_switch_resolution_test start for hardware vpss -----------------");
+		vpss_switch_resolution_test(gModeTest->s32ModuleTestLoop);
+		break;
 	default:
 		RK_LOGE("mode test type:%d is unsupported", gModeTest->s32ModuleTestType);
 	}
@@ -587,6 +596,12 @@ int main(int argc, char *argv[]) {
 	ctx->vpss.dstFilePath = pOutPath;
 	/* RGA_device: VIDEO_PROC_DEV_RGA */
 	ctx->vpss.enVProcDevType = VIDEO_PROC_DEV_RGA;
+#if defined(RK3576)
+	if (gModeTest->s32ModuleTestType == 3 || gModeTest->s32ModuleTestType == 4) {
+		ctx->vpss.enVProcDevType = VIDEO_PROC_DEV_VPSS;
+		RK_LOGE("using hardware vpss now");
+	}
+#endif
 	ctx->vpss.stGrpVpssAttr.enPixelFormat = RK_FMT_YUV420SP;
 	ctx->vpss.stGrpVpssAttr.enCompressMode = COMPRESS_MODE_NONE; /* no compress */
 	ctx->vpss.stVpssChnAttr[0].enChnMode = VPSS_CHN_MODE_USER;

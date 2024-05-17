@@ -141,6 +141,26 @@ RK_S32 SAMPLE_COMM_RGN_CreateChn(SAMPLE_RGN_CTX_S *ctx) {
 		ctx->stRgnChnAttr.unChnAttr.stMosaicChn.enBlkSize = MOSAIC_BLK_SIZE_64;
 		ctx->stRgnChnAttr.unChnAttr.stMosaicChn.u32Layer = ctx->u32Layer;
 	} break;
+	case OVERLAY_EX_RGN: {
+		ctx->stRgnAttr.enType = OVERLAY_EX_RGN;
+		ctx->stRgnAttr.unAttr.stOverlay.enPixelFmt = (PIXEL_FORMAT_E)ctx->u32BmpFormat;
+		ctx->stRgnAttr.unAttr.stOverlay.stSize.u32Width = ctx->stRegion.u32Width;
+		ctx->stRgnAttr.unAttr.stOverlay.stSize.u32Height = ctx->stRegion.u32Height;
+
+		ctx->stRgnChnAttr.bShow = RK_TRUE;
+		ctx->stRgnChnAttr.enType = OVERLAY_EX_RGN;
+		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.stPoint.s32X = ctx->stRegion.s32X;
+		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.stPoint.s32Y = ctx->stRegion.s32Y;
+		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.u32BgAlpha = ctx->u32BgAlpha;
+		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.u32FgAlpha = ctx->u32FgAlpha;
+		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.u32Layer = ctx->u32Layer;
+
+		s32Ret = test_rgn_load_bmp(ctx);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("test_rgn_load_bmp failure:%#X", s32Ret);
+			return s32Ret;
+		}
+	} break;
 	default:
 		RK_LOGE("unsupport type %d.", ctx->stRgnAttr.enType);
 		return RK_FAILURE;
@@ -158,7 +178,7 @@ RK_S32 SAMPLE_COMM_RGN_CreateChn(SAMPLE_RGN_CTX_S *ctx) {
 		return RK_FAILURE;
 	}
 
-	if (ctx->stRgnAttr.enType == OVERLAY_RGN) {
+	if (ctx->stRgnAttr.enType == OVERLAY_RGN || ctx->stRgnAttr.enType == OVERLAY_EX_RGN) {
 		// s64TimeStart = mpi_test_utils_get_now_us();
 
 		s32Ret = RK_MPI_RGN_SetBitMap(ctx->rgnHandle, &ctx->stBitmap);
@@ -194,6 +214,22 @@ RK_S32 SAMPLE_COMM_RGN_CreateChn(SAMPLE_RGN_CTX_S *ctx) {
 	case OVERLAY_RGN: {
 		ctx->stRgnChnAttr.bShow = RK_TRUE;
 		ctx->stRgnChnAttr.enType = OVERLAY_RGN;
+		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.stPoint.s32X = ctx->stRegion.s32X;
+		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.stPoint.s32Y = ctx->stRegion.s32Y;
+		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.u32BgAlpha = ctx->u32BgAlpha;
+		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.u32FgAlpha = ctx->u32FgAlpha;
+		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.u32Layer = ctx->u32Layer;
+		RK_LOGE("resize the overlay region %d to <%d, %d> BgAlpha %d "
+		        "FgAlpha%d, color<0x%x>",
+		        ctx->rgnHandle, ctx->stRgnChnAttr.unChnAttr.stOverlayChn.stPoint.s32X,
+		        ctx->stRgnChnAttr.unChnAttr.stOverlayChn.stPoint.s32Y,
+		        ctx->stRgnChnAttr.unChnAttr.stOverlayChn.u32BgAlpha,
+		        ctx->stRgnChnAttr.unChnAttr.stOverlayChn.u32FgAlpha,
+		        ctx->stRgnChnAttr.unChnAttr.stOverlayChn.u32Layer);
+	} break;
+	case OVERLAY_EX_RGN: {
+		ctx->stRgnChnAttr.bShow = RK_TRUE;
+		ctx->stRgnChnAttr.enType = OVERLAY_EX_RGN;
 		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.stPoint.s32X = ctx->stRegion.s32X;
 		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.stPoint.s32Y = ctx->stRegion.s32Y;
 		ctx->stRgnChnAttr.unChnAttr.stOverlayChn.u32BgAlpha = ctx->u32BgAlpha;

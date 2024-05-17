@@ -59,6 +59,7 @@ typedef struct _rkModeTest {
 
 typedef struct _rkMpiCtx {
 	SAMPLE_VI_CTX_S vi;
+	SAMPLE_VPSS_CTX_S vpss;
 	SAMPLE_VENC_CTX_S venc;
 	SAMPLE_RGN_CTX_S rgn[RGN_CHN_MAX];
 } SAMPLE_MPI_CTX_S;
@@ -129,6 +130,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-i | --inputBmp1Path : input bmp file path. default: NULL\n");
 	printf("\t-I | --inputBmp2Path : input bmp file path. default: NULL\n");
 	printf("\t-m | --mode_test_type : test type, 0:none, 1:rgn attach and detach. "
+					"2:rgn attach and detach in hardware vpss"
 	       "Default: 0\n");
 	printf("\t-e | --encode : set encode type, Value: h264cbr, h264vbr, h265cbr, "
 	       "h265vbr, default: h264cbr \n");
@@ -340,13 +342,17 @@ static RK_S32 rgn_init(void) {
 		        ctx->rgn[3].rgnHandle);
 		return s32Ret;
 	}
-#elif defined(RV1126)
+#else
 	RK_U32 u32Color = 0xFFFFFF;
 	for (RK_S32 i = 0; i < RGN_COVER_NUM_FOR_1126; i++) {
 		// cover for venc
 		ctx->rgn[i].rgnHandle = i;
 		ctx->rgn[i].stRgnAttr.enType = COVER_RGN;
+#if defined(RK3576)
+		ctx->rgn[i].stMppChn.enModId = RK_ID_VPSS;
+#else
 		ctx->rgn[i].stMppChn.enModId = RK_ID_VENC;
+#endif
 		ctx->rgn[i].stMppChn.s32ChnId = ctx->venc.s32ChnId;
 		ctx->rgn[i].stMppChn.s32DevId = 0;
 		ctx->rgn[i].stRegion.s32X = i * 128;  // must be 16 aligned
@@ -375,7 +381,12 @@ static RK_S32 rgn_init(void) {
 		u32Height = 128;
 	}
 	ctx->rgn[4].rgnHandle = 4;
+#if defined(RK3576)
+	ctx->rgn[4].stRgnAttr.enType = OVERLAY_EX_RGN;
+	ctx->rgn[4].stRgnAttr.unAttr.stOverlay.enVProcDev = VIDEO_PROC_DEV_RGA;
+#else
 	ctx->rgn[4].stRgnAttr.enType = OVERLAY_RGN;
+#endif
 	ctx->rgn[4].stMppChn.enModId = RK_ID_VENC;
 	ctx->rgn[4].stMppChn.s32ChnId = ctx->venc.s32ChnId;
 	ctx->rgn[4].stMppChn.s32DevId = 0;
@@ -403,7 +414,12 @@ static RK_S32 rgn_init(void) {
 		u32Height = 128;
 	}
 	ctx->rgn[5].rgnHandle = 5;
+#if defined(RK3576)
+	ctx->rgn[5].stRgnAttr.enType = OVERLAY_EX_RGN;
+	ctx->rgn[5].stRgnAttr.unAttr.stOverlay.enVProcDev = VIDEO_PROC_DEV_RGA;
+#else
 	ctx->rgn[5].stRgnAttr.enType = OVERLAY_RGN;
+#endif
 	ctx->rgn[5].stMppChn.enModId = RK_ID_VENC;
 	ctx->rgn[5].stMppChn.s32ChnId = ctx->venc.s32ChnId;
 	ctx->rgn[5].stMppChn.s32DevId = 0;
@@ -431,7 +447,12 @@ static RK_S32 rgn_init(void) {
 		u32Height = 128;
 	}
 	ctx->rgn[6].rgnHandle = 6;
+#if defined(RK3576)
+	ctx->rgn[6].stRgnAttr.enType = OVERLAY_EX_RGN;
+	ctx->rgn[6].stRgnAttr.unAttr.stOverlay.enVProcDev = VIDEO_PROC_DEV_RGA;
+#else
 	ctx->rgn[6].stRgnAttr.enType = OVERLAY_RGN;
+#endif
 	ctx->rgn[6].stMppChn.enModId = RK_ID_VENC;
 	ctx->rgn[6].stMppChn.s32ChnId = ctx->venc.s32ChnId;
 	ctx->rgn[6].stMppChn.s32DevId = 0;
@@ -473,12 +494,12 @@ static void rgn_attach_and_detach(RK_S32 test_loop) {
 	RK_S32 i = 0;
 
 	while (!gModeTest->bModuleTestThreadQuit) {
-
 		for (i = 0; i < RGN_CHN_MAX; i++) {
 			s32Ret = SAMPLE_COMM_RGN_DestroyChn(&ctx->rgn[i]);
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("SAMPLE_COMM_RGN_DestroyChn Failure s32Ret:%#X rgn handle:%d",
 				        s32Ret, ctx->rgn[i].rgnHandle);
+				program_handle_error(__func__, __LINE__);
 			}
 		}
 
@@ -488,6 +509,7 @@ static void rgn_attach_and_detach(RK_S32 test_loop) {
 			if (s32Ret != RK_SUCCESS) {
 				RK_LOGE("SAMPLE_COMM_RGN_CreateChn Handle:%d Failure Ret:%#X",
 				        ctx->rgn[i].rgnHandle, s32Ret);
+				program_handle_error(__func__, __LINE__);
 			}
 		}
 
@@ -518,6 +540,7 @@ static void *sample_rgn_stress_test(void *pArgs) {
 	SAMPLE_COMM_DumpMeminfo("Enter sample_rgn_test", gModeTest->s32ModuleTestType);
 	switch (gModeTest->s32ModuleTestType) {
 	case 1:
+	case 2:
 		/* rgn attach/detach */
 		rgn_attach_and_detach(gModeTest->s32ModuleTestLoop);
 		break;
@@ -773,6 +796,36 @@ int main(int argc, char *argv[]) {
 		goto __FAILED;
 	}
 
+	/* Init VPSS */
+	ctx->vpss.s32GrpId = 0;
+	ctx->vpss.s32ChnId = 0;
+#if defined(RK3576)
+	if (gModeTest->s32ModuleTestType == 2)
+		ctx->vpss.enVProcDevType = VIDEO_PROC_DEV_VPSS;
+	else
+		ctx->vpss.enVProcDevType = VIDEO_PROC_DEV_RGA;
+#else
+	ctx->vpss.enVProcDevType = VIDEO_PROC_DEV_RGA;
+#endif
+	ctx->vpss.stGrpVpssAttr.enPixelFormat = RK_FMT_YUV420SP;
+	ctx->vpss.stGrpVpssAttr.enCompressMode = COMPRESS_MODE_NONE; // no compress
+	ctx->vpss.s32ChnRotation[0] = ROTATION_0;
+	ctx->vpss.stVpssChnAttr[0].enChnMode = VPSS_CHN_MODE_AUTO;
+	ctx->vpss.stVpssChnAttr[0].enCompressMode = COMPRESS_MODE_NONE;
+	ctx->vpss.stVpssChnAttr[0].enDynamicRange = DYNAMIC_RANGE_SDR8;
+	ctx->vpss.stVpssChnAttr[0].enPixelFormat = RK_FMT_YUV420SP;
+	ctx->vpss.stVpssChnAttr[0].stFrameRate.s32SrcFrameRate = -1;
+	ctx->vpss.stVpssChnAttr[0].stFrameRate.s32DstFrameRate = -1;
+	ctx->vpss.stVpssChnAttr[0].u32Width = s32VideoWidth;
+	ctx->vpss.stVpssChnAttr[0].u32Height = s32VideoHeight;
+	ctx->vpss.stVpssChnAttr[0].u32Depth = 0;
+	s32Ret = SAMPLE_COMM_VPSS_CreateChn(&ctx->vpss);
+	if (s32Ret != RK_SUCCESS) {
+		g_exit_result = RK_FAILURE;
+		RK_LOGE("SAMPLE_COMM_VPSS_CreateChn group 0 failed %#X\n", s32Ret);
+		goto __FAILED;
+	}
+
 	/* Init VENC */
 	ctx->venc.s32ChnId = 0;
 	ctx->venc.u32Width = s32VideoWidth;
@@ -805,19 +858,31 @@ int main(int argc, char *argv[]) {
 	stSrcChn.enModId = RK_ID_VI;
 	stSrcChn.s32DevId = ctx->vi.s32DevId;
 	stSrcChn.s32ChnId = ctx->vi.s32ChnId;
+	stDestChn.enModId = RK_ID_VPSS;
+	stDestChn.s32DevId = ctx->vpss.s32GrpId;
+	stDestChn.s32ChnId = ctx->vpss.s32ChnId;
+	s32Ret = SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("VI and VPSS bind failure:%X", s32Ret);
+		program_handle_error(__func__, __LINE__);
+	}
+
+	stSrcChn.enModId = RK_ID_VPSS;
+	stSrcChn.s32DevId = ctx->vpss.s32GrpId;
+	stSrcChn.s32ChnId = ctx->vpss.s32ChnId;
 	stDestChn.enModId = RK_ID_VENC;
 	stDestChn.s32DevId = 0;
 	stDestChn.s32ChnId = ctx->venc.s32ChnId;
 	s32Ret = SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
 	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("VI and VENC bind failure:%X", s32Ret);
+		RK_LOGE("VPSS and VENC bind failure:%X", s32Ret);
 		program_handle_error(__func__, __LINE__);
 	}
 
 	/* Rgn Init*/
 	rgn_init();
 
-	if (gModeTest->s32ModuleTestType) {
+	if (gModeTest->s32ModuleTestType == 1 || gModeTest->s32ModuleTestType == 2) {
 		gModeTest->bModuleTestIfopen = RK_TRUE;
 		pthread_create(&modeTest_thread_id, 0, sample_rgn_stress_test,
 		               (void *)(gModeTest));
@@ -830,7 +895,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	/* mode_test_deinit */
-	if (gModeTest->s32ModuleTestType) {
+	if (gModeTest->s32ModuleTestType == 1 || gModeTest->s32ModuleTestType == 2) {
 		gModeTest->bModuleTestThreadQuit = RK_TRUE;
 		pthread_join(modeTest_thread_id, NULL);
 	}
@@ -846,10 +911,10 @@ int main(int argc, char *argv[]) {
 	gModeTest->bIfVencThreadQuit = RK_TRUE;
 	pthread_join(ctx->venc.getStreamThread, NULL);
 
-	/* VI unbind VENC */
-	stSrcChn.enModId = RK_ID_VI;
-	stSrcChn.s32DevId = ctx->vi.s32DevId;
-	stSrcChn.s32ChnId = ctx->vi.s32ChnId;
+	/* VPSS unbind VENC */
+	stSrcChn.enModId = RK_ID_VPSS;
+	stSrcChn.s32DevId = ctx->vpss.s32GrpId;
+	stSrcChn.s32ChnId = ctx->vpss.s32ChnId;
 	stDestChn.enModId = RK_ID_VENC;
 	stDestChn.s32DevId = 0;
 	stDestChn.s32ChnId = ctx->venc.s32ChnId;
@@ -858,9 +923,23 @@ int main(int argc, char *argv[]) {
 		RK_LOGE("VI and VENC bind failure:%X", s32Ret);
 		g_exit_result = RK_FAILURE;
 	}
+	/* VI unbind VPSS */
+	stSrcChn.enModId = RK_ID_VI;
+	stSrcChn.s32DevId = ctx->vi.s32DevId;
+	stSrcChn.s32ChnId = ctx->vi.s32ChnId;
+	stDestChn.enModId = RK_ID_VPSS;
+	stDestChn.s32DevId = ctx->vpss.s32GrpId;
+	stDestChn.s32ChnId = ctx->vpss.s32ChnId;
+	s32Ret = SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("VI and VENC bind failure:%X", s32Ret);
+		g_exit_result = RK_FAILURE;
+	}
 	/* destroy venc */
 	SAMPLE_COMM_VENC_DestroyChn(&ctx->venc);
 
+	/* destroy venc */
+	SAMPLE_COMM_VPSS_DestroyChn(&ctx->vpss);
 	/* rtsp deinit */
 	rtsp_deinit();
 

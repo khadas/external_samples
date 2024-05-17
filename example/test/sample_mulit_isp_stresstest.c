@@ -37,7 +37,7 @@ extern "C" {
 
 #include "sample_comm.h"
 
-#define CAM_NUM_MAX 2
+#define CAM_NUM_MAX 4
 #define BUFFER_SIZE 255
 #define LDCH_MAX_LEVEL 255
 
