@@ -62,6 +62,7 @@ endif
 	@cp   -f   source/multi_isp_stresstest.sh          $(SAMPLE_OUT_DIR)/install_to_userdata
 	@cp   -f   source/rv1126_multi_cam_stresstest.sh   $(SAMPLE_OUT_DIR)/install_to_userdata
 	@cp   -f   source/kill_pid.sh                      $(SAMPLE_OUT_DIR)/install_to_userdata
+	@cp   -f   source/rk3576_stresstest.sh             $(SAMPLE_OUT_DIR)/install_to_userdata
 
 clean:
 	@echo "clean test"
