@@ -258,7 +258,13 @@ static void hdr_mode_switch_test(RK_S32 test_loop) {
 	RK_S32 s32Ret = RK_FAILURE;
 
 	while (!gModeTest->bModuleTestThreadQuit) {
-#if defined(RV1106)
+#if defined(RV1106) || defined(RK3576)
+#if defined(RK3576)
+#warning "[FIXME] workaround for RK3576 hdr switch failed case."
+		gModeTest->bIfViTHreadQuit = RK_TRUE;
+		pthread_join(gModeTest->vi_thread_id, RK_NULL);
+#endif
+
 		RK_MPI_VI_PauseChn(ctx->vi.u32PipeId, ctx->vi.s32ChnId);
 		SAMPLE_COMM_ISP_Stop(gModeTest->s32CamId);
 
@@ -279,6 +285,11 @@ static void hdr_mode_switch_test(RK_S32 test_loop) {
 		}
 
 		RK_MPI_VI_ResumeChn(ctx->vi.u32PipeId, ctx->vi.s32ChnId);
+
+#if defined(RK3576)
+		gModeTest->bIfViTHreadQuit = RK_FALSE;
+		pthread_create(&gModeTest->vi_thread_id, 0, vi_get_stream, (void *)(&ctx->vi));
+#endif
 #elif defined(RV1126)
 		if (gModeTest->eHdrMode == RK_AIQ_WORKING_MODE_NORMAL) {
 			gModeTest->eHdrMode = RK_AIQ_WORKING_MODE_ISP_HDR2;
@@ -294,36 +305,6 @@ static void hdr_mode_switch_test(RK_S32 test_loop) {
 			program_handle_error(__func__, __LINE__);
 			break;
 		}
-#elif defined(RK3576)
-		gModeTest->bIfViTHreadQuit = RK_TRUE;
-		pthread_join(gModeTest->vi_thread_id, RK_NULL);
-		SAMPLE_COMM_VI_DestroyChn(&ctx->vi);
-		SAMPLE_COMM_ISP_Stop(gModeTest->s32CamId);
-
-		if (gModeTest->eHdrMode == RK_AIQ_WORKING_MODE_NORMAL) {
-			gModeTest->eHdrMode = RK_AIQ_WORKING_MODE_ISP_HDR2;
-		} else if (gModeTest->eHdrMode == RK_AIQ_WORKING_MODE_ISP_HDR2) {
-			gModeTest->eHdrMode = RK_AIQ_WORKING_MODE_NORMAL;
-		} else {
-			gModeTest->eHdrMode = RK_AIQ_WORKING_MODE_NORMAL;
-		}
-		s32Ret = SAMPLE_COMM_ISP_Init(gModeTest->s32CamId, gModeTest->eHdrMode,
-		                              gModeTest->bMultictx, gModeTest->pIqFileDir);
-		s32Ret |= SAMPLE_COMM_ISP_Run(gModeTest->s32CamId);
-		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("ISP init failure\n");
-			program_handle_error(__func__, __LINE__);
-			break;
-		}
-
-		s32Ret = SAMPLE_COMM_VI_CreateChn(&ctx->vi);
-		if (s32Ret != RK_SUCCESS) {
-			RK_LOGE("VI init failure\n");
-			program_handle_error(__func__, __LINE__);
-			break;
-		}
-		gModeTest->bIfViTHreadQuit = RK_FALSE;
-		pthread_create(&gModeTest->vi_thread_id, 0, vi_get_stream, (void *)(&ctx->vi));
 #endif
 		wait_module_test_switch_success();
 
