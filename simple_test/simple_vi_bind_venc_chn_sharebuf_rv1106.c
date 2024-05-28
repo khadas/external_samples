@@ -204,6 +204,9 @@ int vi_chn_init(int channelId, int width, int height, int x, int y, int buf_widt
 	vi_chn_attr.enCompressMode = COMPRESS_MODE_NONE; // COMPRESS_AFBC_16x16;
 	vi_chn_attr.u32Depth = 0; //0, get fail, 1 - u32BufCount, can get, if bind to other device, must be < u32BufCount
 	vi_chn_attr.enAllocBufType = channelId? VI_ALLOC_BUF_TYPE_CHN_SHARE : VI_ALLOC_BUF_TYPE_INTERNAL;
+	vi_chn_attr.stShareBufChn.enModId = RK_ID_VI;
+	vi_chn_attr.stShareBufChn.s32DevId = 0;
+	vi_chn_attr.stShareBufChn.s32ChnId = 0;
 	ret = RK_MPI_VI_SetChnAttr(0, channelId, &vi_chn_attr);
 	ret |= RK_MPI_VI_EnableChn(0, channelId);
 	if (ret) {
