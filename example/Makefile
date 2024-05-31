@@ -77,8 +77,6 @@ COMM_SRC += $(wildcard $(COMM_DIR)/isp3.x/*.c)
 endif
 ifeq ($(RK_MEDIA_CHIP), rk3576)
 COMM_SRC += $(wildcard $(COMM_DIR)/isp3.9/*.c)
-endif
-ifeq ($(CONFIG_FREETYPE),y)
 COMM_SRC += $(wildcard $(COMM_DIR)/font_factory.c)
 endif
 COMM_OBJ := $(COMM_SRC:%.c=%.o)
