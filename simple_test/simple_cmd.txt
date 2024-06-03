@@ -12,9 +12,9 @@ sleep 5
 killall simple_ai_bind_aenc
 checkmd5sum /tmp/16k_aenc.g711u
 
-simple_adec_bind_ao -r 8000 -t g726 -c 1 -i /tmp/simple/output/simple_ai_bind_aenc.bin
-simple_adec_bind_ao -r 8000 -t g711a -c 1 -i /tmp/simple/output/simple_ai_bind_aenc_-r_8000_-t_g711a_-o__tmp_8k_aenc_g711a.bin
-simple_adec_bind_ao -r 16000 -t g711u -c 1 -i /tmp/simple/output/simple_ai_bind_aenc_-r_16000_-t_g711u_-o__tmp_16k_aenc_g711u.bin
+simple_adec_bind_ao -r 8000 -t g726 -c 1 -i /tmp/simple/output/_simple_ai_bind_aenc.bin
+simple_adec_bind_ao -r 8000 -t g711a -c 1 -i /tmp/simple/output/_simple_ai_bind_aenc_-r_8000_-t_g711a_-o__tmp_8k_aenc_g711a.bin
+simple_adec_bind_ao -r 16000 -t g711u -c 1 -i /tmp/simple/output/_simple_ai_bind_aenc_-r_16000_-t_g711u_-o__tmp_16k_aenc_g711u.bin
 
 logai=6
 simple_ai_get_frame&
@@ -55,9 +55,9 @@ killall simple_ai_get_frame
 checkmd5sum /data/ai.pcm
 
 logao=6
-simple_ao_send_frame -r 8000 -R 8000 -i /tmp/simple/output/simple_ai_get_frame_-r_8000_-R_16000_-b_0_-v_1_-o__data_ai_pcm.bin
-simple_ao_send_frame -r 16000 -R 8000 -i /tmp/simple/output/simple_ai_get_frame_-r_8000_-R_16000_-b_0_-v_1_-o__data_ai_pcm.bin
-simple_ao_send_frame -r 16000 -R 8000 -v 2 -i /tmp/simple/output/simple_ai_get_frame_-r_8000_-R_16000_-b_0_-v_1_-o__data_ai_pcm.bin
+simple_ao_send_frame -r 8000 -R 8000 -i /tmp/simple/output/_simple_ai_get_frame_-r_8000_-R_16000_-b_0_-v_1_-o__data_ai_pcm.bin
+simple_ao_send_frame -r 16000 -R 8000 -i /tmp/simple/output/_simple_ai_get_frame_-r_8000_-R_16000_-b_0_-v_1_-o__data_ai_pcm.bin
+simple_ao_send_frame -r 16000 -R 8000 -v 2 -i /tmp/simple/output/_simple_ai_get_frame_-r_8000_-R_16000_-b_0_-v_1_-o__data_ai_pcm.bin
 
 logvi=6
 simple_vi_get_frame&
