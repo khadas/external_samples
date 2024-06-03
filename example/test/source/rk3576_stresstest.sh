@@ -4,6 +4,8 @@ if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
 echo "example:"
 echo "CAMERA_ID=0 WIDTH=3840 HEIGHT=2160 rk3576_stresstest.sh"
 echo "option list:"
+echo "    TEST_LOOP: total loop count for each test case, default: 10000"
+echo "    TEST_FRAME: test frame count each loop, default: 50"
 echo "    WIDTH: camera sensor width, default: 2560"
 echo "    HEIGHT: camera sensor height, default: 1440"
 echo "    CAMERA_ID: camera index, defalut: 0"
@@ -24,19 +26,17 @@ fi
 
 set -x
 #test loop
-test_loop=10000
+if [ -z $TEST_LOOP ]; then
+TEST_LOOP=10000
+fi
 
 #test frame
-test_frame=50
+if [ -z $TEST_FRAME ]; then
+TEST_FRAME=50
+fi
 
 #test result path
 test_result_path=/tmp/rk3576_test_result.log
-
-#vi framerate switch loop
-vi_framerate_switch_loop=5000
-
-# get script path
-script_file_path=$(dirname $0)
 
 #set environment variables
 if [ -z $PN_MODE ]; then
@@ -150,37 +150,37 @@ isp_stresstest()
     #1 PN mode switch
     if [ "$PN_MODE" = "on" ]; then
         test_cmd sample_isp_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH -I $CAMERA_ID \
-            --chn_id 1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 1
+            --chn_id 1 --test_frame_count $TEST_FRAME --mode_test_loop $TEST_LOOP --mode_test_type 1
     fi
 
     #2 HDR mode test
     if [ "$HDR" = "on" ]; then
         test_cmd sample_isp_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH -I $CAMERA_ID \
-            --chn_id 1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 2
+            --chn_id 1 --test_frame_count $TEST_FRAME --mode_test_loop $TEST_LOOP --mode_test_type 2
     fi
 
     #3 framerate switch test
     if [ "$FRAMERATE" = "on" ]; then
         test_cmd sample_isp_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH -I $CAMERA_ID \
-            --chn_id 1 --test_frame_count $test_frame --mode_test_loop $vi_framerate_switch_loop --mode_test_type 3
+            --chn_id 1 --test_frame_count $TEST_FRAME --mode_test_loop $TEST_LOOP --mode_test_type 3
     fi
 
     #4 LDCH mode test
     if [ "$LDCH" = "on" ]; then
         test_cmd sample_isp_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH -I $CAMERA_ID \
-             --chn_id 1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 4
+             --chn_id 1 --test_frame_count $TEST_FRAME --mode_test_loop $TEST_LOOP --mode_test_type 4
     fi
 
     #6 isp_deinit_init test
     if [ "$RESTART" = "on" ]; then
         test_cmd sample_isp_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH -I $CAMERA_ID \
-             --chn_id 1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 6
+             --chn_id 1 --test_frame_count $TEST_FRAME --mode_test_loop $TEST_LOOP --mode_test_type 6
     fi
 
     #7 aiisp_deinit_init test
     if [ "$AIISP" = "on" ]; then
         test_cmd sample_isp_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH -I $CAMERA_ID \
-             --chn_id 1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 7
+             --chn_id 1 --test_frame_count $TEST_FRAME --mode_test_loop $TEST_LOOP --mode_test_type 7
     fi
 
     sleep 3
@@ -202,37 +202,37 @@ venc_stresstest()
 
     #venc resolution switch test
     if [ "$RESOLUTION" = "on" ]; then
-        test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $test_frame
+        test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 1 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
     fi
 
     # encode type switch tes
     if [ "$ENCODE_TYPE" = "on" ]; then
-        test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $test_frame
+        test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 2 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
     fi
 
     #smartp mode switch test
     if [ "$SMART_P" = "on" ]; then
-        test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 3 --mode_test_loop $test_loop --test_frame_count $test_frame
+        test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 3 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
     fi
 
     #SVC mode switch test
     if [ "$SVC" = "on" ]; then
-        test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 4 --mode_test_loop $test_loop --test_frame_count $test_frame
+        test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 4 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
     fi
 
     #motion deblur switch test
     if [ "$MOTION" = "on" ]; then
-        test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 5 --mode_test_loop $test_loop --test_frame_count $test_frame
+        test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 5 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
     fi
 
     #force IDR switch test
     if [ "$IDR" = "on" ]; then
-        test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 6 --mode_test_loop $test_loop --test_frame_count $test_frame
+        test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 6 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
     fi
 
     #venc chn rotation switch test
     if [ "$ROTATION" = "on" ]; then
-	    test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 7 --mode_test_loop $test_loop --test_frame_count $test_frame
+	    test_cmd sample_venc_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --wrap 0 --mode_test_type 7 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
     fi
 
     sleep 1
@@ -254,12 +254,12 @@ rgn_stresstest()
 
     #rgn detach attach test
     if [ "$DETACH_ATTACH" = "on" ]; then
-        test_cmd sample_rgn_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH -l -1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 1
+        test_cmd sample_rgn_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH -l -1 --test_frame_count $TEST_FRAME --mode_test_loop $TEST_LOOP --mode_test_type 1
     fi
 
     #rgn detach attach test for hardware vpss
     if [ "$DETACH_ATTACH" = "on" ]; then
-        test_cmd sample_rgn_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH -l -1 --test_frame_count $test_frame --mode_test_loop $test_loop --mode_test_type 2
+        test_cmd sample_rgn_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH -l -1 --test_frame_count $TEST_FRAME --mode_test_loop $TEST_LOOP --mode_test_type 2
     fi
 
     sleep 3
@@ -281,16 +281,16 @@ vpss_stresstest()
     echo "-----------------enter vpss stresstest-----------------" >> $test_result_path
 
     #1. vpss_deinit_ubind_test
-    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a IQ_PATH --mode_test_type 1 --mode_test_loop $test_loop --test_frame_count $test_frame
+    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a IQ_PATH --mode_test_type 1 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
 
     #2. vpss_resolution_test
-    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a IQ_PATH --mode_test_type 2 --mode_test_loop $test_loop --test_frame_count $test_frame
+    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a IQ_PATH --mode_test_type 2 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
 
     #3. hardware vpss_deinit_ubind_test
-    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a IQ_PATH --mode_test_type 3 --mode_test_loop $test_loop --test_frame_count $test_frame
+    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a IQ_PATH --mode_test_type 3 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
 
     #4. hardware vpss_resolution_test
-    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a IQ_PATH --mode_test_type 4 --mode_test_loop $test_loop --test_frame_count $test_frame
+    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a IQ_PATH --mode_test_type 4 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
 
     echo "-----------------exit vpss stresstest-----------------" >> $test_result_path
 }

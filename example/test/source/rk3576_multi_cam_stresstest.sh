@@ -4,9 +4,12 @@ if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
 echo "example:"
 echo "CAMERA_NUMBER=4 WIDTH=2560 HEIGHT=1440 rk3576_multi_cam_stresstest.sh"
 echo "option list:"
+echo "    TEST_LOOP: total loop count for each test case, default: 10000"
+echo "    TEST_FRAME: test frame count each loop, default: 50"
 echo "    WIDTH: camera sensor width, default: 2560"
 echo "    HEIGHT: camera sensor height, default: 1440"
 echo "    CAMERA_NUMBER: camera sensor numbers, defalut: 4"
+echo "    GROUP_MODE: aiq group mode, default: 0"
 echo "    PN_MODE: enable pn-mode switch test, default: on"
 echo "    AIISP: enable aiisp deinit-init test, default: off"
 echo "    HDR: enable HDR switch test, default: on"
@@ -20,10 +23,14 @@ fi
 
 set -x
 #test loop
-test_loop=10000
+if [ -z $TEST_LOOP ]; then
+TEST_LOOP=10000
+fi
 
 #test frame
-test_frame=50
+if [ -z $TEST_FRAME ]; then
+TEST_FRAME=50
+fi
 
 #test result path
 test_result_path=/tmp/rk3576_multi_cam_test_result.log
@@ -130,42 +137,42 @@ multi_cam_test()
     #1. pn_mode_switch_test
     if [ "$PN_MODE" = "on" ]; then
         test_cmd sample_multi_cam_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --camera_num $CAMERA_NUMBER \
-            --test_type 1 --test_loop $test_loop --test_frame_cnt $test_frame --enable_group $GROUP_MODE
+            --test_type 1 --test_loop $TEST_LOOP --test_frame_cnt $TEST_FRAME --enable_group $GROUP_MODE
     fi
     #2. hdr_mode_switch_test
     if [ "$HDR" = "on" ]; then
         test_cmd sample_multi_cam_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --camera_num $CAMERA_NUMBER \
-            --test_type 2 --test_loop $test_loop --test_frame_cnt $test_frame --enable_group $GROUP_MODE
+            --test_type 2 --test_loop $TEST_LOOP --test_frame_cnt $TEST_FRAME --enable_group $GROUP_MODE
     fi
     #3. fps_switch_test
     if [ "$FRAMERATE" = "on" ]; then
         test_cmd sample_multi_cam_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --camera_num $CAMERA_NUMBER \
-            --test_type 3 --test_loop $test_loop --test_frame_cnt $test_frame --enable_group $GROUP_MODE
+            --test_type 3 --test_loop $TEST_LOOP --test_frame_cnt $TEST_FRAME --enable_group $GROUP_MODE
     fi
     #4. aiisp_switch_test
     if [ "$AIISP" = "on" ]; then
         test_cmd sample_multi_cam_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --camera_num 2 \
-            --test_type 4 --test_loop $test_loop --test_frame_cnt $test_frame --enable_group $GROUP_MODE
+            --test_type 4 --test_loop $TEST_LOOP --test_frame_cnt $TEST_FRAME --enable_group $GROUP_MODE
     fi
     #5. venc_resolution_switch_test
     if [ "$RESOLUTION" = "on" ]; then
         test_cmd sample_multi_cam_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --camera_num 2 \
-            --test_type 5 --test_loop $test_loop --test_frame_cnt $test_frame --enable_group $GROUP_MODE
+            --test_type 5 --test_loop $TEST_LOOP --test_frame_cnt $TEST_FRAME --enable_group $GROUP_MODE
     fi
     #6. encode_type_switch_test
     if [ "$ENCODE_TYPE" = "on" ]; then
         test_cmd sample_multi_cam_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --camera_num $CAMERA_NUMBER \
-            --test_type 6 --test_loop $test_loop --test_frame_cnt $test_frame --enable_group $GROUP_MODE
+            --test_type 6 --test_loop $TEST_LOOP --test_frame_cnt $TEST_FRAME --enable_group $GROUP_MODE
     fi
     #7. rgn_detach_attach_test
     if [ "$DETACH_ATTACH" = "on" ]; then
         test_cmd sample_multi_cam_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --camera_num $CAMERA_NUMBER \
-            --test_type 7 --test_loop $test_loop --test_frame_cnt $test_frame --enable_osd 1 --enable_group $GROUP_MODE
+            --test_type 7 --test_loop $TEST_LOOP --test_frame_cnt $TEST_FRAME --enable_osd 1 --enable_group $GROUP_MODE
     fi
     #8. media_deinit_init_test
     if [ "$RESTART" = "on" ]; then
         test_cmd sample_multi_cam_stresstest -w $WIDTH -h $HEIGHT -a $IQ_PATH --camera_num $CAMERA_NUMBER \
-            --test_type 8 --test_loop $test_loop --test_frame_cnt $test_frame --enable_group $GROUP_MODE
+            --test_type 8 --test_loop $TEST_LOOP --test_frame_cnt $TEST_FRAME --enable_group $GROUP_MODE
     fi
     echo "--------------------exit multi_cam_stresstest-------------------" >> $test_result_path
 }

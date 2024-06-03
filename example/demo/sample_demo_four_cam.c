@@ -249,7 +249,7 @@ static RK_S32 parse_cmd_args(int argc, char **argv, RkCmdArgs *pArgs) {
 	pArgs->enRcMode = VENC_RC_MODE_H265CBR;
 	pArgs->s32LoopCnt = -1;
 	pArgs->s32BitRate = 4 * 1024;
-	pArgs->u32Fps = 30;
+	pArgs->u32Fps = 25;
 	pArgs->u32VoDevId = 0;
 	pArgs->eHdrMode = RK_AIQ_WORKING_MODE_NORMAL;
 	pArgs->bEnableVo = RK_TRUE;
@@ -421,10 +421,12 @@ do { 												\
 } while(0)
 
 static void *memory_monitor_thread (void *pArgs) {
-	RK_U64 sys_freeram_init, sys_freeram_prev;
+	RK_U32 mem_total, mem_available, mem_available_pre;
+	RK_U32 slab_used, slab_used_pre;
 	RK_U32 rss_total, rss_anon, rss_file, rss_shmem, rss_total_pre;
 	FILE* f = NULL;
 	FILE* proc_status = NULL;
+	FILE* mem_info = NULL;
 	time_t now_time;
 	struct sysinfo si;
 	struct mallinfo2 mi;
@@ -439,27 +441,48 @@ static void *memory_monitor_thread (void *pArgs) {
 		return NULL;
 	}
 
-	time(&now_time);
-	sysinfo(&si);
-	mi = mallinfo2();
-	sys_freeram_prev = si.freeram;
-	sys_freeram_init = si.freeram;
 	PRINT_AND_DUMP_TO_FILE("[memory monitor] ==============================================\n");
 	PRINT_AND_DUMP_TO_FILE("[memory monitor] =================== dump start ===============\n");
 	while (!g_thread_status->bIfMainThreadQuit) {
 		time(&now_time);
-		sysinfo(&si);
-		mi = mallinfo2();
 		PRINT_AND_DUMP_TO_FILE("[memory monitor] ==============================================\n");
 		PRINT_AND_DUMP_TO_FILE("[memory monitor] %s", ctime(&now_time));
-		PRINT_AND_DUMP_TO_FILE("[memory monitor] system total mem: %lu kB\n", si.totalram / 1024);
-		PRINT_AND_DUMP_TO_FILE("[memory monitor] system used mem: %lu kB\n", (si.totalram - si.freeram) / 1024);
-		PRINT_AND_DUMP_TO_FILE("[memory monitor] system free mem: %lu kB\n", si.freeram / 1024);
-		PRINT_AND_DUMP_TO_FILE("[memory monitor] system init free mem: %lu kB\n", sys_freeram_init / 1024);
-		if (si.freeram < sys_freeram_prev)
-			PRINT_AND_DUMP_TO_FILE("[memory monitor] system mem increase in last 2 min: %ld kB\n", (sys_freeram_prev - si.freeram) / 1024);
-		else
-			PRINT_AND_DUMP_TO_FILE("[memory monitor] system mem decrease in last 2 min: %ld kB\n", (si.freeram - sys_freeram_prev) / 1024);
+
+		mem_info = fopen("/proc/meminfo", "r");
+		if (!mem_info) {
+			RK_LOGE("open /proc/meminfo failed, is process died?");
+			program_handle_error(__func__, __LINE__);
+			return RK_NULL;
+		}
+		memset(buf, 0, sizeof(buf));
+		while (true) {
+			memset(buf, 0, sizeof(buf));
+			if (!fgets(buf, sizeof(buf), mem_info))
+				break;
+			if (strstr(buf, "MemTotal:")) {
+				sscanf(buf, "MemTotal: %d", &mem_total);
+				continue;
+			}
+			if (strstr(buf, "MemAvailable:")) {
+				sscanf(buf, "MemAvailable: %d", &mem_available);
+				continue;
+			}
+			if (strstr(buf, "Slab:")) {
+				sscanf(buf, "Slab: %d", &slab_used);
+				break;
+			}
+		}
+		fclose(mem_info);
+
+		PRINT_AND_DUMP_TO_FILE("[memory monitor] system total mem: %u kB\n", mem_total);
+		PRINT_AND_DUMP_TO_FILE("[memory monitor] system available mem: %u kB\n", mem_available);
+		if (mem_available_pre && mem_available < mem_available_pre)
+			PRINT_AND_DUMP_TO_FILE("[memory monitor] system mem increase in last 2 min: %ld kB\n", mem_available_pre - mem_available);
+		PRINT_AND_DUMP_TO_FILE("[memory monitor] kernel used slab: %lu kB\n", slab_used);
+		if (slab_used_pre && slab_used > slab_used_pre)
+			PRINT_AND_DUMP_TO_FILE("[memory monitor] slab increase in last 2 min: %ld kB\n", slab_used - slab_used_pre);
+		slab_used_pre = slab_used;
+		mem_available_pre = mem_available;
 
 		proc_status = fopen(proc_file_name, "r");
 		if (!proc_status) {
@@ -494,13 +517,14 @@ static void *memory_monitor_thread (void *pArgs) {
 		PRINT_AND_DUMP_TO_FILE("[memory monitor] process aono rss: %d kB\n", rss_anon);
 		PRINT_AND_DUMP_TO_FILE("[memory monitor] process file rss: %d kB\n", rss_file);
 		PRINT_AND_DUMP_TO_FILE("[memory monitor] process shmem rss: %d kB\n", rss_shmem);
-		if (!rss_total_pre && rss_total > rss_total_pre)
+		if (rss_total_pre && rss_total > rss_total_pre)
 			PRINT_AND_DUMP_TO_FILE("[memory monitor] process rss increment in last 2 min: %d kB\n", rss_total - rss_total_pre);
 		rss_total_pre = rss_total;
+
+		mi = mallinfo2();
 		PRINT_AND_DUMP_TO_FILE("[memory monitor] malloc mmap mem: %ld kB\n", mi.hblkhd / 1024);
 		PRINT_AND_DUMP_TO_FILE("[memory monitor] malloc heap mem: %ld kB\n", mi.arena / 1024);
 		PRINT_AND_DUMP_TO_FILE("[memory monitor] ==============================================\n");
-		sys_freeram_prev = si.freeram;
 		sleep(120);
 	}
 	PRINT_AND_DUMP_TO_FILE("[memory monitor] =================== dump stop ================\n");
@@ -1089,7 +1113,7 @@ static RK_S32 isp_init(void) {
 	} else {
 		for (sensor_idx = 0; sensor_idx < g_cmd_args->u32CameraNum; ++sensor_idx) {
 			ret = SAMPLE_COMM_ISP_Init(sensor_idx, g_cmd_args->eHdrMode,
-			                              RK_TRUE, g_cmd_args->pIqFileDir);
+			                              g_cmd_args->u32CameraNum > 1, g_cmd_args->pIqFileDir);
 			if (ret != RK_SUCCESS) {
 				printf("#ISP cam %d init failed!\n", sensor_idx);
 				return ret;

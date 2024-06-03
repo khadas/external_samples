@@ -126,9 +126,9 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-I | --camid : camera id, Default: 0\n");
 	printf("\t-l | --loop_count : loop count, Default: -1\n");
 	printf("\t-f | --fps : isp output fps, Default: -1\n");
-	printf("\t-m | --mode_test_type : test type, 0:none, 1:P/N switch test, 2:HDR switch "
-	       "test, 3:frame rate switch test, 4: LDCH mode test 5: iqfile switch test. "
-	       "6: isp_deinit_init, 7: aiisp_deinit_init(just for rk3576), Default: 0\n");
+	printf("\t-m | --mode_test_type : test type, 0:none, 1:P/N switch test, 2:HDR switch\n"
+	       "\t\ttest, 3:frame rate switch test, 4: LDCH mode test 5: iqfile switch test\n. "
+	       "\t\t6: isp_deinit_init, 7: aiisp_deinit_init(just for rk3576), Default: 0\n");
 	printf("\t--pixel_format : camera Format, Value:nv12,nv16,uyvy,rgb565,xbgr8888. "
 	       "Default: "
 	       "nv12\n");
@@ -259,11 +259,6 @@ static void hdr_mode_switch_test(RK_S32 test_loop) {
 
 	while (!gModeTest->bModuleTestThreadQuit) {
 #if defined(RV1106) || defined(RK3576)
-#if defined(RK3576)
-#warning "[FIXME] workaround for RK3576 hdr switch failed case."
-		gModeTest->bIfViTHreadQuit = RK_TRUE;
-		pthread_join(gModeTest->vi_thread_id, RK_NULL);
-#endif
 
 		RK_MPI_VI_PauseChn(ctx->vi.u32PipeId, ctx->vi.s32ChnId);
 		SAMPLE_COMM_ISP_Stop(gModeTest->s32CamId);
@@ -286,10 +281,6 @@ static void hdr_mode_switch_test(RK_S32 test_loop) {
 
 		RK_MPI_VI_ResumeChn(ctx->vi.u32PipeId, ctx->vi.s32ChnId);
 
-#if defined(RK3576)
-		gModeTest->bIfViTHreadQuit = RK_FALSE;
-		pthread_create(&gModeTest->vi_thread_id, 0, vi_get_stream, (void *)(&ctx->vi));
-#endif
 #elif defined(RV1126)
 		if (gModeTest->eHdrMode == RK_AIQ_WORKING_MODE_NORMAL) {
 			gModeTest->eHdrMode = RK_AIQ_WORKING_MODE_ISP_HDR2;
