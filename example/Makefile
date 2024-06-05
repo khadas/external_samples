@@ -10,6 +10,12 @@ export LC_ALL=C
 export HAVE_AVS=y
 SHELL:=/bin/bash
 
+ifneq ($(V),)
+export CMD_DBG=
+else
+export CMD_DBG=@
+endif
+
 CURRENT_DIR := $(shell pwd)
 
 ifeq ($(rk_static),1)
@@ -134,48 +140,48 @@ export SAMPLE_CC SAMPLE_AR
 export SAMPLE_CFLAGS RK_MEDIA_CROSS
 
 all: $(PKG_TARGET)
-	@echo "build $(PKG_NAME) done";
+	$(CMD_DBG)echo "build $(PKG_NAME) done";
 
 COMM_LIB:
-	@make -C $(CURRENT_DIR)/common
+	$(CMD_DBG)make -C $(CURRENT_DIR)/common
 
 sample-build:
-	@test -f $(RK_MEDIA_OUTPUT)/lib/librockit.so  || make -C $(RK_MEDIA_TOP_DIR) media_libs
-	@mkdir -p $(SAMPLE_OUT_DIR)/bin
-	@make COMM_LIB
-	@make -C $(CURRENT_DIR)/audio;
-	@make -C $(CURRENT_DIR)/audio install;
-	@make -C $(CURRENT_DIR)/vi;
-	@make -C $(CURRENT_DIR)/vi install;
+	$(CMD_DBG)test -f $(RK_MEDIA_OUTPUT)/lib/librockit.so  || make -C $(RK_MEDIA_TOP_DIR) media_libs
+	$(CMD_DBG)mkdir -p $(SAMPLE_OUT_DIR)/bin
+	$(CMD_DBG)make COMM_LIB
+	$(CMD_DBG)make -C $(CURRENT_DIR)/audio;
+	$(CMD_DBG)make -C $(CURRENT_DIR)/audio install;
+	$(CMD_DBG)make -C $(CURRENT_DIR)/vi;
+	$(CMD_DBG)make -C $(CURRENT_DIR)/vi install;
 ifneq ($(RK_MEDIA_CHIP), rv1106)
-	@make -C $(CURRENT_DIR)/vo;
-	@make -C $(CURRENT_DIR)/vo install;
+	$(CMD_DBG)make -C $(CURRENT_DIR)/vo;
+	$(CMD_DBG)make -C $(CURRENT_DIR)/vo install;
 endif
-	@make -C $(CURRENT_DIR)/venc;
-	@make -C $(CURRENT_DIR)/venc install;
+	$(CMD_DBG)make -C $(CURRENT_DIR)/venc;
+	$(CMD_DBG)make -C $(CURRENT_DIR)/venc install;
 ifeq ($(HAVE_AVS), y)
-	@make -C $(CURRENT_DIR)/avs;
-	@make -C $(CURRENT_DIR)/avs  install;
+	$(CMD_DBG)make -C $(CURRENT_DIR)/avs;
+	$(CMD_DBG)make -C $(CURRENT_DIR)/avs  install;
 endif
-	@make -C $(CURRENT_DIR)/test;
-	@make -C $(CURRENT_DIR)/test install;
-	@make -C $(CURRENT_DIR)/demo;
-	@make -C $(CURRENT_DIR)/demo install;
+	$(CMD_DBG)make -C $(CURRENT_DIR)/test;
+	$(CMD_DBG)make -C $(CURRENT_DIR)/test install;
+	$(CMD_DBG)make -C $(CURRENT_DIR)/demo;
+	$(CMD_DBG)make -C $(CURRENT_DIR)/demo install;
 	$(call MAROC_COPY_PKG_TO_MEDIA_OUTPUT, $(RK_MEDIA_OUTPUT), $(PKG_BIN))
 
 clean:
-	@make -C $(CURRENT_DIR)/common clean
-	@make -C $(CURRENT_DIR)/audio clean
-	@make -C $(CURRENT_DIR)/vi clean
-	@make -C $(CURRENT_DIR)/vo clean
-	@make -C $(CURRENT_DIR)/venc clean
-	@make -C $(CURRENT_DIR)/test clean
-	@make -C $(CURRENT_DIR)/demo clean
-	@rm -rf $(SAMPLE_OUT_DIR)
+	$(CMD_DBG)make -C $(CURRENT_DIR)/common clean
+	$(CMD_DBG)make -C $(CURRENT_DIR)/audio clean
+	$(CMD_DBG)make -C $(CURRENT_DIR)/vi clean
+	$(CMD_DBG)make -C $(CURRENT_DIR)/vo clean
+	$(CMD_DBG)make -C $(CURRENT_DIR)/venc clean
+	$(CMD_DBG)make -C $(CURRENT_DIR)/test clean
+	$(CMD_DBG)make -C $(CURRENT_DIR)/demo clean
+	$(CMD_DBG)rm -rf $(SAMPLE_OUT_DIR)
 
 help:
-	@echo "help message:"
-	@echo "     build with dynamic link:  make "
-	@echo "     build with static  link:  make rk_static=1"
+	$(CMD_DBG)echo "help message:"
+	$(CMD_DBG)echo "     build with dynamic link:  make "
+	$(CMD_DBG)echo "     build with static  link:  make rk_static=1"
 
 distclean: clean

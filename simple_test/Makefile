@@ -6,6 +6,12 @@ ifeq ($(MEDIA_PARAM), )
 endif
 endif
 
+ifneq ($(V),)
+export CMD_DBG=
+else
+export CMD_DBG=@
+endif
+
 SIMPLE_CC := $(RK_MEDIA_CROSS)-gcc
 SIMPLE_AR := $(RK_MEDIA_CROSS)-ar
 
@@ -73,87 +79,87 @@ OBJECTS       = $(basename $(SOURCES_C))
 
 $(warning "here add the debug info $(OBJECTS)")
 all:
-	@test -f $(RK_MEDIA_OUTPUT)/lib/librockit.so  || make -C $(RK_MEDIA_TOP_DIR) media_libs
-	@make simple_build
+	$(CMD_DBG)test -f $(RK_MEDIA_OUTPUT)/lib/librockit.so  || make -C $(RK_MEDIA_TOP_DIR) media_libs
+	$(CMD_DBG)make simple_build
 
 simple_build: $(OBJECTS)
-	@mkdir -p $(SIMPLE_OUT_DIR)/bin
-	@mv -f $(OBJECTS) $(SIMPLE_OUT_DIR)/bin
-	@cp simple_test.sh simple_cmd.txt $(SIMPLE_OUT_DIR)/bin/
+	$(CMD_DBG)mkdir -p $(SIMPLE_OUT_DIR)/bin
+	$(CMD_DBG)mv -f $(OBJECTS) $(SIMPLE_OUT_DIR)/bin
+	$(CMD_DBG)cp simple_test.sh simple_cmd.txt $(SIMPLE_OUT_DIR)/bin/
 	$(call MAROC_COPY_PKG_TO_MEDIA_OUTPUT, $(RK_MEDIA_OUTPUT)/bin, $(SIMPLE_OUT_DIR)/bin)
 
 simple_adec_bind_ao: simple_adec_bind_ao.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
 simple_ai_bind_aenc: simple_ai_bind_aenc.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
 simple_adec_bind_ao_external_decoder: simple_adec_bind_ao_external_decoder.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaudio -lrkdemuxer
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaudio -lrkdemuxer
 
 simple_ai_bind_aenc_external_encoder: simple_ai_bind_aenc_external_encoder.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaudio
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaudio
 
 simple_ai_get_frame: simple_ai_get_frame.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
 simple_ao_send_frame: simple_ao_send_frame.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
 simple_vi_bind_venc_jpeg: simple_vi_bind_venc_jpeg.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
 simple_vi_bind_venc_osd: simple_vi_bind_venc_osd.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
 simple_vi_get_frame: simple_vi_get_frame.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
 simple_vi_get_frame_send_vo_rv1106: simple_vi_get_frame_send_vo_rv1106.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_VO_LD_FLAGS)
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_VO_LD_FLAGS)
 
 simple_vi_bind_ivs: simple_vi_bind_ivs.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
 simple_vi_bind_venc: simple_vi_bind_venc.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
 simple_vi_bind_venc_chn_sharebuf_rv1106: simple_vi_bind_venc_chn_sharebuf_rv1106.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
 simple_vi_bind_venc_change_resolution_rv1106: simple_vi_bind_venc_change_resolution_rv1106.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
 simple_vi_bind_venc_rtsp: simple_vi_bind_venc_rtsp.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
 
 simple_vi_bind_venc_rtsp_dev_chn_sharebuf_rv1106: simple_vi_bind_venc_rtsp_dev_chn_sharebuf_rv1106.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
 
 simple_vi_bind_venc_rtsp_three_camera_rv1106: simple_vi_bind_venc_rtsp_three_camera_rv1106.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
 
 simple_vi_bind_venc_svc_rtsp: simple_vi_bind_venc_svc_rtsp.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
 
 simple_vi_bind_venc_wrap_rv1106: simple_vi_bind_venc_wrap_rv1106.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
 simple_vi_bind_vpss_bind_venc: simple_vi_bind_vpss_bind_venc.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
 simple_vi_get_frame_rkaiq: simple_vi_get_frame_rkaiq.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq
 
 simple_vi_get_frame_tde: simple_vi_get_frame_tde.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq
 
 simple_vi_bind_venc_combo_rv1106: simple_vi_bind_venc_combo_rv1106.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq
 
 simple_vi_bind_venc_rtsp_eptz: simple_vi_bind_venc_rtsp_eptz.c
-	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
 
 clean:
-	@echo "clean simple"
-	@rm -rf $(SIMPLE_OUT_DIR)
+	$(CMD_DBG)echo "clean simple"
+	$(CMD_DBG)rm -rf $(SIMPLE_OUT_DIR)

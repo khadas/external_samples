@@ -6,5 +6,5 @@ OBJS  := $(SRCS:%.c=%.o)
 .PHONY : clean
 
 clean:
-	@rm -f $(OBJS)
+	$(CMD_DBG)rm -f $(OBJS)
 

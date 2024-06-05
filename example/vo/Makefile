@@ -12,8 +12,8 @@ LD_FLAGS += -lrockit
 endif
 
 sample_vi_vo: sample_vi_vo.c
-	@$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
+	$(CMD_DBG)$(SAMPLE_CC) $^ -o $@ $(SAMPLE_CFLAGS) $(LD_FLAGS)
 install:
-	@mv -f $(OBJECTS) $(SAMPLE_OUT_DIR)/bin
+	$(CMD_DBG)mv -f $(OBJECTS) $(SAMPLE_OUT_DIR)/bin
 clean:
-	@echo "clean sample/vo"
+	$(CMD_DBG)echo "clean sample/vo"

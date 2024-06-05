@@ -10,11 +10,11 @@ LD_FLAGS += -lrockit
 endif
 
 all:
-	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_ai.c -o sample_ai $(LD_FLAGS)
-	@$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_ai_aenc.c -o sample_ai_aenc $(LD_FLAGS)
+	$(CMD_DBG)$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_ai.c -o sample_ai $(LD_FLAGS)
+	$(CMD_DBG)$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_ai_aenc.c -o sample_ai_aenc $(LD_FLAGS)
 
 install:
-	@mv -f sample_ai sample_ai_aenc $(SAMPLE_OUT_DIR)/bin
+	$(CMD_DBG)mv -f sample_ai sample_ai_aenc $(SAMPLE_OUT_DIR)/bin
 
 clean:
-	@rm -f sample_ai sample_ai_aenc
+	$(CMD_DBG)rm -f sample_ai sample_ai_aenc
