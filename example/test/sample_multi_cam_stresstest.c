@@ -809,7 +809,7 @@ static void *update_time_osd(void *arg) {
 		}
 		// calculate really buffer size and allocate buffer for time string.
 		osd_data.width =
-		    UPALIGNTO16(wstr_get_actual_advance_x(osd_data.text.wch) / osd_data.text.font_size);
+		    UPALIGNTO16(wstr_get_actual_advance_x(osd_data.text.wch));
 		osd_data.height = UPALIGNTO16(osd_data.text.font_size);
 		osd_data.size = osd_data.width * osd_data.height * 4; // BGRA8888 4byte
 		osd_data.buffer = malloc(osd_data.size);
@@ -1028,11 +1028,12 @@ static RK_S32 isp_init(void) {
 	} else {
 		for (sensor_idx = 0; sensor_idx < g_cmd_args->u32CameraNum; ++sensor_idx) {
 			ret = SAMPLE_COMM_ISP_Init(sensor_idx, g_cmd_args->eHdrMode,
-			                              g_cmd_args->bEnableAiisp, g_cmd_args->pIqFileDir);
+			                              g_cmd_args->u32CameraNum > 1, g_cmd_args->pIqFileDir);
 			if (ret != RK_SUCCESS) {
 				printf("#ISP cam %d init failed!\n", sensor_idx);
 				return ret;
 			}
+#if defined(RK3576)
 			if (g_cmd_args->bEnableAiisp) {
 				ret = SAMPLE_COMM_ISP_EnablsAiisp(sensor_idx);
 				if (ret != RK_SUCCESS) {
@@ -1040,6 +1041,7 @@ static RK_S32 isp_init(void) {
 					return ret;
 				}
 			}
+#endif
 			ret = SAMPLE_COMM_ISP_SetFrameRate(sensor_idx, g_cmd_args->u32Fps);
 			if (ret != RK_SUCCESS) {
 				printf("#ISP cam %d set fps failed!\n", sensor_idx);
@@ -2492,7 +2494,6 @@ RK_S32 encode_type_switch(void) {
 
 RK_S32 rgn_detach_attach_test(void) {
 	RK_S32 ret = RK_SUCCESS;
-	RK_S32 sensor_idx = 0;
 	if (!g_cmd_args->bEnableOsd) {
 		RK_LOGE("osd is disabled. please add option \"--enable_osd 1 \" to restart test case");
 		return RK_FAILURE;

@@ -24,21 +24,17 @@ extern "C" {
 #endif
 #endif /* End of #ifdef __cplusplus */
 
-#include <fcntl.h>
-#include <rk_aiq_user_api2_camgroup.h>
-#include <rk_aiq_user_api2_imgproc.h>
-#include <rk_aiq_user_api2_sysctl.h>
-#if defined(RK3588)
-#include <rk_aiq_user_api2_ae.h>
-#endif
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-
-#include "sample_comm.h"
+#include <fcntl.h>
+#include <rk_aiq_user_api2_acsm.h>
+#include <rk_aiq_user_api2_camgroup.h>
+#include <rk_aiq_user_api2_sysctl.h>
+#include <rk_aiq_user_api2_isp.h>
 
 /*
  * stream on:
@@ -82,6 +78,7 @@ XCamReturn SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(int CamGrpId, uint8_t SetLdchM
                                                   uint16_t **LdchMesh);
 RK_S32 SAMPLE_COMM_ISP_CamGroup_SetLDCH(RK_U32 CamId, RK_U32 u32Level, RK_BOOL bIfEnable);
 RK_S32 SAMPLE_COMM_ISP_GetAINrParams(RK_S32 CamId, rk_ainr_param *param);
+RK_S32 SAMPLE_COMM_ISP_EnablsAiisp(RK_S32 CamId);
 #ifdef __cplusplus
 #if __cplusplus
 }

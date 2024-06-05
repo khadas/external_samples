@@ -81,8 +81,9 @@ typedef struct _rkCmdArgs {
 	RK_BOOL bEnableAIIsp;
 	RK_BOOL bEnableIva;
 	RK_BOOL bEnableIvs;
+	RK_BOOL bEnableRgn;
 	RK_S32 s32BitRate;
-	RK_U32 u32VencFps;
+	RK_U32 u32Fps;
 	rk_aiq_working_mode_t eHdrMode;
 	RK_U32 s32RgnAttachModule; // 0:vpss,1:venc
 } RkCmdArgs;
@@ -413,7 +414,7 @@ static RK_S32 rgn_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
 	ctx->rgn[0].rgnHandle = 0;
 	ctx->rgn[0].stRgnAttr.enType = COVER_RGN;
 // RV1106 just support attach cover in VI channel.
-#if defined(RV1106)
+#if defined(RV1106) || defined(RV1103B)
 	ctx->rgn[0].stMppChn.enModId = RK_ID_VI;
 	ctx->rgn[0].stMppChn.s32ChnId = 0;
 	ctx->rgn[0].stMppChn.s32DevId = 0;
@@ -438,7 +439,7 @@ static RK_S32 rgn_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
 
 	ctx->rgn[1].rgnHandle = 1;
 	ctx->rgn[1].stRgnAttr.enType = COVER_RGN;
-#if defined(RV1106)
+#if defined(RV1106) || defined(RV1103B)
 	ctx->rgn[1].stMppChn.enModId = RK_ID_VI;
 	ctx->rgn[1].stMppChn.s32ChnId = 0;
 	ctx->rgn[1].stMppChn.s32DevId = 0;
@@ -566,8 +567,8 @@ static RK_S32 vi_chn_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
 	// pCtx->vi.stChnAttr.u32Depth = 4;
 	ctx->vi.stChnAttr.enPixelFormat = RK_FMT_YUV420SP;
 	ctx->vi.stChnAttr.enCompressMode = COMPRESS_MODE_NONE;
-	ctx->vi.stChnAttr.stFrameRate.s32SrcFrameRate = 25;
-	ctx->vi.stChnAttr.stFrameRate.s32DstFrameRate = 25;
+	ctx->vi.stChnAttr.stFrameRate.s32SrcFrameRate = pArgs->u32Fps;
+	ctx->vi.stChnAttr.stFrameRate.s32DstFrameRate = pArgs->u32Fps;
 	s32Ret = SAMPLE_COMM_VI_CreateChn(&(ctx->vi));
 	if (s32Ret != RK_SUCCESS)
 		RK_LOGE("SAMPLE_COMM_VI_CreateChn failure:%d", s32Ret);
@@ -625,6 +626,7 @@ static RK_S32 vpss_chn_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
 	if (s32Ret != RK_SUCCESS)
 		RK_LOGE("SAMPLE_COMM_VPSS_CreateChn group 0 failed %#X\n", s32Ret);
 
+#if defined(RV1106) || defined(RV1126)
 	// Attach aiisp to vpss group 0.
 	if (pArgs->bEnableAIIsp) {
 		AIISP_ATTR_S stAIISPAttr;
@@ -639,6 +641,7 @@ static RK_S32 vpss_chn_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
 		if (RK_SUCCESS != s32Ret)
 			RK_LOGE("VPSS GRP 0 RK_MPI_VPSS_SetGrpAIISPAttr failed with %#x!", s32Ret);
 	}
+#endif
 
 	// Init VPSS[1]
 	vpssGrpId = 1;
@@ -702,7 +705,7 @@ static RK_S32 venc_chn_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
 	ctx->venc[0].s32ChnId = 0;
 	ctx->venc[0].u32Width = pArgs->u32VideoWidth;
 	ctx->venc[0].u32Height = pArgs->u32VideoHeight;
-	ctx->venc[0].u32Fps = pArgs->u32VencFps;
+	ctx->venc[0].u32Fps = pArgs->u32Fps;
 	ctx->venc[0].u32Gop = pArgs->u32Gop;
 	ctx->venc[0].u32BitRate = pArgs->s32BitRate;
 	ctx->venc[0].enCodecType = pArgs->enCodecType;
@@ -730,7 +733,7 @@ static RK_S32 venc_chn_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
 	ctx->venc[1].s32ChnId = 1;
 	ctx->venc[1].u32Width = pArgs->u32SubVideoWidth;
 	ctx->venc[1].u32Height = pArgs->u32SubVideoHeight;
-	ctx->venc[1].u32Fps = pArgs->u32VencFps;
+	ctx->venc[1].u32Fps = pArgs->u32Fps;
 	ctx->venc[1].u32Gop = pArgs->u32Gop;
 	ctx->venc[1].u32BitRate = pArgs->s32BitRate;
 	ctx->venc[1].enCodecType = pArgs->enCodecType;
@@ -758,7 +761,7 @@ static RK_S32 venc_chn_init(SAMPLE_MPI_CTX_S *ctx, RkCmdArgs *pArgs) {
 	ctx->venc[2].s32ChnId = 2;
 	ctx->venc[2].u32Width = pArgs->u32ThirdVideoWidth;
 	ctx->venc[2].u32Height = pArgs->u32ThirdVideoHeight;
-	ctx->venc[2].u32Fps = pArgs->u32VencFps;
+	ctx->venc[2].u32Fps = pArgs->u32Fps;
 	ctx->venc[2].u32Gop = pArgs->u32Gop;
 	ctx->venc[2].u32BitRate = pArgs->s32BitRate;
 	ctx->venc[2].enCodecType = pArgs->enCodecType;
@@ -1079,6 +1082,7 @@ static const struct option long_options[] = {
     {"aiisp_buff_cnt", required_argument, RK_NULL, 'e' + 'k'},
     {"enable_iva", required_argument, RK_NULL, 'e' + 'i'},
     {"enable_ivs", required_argument, RK_NULL, 'e' + 's'},
+    {"enable_rgn", required_argument, RK_NULL, 'e' + 'r'},
     {"inputBmpPath1", required_argument, RK_NULL, 'i'},
     {"inputBmpPath2", required_argument, RK_NULL, 'I'},
     {"help", optional_argument, RK_NULL, '?'},
@@ -1122,6 +1126,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t--enable_aiisp : enable ai isp, 0: close, 1: enable. default: 1\n");
 	printf("\t--enable_iva : enable iva, 0: close, 1: enable. default: 1\n");
 	printf("\t--enable_ivs : enable ivs, 0: close, 1: enable. default: 0\n");
+	printf("\t--enable_rgn : enable rgn, 0: close, 1: enable. default: 0\n");
 	printf("\t--iva_detect_speed : iva detect framerate. default: 10\n");
 	printf("\t--iva_model_path : iva model data path, default: /oem/usr/lib\n");
 	printf("\t--aiisp_model_path : aiisp model data path, default: /oem/usr/lib\n");
@@ -1133,14 +1138,14 @@ static void print_usage(const RK_CHAR *name) {
  * Description : Parse command line arguments.
  ******************************************************************************/
 static RK_S32 parse_cmd_args(int argc, char **argv, RkCmdArgs *pArgs) {
-	pArgs->u32VideoWidth = 2688;
-	pArgs->u32VideoHeight = 1520;
+	pArgs->u32VideoWidth = 2560;
+	pArgs->u32VideoHeight = 1440;
 	pArgs->u32SubVideoWidth = 1280;
 	pArgs->u32SubVideoHeight = 720;
 	pArgs->u32ThirdVideoWidth = 640;
 	pArgs->u32ThirdVideoHeight = 480;
 	pArgs->u32ViBuffCnt = 5;
-#if defined(RV1106)
+#if defined(RV1106) || defined(RV1103B)
 	pArgs->u32ViBuffCnt = 2;
 #endif
 	pArgs->u32IvsWidth = 704;
@@ -1151,7 +1156,7 @@ static RK_S32 parse_cmd_args(int argc, char **argv, RkCmdArgs *pArgs) {
 	pArgs->pInPathBmp2 = NULL;
 	pArgs->pOutPathVenc = NULL;
 	pArgs->pIvaModelPath = "/oem/usr/lib/";
-	pArgs->pIqFileDir = RK_NULL;
+	pArgs->pIqFileDir = "/etc/iqfiles";
 	pArgs->bMultictx = RK_FALSE;
 	pArgs->enCodecType = RK_CODEC_TYPE_H264;
 	pArgs->enRcMode = VENC_RC_MODE_H264CBR;
@@ -1161,12 +1166,13 @@ static RK_S32 parse_cmd_args(int argc, char **argv, RkCmdArgs *pArgs) {
 	pArgs->bEnableAIIsp = RK_TRUE;
 	pArgs->bEnableIva = RK_TRUE;
 	pArgs->bEnableIvs = RK_TRUE;
+	pArgs->bEnableRgn = RK_TRUE;
 	pArgs->s32BitRate = 4 * 1024;
-	pArgs->u32VencFps = 25;
+	pArgs->u32Fps = 25;
 	pArgs->eHdrMode = RK_AIQ_WORKING_MODE_NORMAL;
 	pArgs->s32RgnAttachModule = RGN_ATTACH_VENC; // 0:vpss,1:venc
 	pArgs->pAiispModelPath = "/oem/usr/lib/";
-#if defined(RV1106)
+#if defined(RV1106) || defined(RV1103B)
 	pArgs->u32AiispBuffCnt = 1;
 #else
 	pArgs->u32AiispBuffCnt = 2;
@@ -1232,7 +1238,7 @@ static RK_S32 parse_cmd_args(int argc, char **argv, RkCmdArgs *pArgs) {
 			pArgs->s32loopCnt = atoi(optarg);
 			break;
 		case 'f':
-			pArgs->u32VencFps = atoi(optarg);
+			pArgs->u32Fps = atoi(optarg);
 			break;
 		case 'v':
 			pArgs->u32ViBuffCnt = atoi(optarg);
@@ -1258,6 +1264,9 @@ static RK_S32 parse_cmd_args(int argc, char **argv, RkCmdArgs *pArgs) {
 		case 'e' + 'i':
 			pArgs->bEnableIva = atoi(optarg);
 			break;
+		case 'e' + 'r':
+			pArgs->bEnableRgn = atoi(optarg);
+			break;
 		case 'i':
 			pArgs->pInPathBmp1 = optarg;
 			break;
@@ -1266,7 +1275,8 @@ static RK_S32 parse_cmd_args(int argc, char **argv, RkCmdArgs *pArgs) {
 			break;
 		case '?':
 		default:
-			return RK_SUCCESS;
+			print_usage(argv[0]);
+			return RK_FAILURE;
 		}
 	}
 
@@ -1282,7 +1292,6 @@ int main(int argc, char *argv[]) {
 	SAMPLE_MPI_CTX_S *ctx;
 	RkCmdArgs parsedArgs;
 
-	print_usage(argv[0]);
 	if (argc < 2) {
 		printf("bad arguments!\n");
 		return RK_FAILURE;
@@ -1298,7 +1307,10 @@ int main(int argc, char *argv[]) {
 
 	// Parse command line.
 	memset(&parsedArgs, 0, sizeof(RkCmdArgs));
-	parse_cmd_args(argc, argv, &parsedArgs);
+	if (parse_cmd_args(argc, argv, &parsedArgs) != RK_SUCCESS) {
+		printf("parse command line failure\n");
+		return RK_FAILURE;
+	}
 
 	s32Ret = global_param_init();
 	if (s32Ret != RK_SUCCESS) {
@@ -1321,6 +1333,11 @@ int main(int argc, char *argv[]) {
 
 		s32Ret = SAMPLE_COMM_ISP_Init(parsedArgs.s32CamId, parsedArgs.eHdrMode,
 		                              parsedArgs.bMultictx, parsedArgs.pIqFileDir);
+		s32Ret = SAMPLE_COMM_ISP_SetFrameRate(parsedArgs.s32CamId, parsedArgs.u32Fps);
+#if defined(RK3576)
+		if (parsedArgs.bEnableAIIsp)
+			s32Ret |= SAMPLE_COMM_ISP_EnablsAiisp(parsedArgs.s32CamId);
+#endif
 		s32Ret |= SAMPLE_COMM_ISP_Run(parsedArgs.s32CamId);
 		if (s32Ret != RK_SUCCESS) {
 			printf("ISP init failure");
@@ -1345,7 +1362,8 @@ int main(int argc, char *argv[]) {
 	venc_chn_init(ctx, &parsedArgs);
 	if (parsedArgs.bEnableIvs)
 		ivs_init(ctx, &parsedArgs);
-	rgn_init(ctx, &parsedArgs);
+	if (parsedArgs.bEnableRgn)
+		rgn_init(ctx, &parsedArgs);
 	// Bind all pipeline nodes.
 	bind_init(ctx, &parsedArgs);
 	// Start sub-threads after all initialization done.
@@ -1359,7 +1377,8 @@ int main(int argc, char *argv[]) {
 	// Destroy pipeline.
 	sub_threads_deinit(ctx, &parsedArgs);
 	bind_deinit(ctx, &parsedArgs);
-	rgn_deinit(ctx, &parsedArgs);
+	if (parsedArgs.bEnableRgn)
+		rgn_deinit(ctx, &parsedArgs);
 	if (parsedArgs.bEnableIvs)
 		ivs_deinit(ctx, &parsedArgs);
 	venc_chn_deinit(ctx, &parsedArgs);

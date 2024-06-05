@@ -81,7 +81,6 @@ static void *GetMediaBuffer0(void *arg) {
 
 		if ((g_s32FrameCnt >= 0) && (loopCount > g_s32FrameCnt))
 			quit = true;
-		usleep(10 * 1000);
 	}
 
 	if (venc0_file)

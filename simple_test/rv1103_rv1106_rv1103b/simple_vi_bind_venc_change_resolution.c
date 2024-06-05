@@ -32,8 +32,13 @@
 #define MAXWIDTH 2304
 #define MAXHEIGHT 1296
 
+static FILE *venc0_file;
 static RK_S32 g_s32FrameCnt = -1;
 static bool quit = false;
+static RK_BOOL g_bWrapEn;
+static RK_U32 g_u32WrapLine;
+static VI_CHN_BUF_WRAP_S g_stViWrap;
+
 #define RK_ARRAY_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 static void sigterm_handler(int sig) {
 	fprintf(stderr, "signal %d\n", sig);
@@ -88,6 +93,7 @@ static void *GetMediaBuffer0(void *arg) {
 	stDestChn.enModId = RK_ID_VENC;
 	stDestChn.s32DevId = 0;
 	stDestChn.s32ChnId = 0;
+	void *pData = RK_NULL;
 
 	while (!quit) {
 		s32Ret = RK_MPI_VENC_GetStream(0, &stFrame, 500);
@@ -95,8 +101,13 @@ static void *GetMediaBuffer0(void *arg) {
 			RK_U64 nowUs = TEST_COMM_GetNowUs();
 
 			RK_LOGD("chn:0, loopCount:%d enc->seq:%d wd:%d pts=%lld delay=%lldus\n",
-			        loopCount, stFrame.u32Seq, stFrame.pstPack->u32Len,
-			        stFrame.pstPack->u64PTS, nowUs - stFrame.pstPack->u64PTS);
+					loopCount, stFrame.u32Seq, stFrame.pstPack->u32Len,
+					stFrame.pstPack->u64PTS, nowUs - stFrame.pstPack->u64PTS);
+			if (venc0_file) {
+				pData = RK_MPI_MB_Handle2VirAddr(stFrame.pstPack->pMbBlk);
+				fwrite(pData, 1, stFrame.pstPack->u32Len, venc0_file);
+				fflush(venc0_file);
+			}
 
 			s32Ret = RK_MPI_VENC_ReleaseStream(0, &stFrame);
 			if (s32Ret != RK_SUCCESS) {
@@ -104,7 +115,7 @@ static void *GetMediaBuffer0(void *arg) {
 			}
 			loopCount++;
 		} else
-		   continue;
+			continue;
 
 		// change resolution
 		if ((loopCount % 100) == 0) {
@@ -164,15 +175,15 @@ static void *GetMediaBuffer0(void *arg) {
 			}
 			idx++;
 		}
-		usleep(10 * 1000);
 
 		if ((g_s32FrameCnt >= 0) && (loopCount >= g_s32FrameCnt)) {
 			quit = true;
 			break;
 		}
-
-		usleep(10 * 1000);
 	}
+
+	if (venc0_file)
+		fclose(venc0_file);
 
 	free(stFrame.pstPack);
 	return NULL;
@@ -182,6 +193,8 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
 	printf("========%s========\n", __func__);
 	VENC_RECV_PIC_PARAM_S stRecvParam;
 	VENC_CHN_ATTR_S stAttr;
+	VENC_CHN_BUF_WRAP_S stVencChnBufWrap;
+
 	memset(&stAttr, 0, sizeof(VENC_CHN_ATTR_S));
 
 	if (enType == RK_VIDEO_ID_AVC) {
@@ -212,6 +225,8 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
 	// stAttr.stGopAttr.u32MaxLtrCount = 1;
 	// stAttr.stVencAttr.enMirror = MIRROR_NONE;
 
+	memset(&stVencChnBufWrap, 0, sizeof(stVencChnBufWrap));
+	stVencChnBufWrap.bEnable = g_stViWrap.bEnable;
 	RK_MPI_VENC_CreateChn(chnId, &stAttr);
 
 	memset(&stRecvParam, 0, sizeof(VENC_RECV_PIC_PARAM_S));
@@ -288,6 +303,20 @@ int vi_chn_init(int channelId, int width, int height) {
 	vi_chn_attr.stFrameRate.s32DstFrameRate = -1;
 
 	ret = RK_MPI_VI_SetChnAttr(0, channelId, &vi_chn_attr);
+	if (g_bWrapEn) {
+		if (g_u32WrapLine < 128 || g_u32WrapLine > height) {
+			printf("wrap mode buffer line must between [128, H]\n");
+			return -1;
+		}
+		memset(&g_stViWrap, 0, sizeof(VI_CHN_BUF_WRAP_S));
+		g_stViWrap.bEnable = RK_TRUE;
+		g_stViWrap.u32BufLine = g_u32WrapLine;
+		g_stViWrap.u32WrapBufferSize =
+		    g_stViWrap.u32BufLine * width * 3 / 2; // nv12 (w * wrapLine *3 / 2)
+		printf("set channel wrap line: %d, wrapBuffSize = %d\n", g_u32WrapLine,
+		       g_stViWrap.u32WrapBufferSize);
+		RK_MPI_VI_SetChnWrapBufAttr(0, channelId, &g_stViWrap);
+	}
 	ret |= RK_MPI_VI_EnableChn(0, channelId);
 	if (ret) {
 		printf("ERROR: create VI error! ret=%d\n", ret);
@@ -297,7 +326,7 @@ int vi_chn_init(int channelId, int width, int height) {
 	return ret;
 }
 
-static RK_CHAR optstr[] = "?::w:h:c:I:e:";
+static RK_CHAR optstr[] = "?::w:h:c:I:e:o:r:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s -I 0 -w 1920 -h 1080 -o /tmp/venc.h264\n", name);
@@ -307,6 +336,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-I | --camid: camera ctx id, Default 0. "
 	       "0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
 	printf("\t-e | --encode: encode type, Default:h264, Value:h264, h265, mjpeg\n");
+	printf("\t-r: enable wrap mode, Default: 1\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -318,6 +348,7 @@ int main(int argc, char *argv[]) {
 	RK_S32 s32chnlId = 0;
 	int c;
 	int ret = -1;
+	RK_CHAR *pOutPath = NULL;
 
 	while ((c = getopt(argc, argv, optstr)) != -1) {
 		switch (c) {
@@ -348,6 +379,12 @@ int main(int argc, char *argv[]) {
 				return 0;
 			}
 			break;
+		case 'o':
+			pOutPath = optarg;
+			break;
+		case 'r': // wrap
+			g_bWrapEn = (RK_BOOL)atoi(optarg);
+			break;
 		case '?':
 		default:
 			print_usage(argv[0]);
@@ -359,6 +396,14 @@ int main(int argc, char *argv[]) {
 	printf("#Resolution: %dx%d\n", u32Width, u32Height);
 	printf("#CameraIdx: %d\n\n", s32chnlId);
 	printf("#Frame Count to save: %d\n", g_s32FrameCnt);
+
+	if (pOutPath) {
+		venc0_file = fopen(pOutPath, "w");
+		if (!venc0_file) {
+			printf("ERROR: open file: %s fail, exit\n", pOutPath);
+			return 0;
+		}
+	}
 
 	signal(SIGINT, sigterm_handler);
 

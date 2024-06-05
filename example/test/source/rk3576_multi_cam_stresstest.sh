@@ -33,7 +33,7 @@ TEST_FRAME=50
 fi
 
 #test result path
-test_result_path=/tmp/rk3576_multi_cam_test_result.log
+test_result_path=/tmp/$(basename $0).log
 
 #set environment variables
 if [ -z $GROUP_MODE ]; then
@@ -109,13 +109,13 @@ test_cmd()
 	fi
 	__echo_test_cmd_msg "TEST    [$*]"
 	eval $*
-	__chk_cma_free
 	if [ $? -eq 0 ]; then
 		__echo_test_cmd_msg "SUCCESS [$*]"
 	else
 		__echo_test_cmd_msg "FAILURE [$*]"
 		exit 1
 	fi
+	__chk_cma_free
 }
 
 demo_vi_avs_venc_stresstest()

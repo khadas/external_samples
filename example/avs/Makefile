@@ -2,11 +2,7 @@
 
 LD_FLAGS += -L$(COMM_DIR)/lib -lsample_comm
 LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib
-ifeq ($(RK_MEDIA_CHIP), rv1106)
-LD_FLAGS += -lrockit_full
-else
-LD_FLAGS += -lrockit
-endif
+
 all:
 	$(CMD_DBG)$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_multi_vi_avs.c         -o sample_multi_vi_avs          $(LD_FLAGS) -lrkaiq
 	$(CMD_DBG)$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_avs.c        -o sample_avs           $(LD_FLAGS)

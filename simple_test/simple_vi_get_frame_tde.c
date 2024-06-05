@@ -246,6 +246,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-h | --height: Vi height, Default 1080\n");
 	printf("\t-l | --loop_count: loop count, Default -1\n");
 	printf("\t-o | --output_path: Tde output file path, Default NULL\n");
+	printf("\t Default output image size: 704 * 576\n");
 }
 
 static RK_S32 vi_init(RK_S32 s32DevId, RK_S32 s32ChnId, RK_U32 u32Width,

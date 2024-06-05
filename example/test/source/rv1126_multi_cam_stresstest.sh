@@ -8,7 +8,7 @@ test_loop=10000
 test_frame=10
 
 #test result path
-test_result_path=/tmp/rv1126_multi_cam_test_result.log
+test_result_path=/tmp/$(basename $0).log
 
 #vi framerate switch loop
 vi_framerate_switch_loop=2000

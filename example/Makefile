@@ -44,10 +44,10 @@ PKG_CONF_OPTS += -DCMAKE_SYSTEM_PROCESSOR=armv7l
 PKG_CONF_OPTS += -DARCH64=OFF
 endif
 
-# TODO
 ifeq ($(RK_MEDIA_CHIP), rv1103b)
-RK_MEDIA_CHIP=rv1106
+PKG_CONF_OPTS += -DARCH64=OFF
 endif
+
 ifeq ($(RK_MEDIA_CHIP), rv1106)
 PKG_CONF_OPTS += -DARCH64=OFF
 endif
@@ -85,6 +85,16 @@ ifeq ($(RK_MEDIA_CHIP), rk3576)
 COMM_SRC += $(wildcard $(COMM_DIR)/isp3.9/*.c)
 COMM_SRC += $(wildcard $(COMM_DIR)/font_factory.c)
 endif
+
+ifeq ($(RK_MEDIA_CHIP), rk3588)
+COMM_SRC += $(wildcard $(COMM_DIR)/isp3.x/*.c)
+COMM_SRC += $(wildcard $(COMM_DIR)/font_factory.c)
+endif
+
+ifeq ($(RK_MEDIA_CHIP), rv1103b)
+COMM_SRC += $(wildcard $(COMM_DIR)/isp3.3/*.c)
+endif
+
 COMM_OBJ := $(COMM_SRC:%.c=%.o)
 
 INC_FLAGS := -I$(COMM_DIR)
@@ -115,11 +125,23 @@ INC_FLAGS += -I$(COMM_DIR)/isp3.x
 SAMPLE_CFLAGS += -DISP_HW_V30 -DRV1106 -DROCKIT_IVS -DROCKCOMBO -DUAPI2 -DRKAIQ_GRP
 endif
 
+ifeq ($(RK_MEDIA_CHIP), rv1103b)
+INC_FLAGS += -I$(COMM_DIR)/isp3.3
+SAMPLE_CFLAGS += -DISP_HW_V33 -DRV1103B -DROCKIT_IVS -DROCKCOMBO -DUAPI2 -DRKAIQ_GRP
+endif
+
 ifeq ($(RK_MEDIA_CHIP), rk3576)
 INC_FLAGS += -I$(COMM_DIR)/isp3.9
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/freetype2
 SAMPLE_CFLAGS += -DISP_HW_V39 -DRK3576 -DUAPI2 -DRKAIQ_GRP
 endif
+
+ifeq ($(RK_MEDIA_CHIP), rk3588)
+INC_FLAGS += -I$(COMM_DIR)/isp3.x
+INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/freetype2
+SAMPLE_CFLAGS += -DISP_HW_V30 -DRK3588 -DUAPI2 -DRKAIQ_GRP
+endif
+
 
 ifeq ($(CONFIG_RK_IVA),y)
 SAMPLE_CFLAGS += -DROCKIVA
@@ -133,6 +155,13 @@ ifeq ($(CONFIG_RK_LIBEASYIIO),y)
 SAMPLE_CFLAGS += -DEIS_ENABLE
 endif
 
+ifneq ($(findstring $(RK_MEDIA_CHIP),rv1106 rv1103b),)
+LD_FLAGS += -lrockit_full
+else
+LD_FLAGS += -lrockit
+endif
+
+export LD_FLAGS
 export SAMPLE_OUT_DIR=$(CURRENT_DIR)/out
 export PKG_CONF_OPTS
 export COMM_OBJ COMM_SRC COMM_DIR

@@ -25,8 +25,21 @@ SIMPLE_PKG_CONF_OPTS += -DCMAKE_SYSTEM_PROCESSOR=armv7l
 SIMPLE_PKG_CONF_OPTS += -DARCH64=OFF
 endif
 
+SIMPLE_VO_LD_FLAGS := -lrockit
+
 ifeq ($(RK_MEDIA_CHIP), rv1106)
+SIMPLE_VO_LD_FLAGS := -lrockit_full
 SIMPLE_PKG_CONF_OPTS += -DARCH64=OFF
+SIMPLE_LD_FLAGS += -DRV1106_RV1103
+SIMPLE_SPECIAL_SRC_DIR := rv1103_rv1106_rv1103b
+endif
+
+ifeq ($(RK_MEDIA_CHIP), rv1103b)
+SIMPLE_PKG_CONF_OPTS += -DCMAKE_SYSTEM_PROCESSOR=armv7l
+SIMPLE_PKG_CONF_OPTS += -DARCH64=OFF
+SIMPLE_VO_LD_FLAGS := -lrockit_full
+SIMPLE_LD_FLAGS += -DRV1103B
+SIMPLE_SPECIAL_SRC_DIR := rv1103_rv1106_rv1103b
 endif
 
 SIMPLE_OPTS += -Wl,-rpath-link,${RK_MEDIA_OUTPUT}/lib
@@ -40,8 +53,8 @@ SIMPLE_LD_FLAGS += -DRV1126_RV1109
 else
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/uAPI2
 SIMPLE_LD_FLAGS += -DUAPI2
-SIMPLE_LD_FLAGS += -DRV1106_RV1103
 endif
+
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/common
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/xcore
 INC_FLAGS += -I$(RK_MEDIA_OUTPUT)/include/rkaiq/algos
@@ -54,16 +67,11 @@ SIMPLE_CFLAGS += -g -Wall $(INC_FLAGS) $(SIMPLE_PKG_CONF_OPTS) $(RK_MEDIA_CROSS_
 SIMPLE_LD_FLAGS += $(SIMPLE_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -L$(RK_MEDIA_OUTPUT)/root/usr/lib \
 					-lpthread -lm -lrockit \
 					-lrockchip_mpp -DRKAIQ \
-					-lrga -lstdc++
+					-lrga
 SIMPLE_LD_FLAGS += -Wl,--gc-sections -Wl,--as-needed
 
 SIMPLE_VO_LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -L$(RK_MEDIA_OUTPUT)/root/usr/lib -Wl,-Bdynamic \
-						-lrockchip_mpp -lrga -ldrm -lpthread  -lstdc++
-ifneq ($(RK_MEDIA_CHIP), rv1106)
-SIMPLE_VO_LD_FLAGS += -lrockit
-else
-SIMPLE_VO_LD_FLAGS += -lrockit_full
-endif
+						-lrockchip_mpp -lrga -ldrm -lpthread
 
 ifeq ($(RK_MEDIA_CHIP), rv1126)
 SIMPLE_LD_FLAGS += -lasound
@@ -71,11 +79,11 @@ SIMPLE_VO_LD_FLAGS += -lasound
 endif
 
 SOURCES_C     = $(wildcard *.c)
-ifneq ($(RK_MEDIA_CHIP), rv1106)
-SOURCES_C     = $(filter-out simple_vi_get_frame_send_vo_rv1106.c simple_vi_bind_venc_change_resolution_rv1106.c simple_vi_bind_venc_rtsp_dev_chn_sharebuf_rv1106.c simple_vi_bind_venc_chn_sharebuf_rv1106.c simple_vi_bind_venc_rtsp_three_camera_rv1106.c simple_vi_bind_venc_wrap_rv1106 simple_vi_bind_venc_combo_rv1106, $(wildcard *.c))
+ifneq ($(SIMPLE_SPECIAL_SRC_DIR),)
+SPEICAL_SOURCES_C = $(wildcard $(strip $(SIMPLE_SPECIAL_SRC_DIR))/*.c)
 endif
 
-OBJECTS       = $(basename $(SOURCES_C))
+OBJECTS       = $(basename $(SOURCES_C)) $(basename $(SPEICAL_SOURCES_C))
 
 $(warning "here add the debug info $(OBJECTS)")
 all:
@@ -115,35 +123,17 @@ simple_vi_bind_venc_osd: simple_vi_bind_venc_osd.c
 simple_vi_get_frame: simple_vi_get_frame.c
 	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
-simple_vi_get_frame_send_vo_rv1106: simple_vi_get_frame_send_vo_rv1106.c
-	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_VO_LD_FLAGS)
-
 simple_vi_bind_ivs: simple_vi_bind_ivs.c
 	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
 simple_vi_bind_venc: simple_vi_bind_venc.c
 	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
-simple_vi_bind_venc_chn_sharebuf_rv1106: simple_vi_bind_venc_chn_sharebuf_rv1106.c
-	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
-
-simple_vi_bind_venc_change_resolution_rv1106: simple_vi_bind_venc_change_resolution_rv1106.c
-	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
-
 simple_vi_bind_venc_rtsp: simple_vi_bind_venc_rtsp.c
-	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
-
-simple_vi_bind_venc_rtsp_dev_chn_sharebuf_rv1106: simple_vi_bind_venc_rtsp_dev_chn_sharebuf_rv1106.c
-	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
-
-simple_vi_bind_venc_rtsp_three_camera_rv1106: simple_vi_bind_venc_rtsp_three_camera_rv1106.c
 	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
 
 simple_vi_bind_venc_svc_rtsp: simple_vi_bind_venc_svc_rtsp.c
 	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
-
-simple_vi_bind_venc_wrap_rv1106: simple_vi_bind_venc_wrap_rv1106.c
-	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
 simple_vi_bind_vpss_bind_venc: simple_vi_bind_vpss_bind_venc.c
 	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
@@ -154,11 +144,32 @@ simple_vi_get_frame_rkaiq: simple_vi_get_frame_rkaiq.c
 simple_vi_get_frame_tde: simple_vi_get_frame_tde.c
 	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq
 
-simple_vi_bind_venc_combo_rv1106: simple_vi_bind_venc_combo_rv1106.c
-	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq
-
 simple_vi_bind_venc_rtsp_eptz: simple_vi_bind_venc_rtsp_eptz.c
 	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
+
+simple_vi_get_frame_send_vo: simple_vi_get_frame_send_vo.c
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_VO_LD_FLAGS)
+
+$(SIMPLE_SPECIAL_SRC_DIR)/simple_vi_bind_venc_chn_sharebuf: $(SIMPLE_SPECIAL_SRC_DIR)/simple_vi_bind_venc_chn_sharebuf.c
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+
+$(SIMPLE_SPECIAL_SRC_DIR)/simple_vi_bind_venc_change_resolution: $(SIMPLE_SPECIAL_SRC_DIR)/simple_vi_bind_venc_change_resolution.c
+	$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+
+$(SIMPLE_SPECIAL_SRC_DIR)/simple_vi_bind_venc_rtsp_dev_chn_sharebuf: $(SIMPLE_SPECIAL_SRC_DIR)/simple_vi_bind_venc_rtsp_dev_chn_sharebuf.c
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
+
+$(SIMPLE_SPECIAL_SRC_DIR)/simple_vi_bind_venc_rtsp_three_camera: $(SIMPLE_SPECIAL_SRC_DIR)/simple_vi_bind_venc_rtsp_three_camera.c
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq -lrtsp
+
+$(SIMPLE_SPECIAL_SRC_DIR)/simple_vi_bind_venc_wrap: $(SIMPLE_SPECIAL_SRC_DIR)/simple_vi_bind_venc_wrap.c
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+
+$(SIMPLE_SPECIAL_SRC_DIR)/simple_vi_bind_venc_combo: $(SIMPLE_SPECIAL_SRC_DIR)/simple_vi_bind_venc_combo.c
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq
+
+$(SIMPLE_SPECIAL_SRC_DIR)/simple_vi_bind_venc_rawstream_wrap: $(SIMPLE_SPECIAL_SRC_DIR)/simple_vi_bind_venc_rawstream_wrap.c
+	@$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq
 
 clean:
 	$(CMD_DBG)echo "clean simple"

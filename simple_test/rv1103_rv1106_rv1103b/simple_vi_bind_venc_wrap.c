@@ -259,8 +259,6 @@ static void *vi_venc_wrap(void *arg) {
 			quit = true;
 			break;
 		}
-
-		usleep(1 * 1000);
 	}
 	return NULL;
 }

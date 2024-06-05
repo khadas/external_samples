@@ -194,7 +194,7 @@ RK_S32 SAMPLE_COMM_AVS_DestroyGrp(SAMPLE_AVS_CTX_S *ctx) {
 			}
 		}
 	}
-#if defined(RV1106)
+#if defined(RV1106) || defined(RV1103B)
 	RK_MPI_SYS_WaitFreeMB();
 #endif
 	return RK_SUCCESS;

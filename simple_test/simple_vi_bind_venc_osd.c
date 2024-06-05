@@ -93,8 +93,6 @@ static void *GetMediaBuffer0(void *arg) {
 			quit = true;
 			break;
 		}
-
-		usleep(10 * 1000);
 	}
 
 	if (venc0_file)

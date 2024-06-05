@@ -101,8 +101,6 @@ static void *GetMediaBuffer0(void *arg) {
 			quit = true;
 			break;
 		}
-
-		usleep(10 * 1000);
 	}
 	printf("\n======exit %s=======\n", __func__);
 	free(stFrame.pstPack);

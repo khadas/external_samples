@@ -50,6 +50,7 @@
 #define VENC_SUB_CHN 1
 #define VENC_THIRD_CHN 2
 #define VENC_JPEG_CHN 3
+#define VENC_CHN_NUM_PER_CAM 4
 
 #define TIME_OSD_CHN (MAX_CAMERA_NUM * 2)
 
@@ -374,7 +375,7 @@ static RK_S32 parse_cmd_args(int argc, char **argv, RkCmdArgs *pArgs) {
 			pArgs->bEnableCompress = (atoi(optarg) == 0) ? RK_FALSE : RK_TRUE;
 			break;
 		case 'e' + 'a' + 'p':
-			pArgs->bEnableCompress = (atoi(optarg) == 0) ? RK_FALSE : RK_TRUE;
+			pArgs->bEnableAiisp = (atoi(optarg) == 0) ? RK_FALSE : RK_TRUE;
 			break;
 		case 'e' + 'd' + 'p' + 'y' + 'u':
 			pArgs->bEnableNeedDumpYuv = (atoi(optarg) == 0) ? RK_FALSE : RK_TRUE;
@@ -417,18 +418,17 @@ do { 												\
 	snprintf(buf, sizeof(buf), str, ##__VA_ARGS__); \
 	fwrite(buf, sizeof(buf), 1, f); 				\
 	fflush(f); 										\
-	RK_LOGI(buf);									\
+	RK_LOGI("%s", buf);								\
 } while(0)
 
 static void *memory_monitor_thread (void *pArgs) {
-	RK_U32 mem_total, mem_available, mem_available_pre;
-	RK_U32 slab_used, slab_used_pre;
-	RK_U32 rss_total, rss_anon, rss_file, rss_shmem, rss_total_pre;
+	RK_U32 mem_total = 0, mem_available = 0, mem_available_pre = 0;
+	RK_U32 slab_used = 0, slab_used_pre = 0;
+	RK_U32 rss_total = 0, rss_anon = 0, rss_file = 0, rss_shmem = 0, rss_total_pre = 0;
 	FILE* f = NULL;
 	FILE* proc_status = NULL;
 	FILE* mem_info = NULL;
 	time_t now_time;
-	struct sysinfo si;
 	struct mallinfo2 mi;
 	char buf[256];
 	char proc_file_name[256] = {'\0'};;
@@ -460,15 +460,15 @@ static void *memory_monitor_thread (void *pArgs) {
 			if (!fgets(buf, sizeof(buf), mem_info))
 				break;
 			if (strstr(buf, "MemTotal:")) {
-				sscanf(buf, "MemTotal: %d", &mem_total);
+				sscanf(buf, "MemTotal: %u", &mem_total);
 				continue;
 			}
 			if (strstr(buf, "MemAvailable:")) {
-				sscanf(buf, "MemAvailable: %d", &mem_available);
+				sscanf(buf, "MemAvailable: %u", &mem_available);
 				continue;
 			}
 			if (strstr(buf, "Slab:")) {
-				sscanf(buf, "Slab: %d", &slab_used);
+				sscanf(buf, "Slab: %u", &slab_used);
 				break;
 			}
 		}
@@ -477,10 +477,10 @@ static void *memory_monitor_thread (void *pArgs) {
 		PRINT_AND_DUMP_TO_FILE("[memory monitor] system total mem: %u kB\n", mem_total);
 		PRINT_AND_DUMP_TO_FILE("[memory monitor] system available mem: %u kB\n", mem_available);
 		if (mem_available_pre && mem_available < mem_available_pre)
-			PRINT_AND_DUMP_TO_FILE("[memory monitor] system mem increase in last 2 min: %ld kB\n", mem_available_pre - mem_available);
-		PRINT_AND_DUMP_TO_FILE("[memory monitor] kernel used slab: %lu kB\n", slab_used);
+			PRINT_AND_DUMP_TO_FILE("[memory monitor] system mem increase in last 2 min: %u kB\n", mem_available_pre - mem_available);
+		PRINT_AND_DUMP_TO_FILE("[memory monitor] kernel used slab: %u kB\n", slab_used);
 		if (slab_used_pre && slab_used > slab_used_pre)
-			PRINT_AND_DUMP_TO_FILE("[memory monitor] slab increase in last 2 min: %ld kB\n", slab_used - slab_used_pre);
+			PRINT_AND_DUMP_TO_FILE("[memory monitor] slab increase in last 2 min: %u kB\n", slab_used - slab_used_pre);
 		slab_used_pre = slab_used;
 		mem_available_pre = mem_available;
 
@@ -496,29 +496,29 @@ static void *memory_monitor_thread (void *pArgs) {
 			if (!fgets(buf, sizeof(buf), proc_status))
 				break;
 			if (strstr(buf, "VmRSS")) {
-				sscanf(buf, "VmRSS: %d", &rss_total);
+				sscanf(buf, "VmRSS: %u", &rss_total);
 				continue;
 			}
 			if (strstr(buf, "RssAnon")) {
-				sscanf(buf, "RssAnon: %d", &rss_anon);
+				sscanf(buf, "RssAnon: %u", &rss_anon);
 				continue;
 			}
 			if (strstr(buf, "RssFile")) {
-				sscanf(buf, "RssFile: %d", &rss_file);
+				sscanf(buf, "RssFile: %u", &rss_file);
 				continue;
 			}
 			if (strstr(buf, "RssShmem")) {
-				sscanf(buf, "RssShmem: %d", &rss_shmem);
+				sscanf(buf, "RssShmem: %u", &rss_shmem);
 				break;
 			}
 		}
 		fclose(proc_status);
-		PRINT_AND_DUMP_TO_FILE("[memory monitor] process total rss: %d kB\n", rss_total);
-		PRINT_AND_DUMP_TO_FILE("[memory monitor] process aono rss: %d kB\n", rss_anon);
-		PRINT_AND_DUMP_TO_FILE("[memory monitor] process file rss: %d kB\n", rss_file);
-		PRINT_AND_DUMP_TO_FILE("[memory monitor] process shmem rss: %d kB\n", rss_shmem);
+		PRINT_AND_DUMP_TO_FILE("[memory monitor] process total rss: %u kB\n", rss_total);
+		PRINT_AND_DUMP_TO_FILE("[memory monitor] process aono rss: %u kB\n", rss_anon);
+		PRINT_AND_DUMP_TO_FILE("[memory monitor] process file rss: %u kB\n", rss_file);
+		PRINT_AND_DUMP_TO_FILE("[memory monitor] process shmem rss: %u kB\n", rss_shmem);
 		if (rss_total_pre && rss_total > rss_total_pre)
-			PRINT_AND_DUMP_TO_FILE("[memory monitor] process rss increment in last 2 min: %d kB\n", rss_total - rss_total_pre);
+			PRINT_AND_DUMP_TO_FILE("[memory monitor] process rss increment in last 2 min: %u kB\n", rss_total - rss_total_pre);
 		rss_total_pre = rss_total;
 
 		mi = mallinfo2();
@@ -557,7 +557,7 @@ static void *vpss_get_4M_frame(void *pArgs) {
 	while (!g_thread_status->bIfMainThreadQuit) {
 		memset(&frame, 0, sizeof(VIDEO_FRAME_INFO_S));
 		clock_gettime(CLOCK_MONOTONIC, &start_time);
-		s32Ret = RK_MPI_VPSS_GetChnFrame(sensor_idx, VENC_MAIN_CHN, &frame, -1);
+		s32Ret = RK_MPI_VPSS_GetChnFrame(sensor_idx, VENC_MAIN_CHN, &frame, 1000);
 		if (s32Ret == RK_SUCCESS) {
 			RK_LOGD("[grp %d, chn %d] width %u height %u seq %d pts %llu"
 				, sensor_idx, VENC_MAIN_CHN
@@ -650,7 +650,7 @@ static void *vpss_get_2M_frame(void *pArgs) {
 		memset(&frame, 0, sizeof(VIDEO_FRAME_INFO_S));
 		clock_gettime(CLOCK_MONOTONIC, &start_time);
 		group_id = sensor_idx + MAX_CAMERA_NUM;
-		s32Ret = RK_MPI_VPSS_GetChnFrame(group_id, 1, &frame, -1);
+		s32Ret = RK_MPI_VPSS_GetChnFrame(group_id, 1, &frame, 1000);
 		if (s32Ret == RK_SUCCESS) {
 			RK_LOGD("[grp %d, chn %d] width %u height %u seq %d pts %llu"
 				, group_id, 1
@@ -716,7 +716,7 @@ static void *vpss_get_D1_frame(void *pArgs) {
 		for (sensor_idx = 0; sensor_idx != g_cmd_args->u32CameraNum; ++sensor_idx) {
 			memset(&frame, 0, sizeof(VIDEO_FRAME_INFO_S));
 			group_id = sensor_idx + MAX_CAMERA_NUM;
-			s32Ret = RK_MPI_VPSS_GetChnFrame(group_id, 2, &frame, -1);
+			s32Ret = RK_MPI_VPSS_GetChnFrame(group_id, 2, &frame, 1000);
 			if (s32Ret == RK_SUCCESS) {
 				RK_LOGD("[grp %d, chn %d] width %u height %u seq %d pts %llu"
 					, group_id, 2
@@ -917,7 +917,7 @@ static void *update_time_osd(void *arg) {
 		}
 		// calculate really buffer size and allocate buffer for time string.
 		osd_data.width =
-		    UPALIGNTO16(wstr_get_actual_advance_x(osd_data.text.wch) / osd_data.text.font_size);
+		    UPALIGNTO16(wstr_get_actual_advance_x(osd_data.text.wch));
 		osd_data.height = UPALIGNTO16(osd_data.text.font_size);
 		osd_data.size = osd_data.width * osd_data.height * 4; // BGRA8888 4byte
 		osd_data.buffer = malloc(osd_data.size);
@@ -976,11 +976,6 @@ static void iva_release_callback(const RockIvaReleaseFrames *releaseFrames,
 		}
 		free(releaseFrames->frames[i].extData);
 	}
-}
-
-int aiisp_result_callback(rk_aiq_aiisp_t* aiisp_evt, void* ctx) {
-	RK_LOGV("aiisp rd_line cnt %u, wr_line cnt %u, seq %d", aiisp_evt->wr_linecnt, aiisp_evt->rd_linecnt, aiisp_evt->sequence);
-	return 0;
 }
 
 static RK_S32 global_param_init(void) {
@@ -1060,9 +1055,6 @@ static RK_S32 rtsp_init(CODEC_TYPE_E enCodecType) {
 	RK_CHAR rtspAddr[255] = {0};
 
 	for (i = 0; i < VENC_CHN_MAX; i++) {
-		// skip jpeg channel.
-		if ((i % MAX_CAMERA_NUM) == VENC_JPEG_CHN)
-			continue;
 		sprintf(rtspAddr, "/live/%d", i);
 		g_rtsp_session[i] = rtsp_new_session(g_rtsplive, rtspAddr);
 		if (enCodecType == RK_CODEC_TYPE_H264) {
@@ -1118,6 +1110,7 @@ static RK_S32 isp_init(void) {
 				printf("#ISP cam %d init failed!\n", sensor_idx);
 				return ret;
 			}
+#if defined(RK3576)
 			if (g_cmd_args->bEnableAiisp) {
 				ret = SAMPLE_COMM_ISP_EnablsAiisp(sensor_idx);
 				if (ret != RK_SUCCESS) {
@@ -1125,6 +1118,7 @@ static RK_S32 isp_init(void) {
 					return ret;
 				}
 			}
+#endif
 			ret = SAMPLE_COMM_ISP_SetFrameRate(sensor_idx, g_cmd_args->u32Fps);
 			if (ret != RK_SUCCESS) {
 				printf("#ISP cam %d set fps failed!\n", sensor_idx);
@@ -1476,7 +1470,7 @@ static RK_S32 venc_init(void) {
 	TRACE_BEGIN();
 	for (sensor_idx = 0; sensor_idx < g_cmd_args->u32CameraNum; ++sensor_idx) {
 		// Init main venc, for main video stream.
-		g_mpi_ctx->main_venc[sensor_idx].s32ChnId = (sensor_idx * MAX_CAMERA_NUM) + VENC_MAIN_CHN;
+		g_mpi_ctx->main_venc[sensor_idx].s32ChnId = (sensor_idx * VENC_CHN_NUM_PER_CAM) + VENC_MAIN_CHN;
 		g_mpi_ctx->main_venc[sensor_idx].u32Width = g_cmd_args->u32MainWidth[sensor_idx];
 		g_mpi_ctx->main_venc[sensor_idx].u32Height = g_cmd_args->u32MainHeight[sensor_idx];
 		g_mpi_ctx->main_venc[sensor_idx].u32Fps = g_cmd_args->u32Fps;
@@ -1505,7 +1499,7 @@ static RK_S32 venc_init(void) {
 				, g_mpi_ctx->main_venc[sensor_idx].s32ChnId, ret);
 
 		// Init sub venc, for sub video stream.
-		g_mpi_ctx->sub_venc[sensor_idx].s32ChnId = (sensor_idx * MAX_CAMERA_NUM) + VENC_SUB_CHN;
+		g_mpi_ctx->sub_venc[sensor_idx].s32ChnId = (sensor_idx * VENC_CHN_NUM_PER_CAM) + VENC_SUB_CHN;
 		g_mpi_ctx->sub_venc[sensor_idx].u32Width = g_cmd_args->u32SubWidth[sensor_idx];
 		g_mpi_ctx->sub_venc[sensor_idx].u32Height = g_cmd_args->u32SubHeight[sensor_idx];
 		g_mpi_ctx->sub_venc[sensor_idx].u32Fps = g_cmd_args->u32Fps;
@@ -1533,7 +1527,7 @@ static RK_S32 venc_init(void) {
 		}
 
 		// Init D1 venc, for D1 video stream.
-		g_mpi_ctx->third_venc[sensor_idx].s32ChnId = (sensor_idx * MAX_CAMERA_NUM) + VENC_THIRD_CHN;
+		g_mpi_ctx->third_venc[sensor_idx].s32ChnId = (sensor_idx * VENC_CHN_NUM_PER_CAM) + VENC_THIRD_CHN;
 		g_mpi_ctx->third_venc[sensor_idx].u32Width = g_cmd_args->u32ThirdWidth[sensor_idx];
 		g_mpi_ctx->third_venc[sensor_idx].u32Height = g_cmd_args->u32ThirdHeight[sensor_idx];
 		g_mpi_ctx->third_venc[sensor_idx].u32Fps = g_cmd_args->u32Fps;
@@ -1565,7 +1559,7 @@ static RK_S32 venc_init(void) {
 		}
 
 		// Init jpeg venc.
-		g_mpi_ctx->jpeg_venc[sensor_idx].s32ChnId = (sensor_idx * MAX_CAMERA_NUM) + VENC_JPEG_CHN;
+		g_mpi_ctx->jpeg_venc[sensor_idx].s32ChnId = (sensor_idx * VENC_CHN_NUM_PER_CAM) + VENC_JPEG_CHN;
 		g_mpi_ctx->jpeg_venc[sensor_idx].u32Width = g_cmd_args->u32MainWidth[sensor_idx];
 		g_mpi_ctx->jpeg_venc[sensor_idx].u32Height = g_cmd_args->u32MainHeight[sensor_idx];
 		g_mpi_ctx->jpeg_venc[sensor_idx].u32Fps = 1;
@@ -1651,7 +1645,7 @@ static RK_S32 time_osd_init() {
 	stRgnChnAttr.unChnAttr.stOverlayChn.u32Layer = 1;
 	for (int sensor_idx = 0; sensor_idx != g_cmd_args->u32CameraNum; ++sensor_idx) {
 		stMppChn.s32DevId = 0;
-		stMppChn.s32ChnId = sensor_idx * MAX_CAMERA_NUM + VENC_MAIN_CHN;
+		stMppChn.s32ChnId = sensor_idx * VENC_CHN_NUM_PER_CAM + VENC_MAIN_CHN;
 		ret = RK_MPI_RGN_AttachToChn(TIME_OSD_CHN, &stMppChn, &stRgnChnAttr);
 		if (RK_SUCCESS != ret) {
 			RK_LOGE("RK_MPI_RGN_AttachToChn (%d) to vpss(%d,%d) failed with %#x\n"
@@ -1660,7 +1654,7 @@ static RK_S32 time_osd_init() {
 		}
 		if (g_cmd_args->bEnableSubVenc) {
 			stMppChn.s32DevId = 0;
-			stMppChn.s32ChnId = sensor_idx * MAX_CAMERA_NUM + VENC_SUB_CHN;
+			stMppChn.s32ChnId = sensor_idx * VENC_CHN_NUM_PER_CAM + VENC_SUB_CHN;
 			ret = RK_MPI_RGN_AttachToChn(TIME_OSD_CHN, &stMppChn, &stRgnChnAttr);
 			if (RK_SUCCESS != ret) {
 				RK_LOGE("RK_MPI_RGN_AttachToChn (%d) to vpss(%d,%d) failed with %#x\n"
@@ -1670,7 +1664,7 @@ static RK_S32 time_osd_init() {
 		}
 		if (g_cmd_args->bEnableThirdVenc) {
 			stMppChn.s32DevId = 0;
-			stMppChn.s32ChnId = sensor_idx * MAX_CAMERA_NUM + VENC_THIRD_CHN;
+			stMppChn.s32ChnId = sensor_idx * VENC_CHN_NUM_PER_CAM + VENC_THIRD_CHN;
 			ret = RK_MPI_RGN_AttachToChn(TIME_OSD_CHN, &stMppChn, &stRgnChnAttr);
 			if (RK_SUCCESS != ret) {
 				RK_LOGE("RK_MPI_RGN_AttachToChn (%d) to vpss(%d,%d) failed with %#x\n"
@@ -1680,7 +1674,7 @@ static RK_S32 time_osd_init() {
 		}
 		if (g_cmd_args->bEnableJpeg) {
 			stMppChn.s32DevId = 0;
-			stMppChn.s32ChnId = sensor_idx * MAX_CAMERA_NUM + VENC_JPEG_CHN;
+			stMppChn.s32ChnId = sensor_idx * VENC_CHN_NUM_PER_CAM + VENC_JPEG_CHN;
 			ret = RK_MPI_RGN_AttachToChn(TIME_OSD_CHN, &stMppChn, &stRgnChnAttr);
 			if (RK_SUCCESS != ret) {
 				RK_LOGE("RK_MPI_RGN_AttachToChn (%d) to vpss(%d,%d) failed with %#x\n"
@@ -1702,18 +1696,18 @@ static RK_S32 time_osd_deinit() {
 	stMppChn.s32DevId = 0;
 	for (int sensor_idx = 0; sensor_idx != g_cmd_args->u32CameraNum; ++sensor_idx) {
 		stMppChn.s32DevId = 0;
-		stMppChn.s32ChnId = sensor_idx * MAX_CAMERA_NUM + VENC_MAIN_CHN;
+		stMppChn.s32ChnId = sensor_idx * VENC_CHN_NUM_PER_CAM + VENC_MAIN_CHN;
 		RK_MPI_RGN_DetachFromChn(TIME_OSD_CHN, &stMppChn);
 		stMppChn.s32DevId = 0;
-		stMppChn.s32ChnId = sensor_idx * MAX_CAMERA_NUM + VENC_SUB_CHN;
+		stMppChn.s32ChnId = sensor_idx * VENC_CHN_NUM_PER_CAM + VENC_SUB_CHN;
 		if (g_cmd_args->bEnableSubVenc)
 			RK_MPI_RGN_DetachFromChn(TIME_OSD_CHN, &stMppChn);
 		stMppChn.s32DevId = 0;
-		stMppChn.s32ChnId = sensor_idx * MAX_CAMERA_NUM + VENC_THIRD_CHN;
+		stMppChn.s32ChnId = sensor_idx * VENC_CHN_NUM_PER_CAM + VENC_THIRD_CHN;
 		if (g_cmd_args->bEnableThirdVenc)
 			RK_MPI_RGN_DetachFromChn(TIME_OSD_CHN, &stMppChn);
 		stMppChn.s32DevId = 0;
-		stMppChn.s32ChnId = sensor_idx * MAX_CAMERA_NUM + VENC_JPEG_CHN;
+		stMppChn.s32ChnId = sensor_idx * VENC_CHN_NUM_PER_CAM + VENC_JPEG_CHN;
 		if (g_cmd_args->bEnableJpeg)
 			RK_MPI_RGN_DetachFromChn(TIME_OSD_CHN, &stMppChn);
 	}

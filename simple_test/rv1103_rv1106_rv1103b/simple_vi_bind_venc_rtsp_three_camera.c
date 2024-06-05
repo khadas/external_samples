@@ -114,8 +114,6 @@ static void *GetMediaBuffer0(void *arg) {
 			quit = true;
 			break;
 		}
-
-		usleep(10 * 1000);
 	}
 	free(stFrame.pstPack);
 	return NULL;

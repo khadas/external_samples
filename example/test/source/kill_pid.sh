@@ -1,6 +1,16 @@
 #!/bin/sh
 set -x
 
+check_coredump()
+{
+	if [ "$__has_coredump" = "1" ];then
+		if ls $(dirname $__dump_path)/core* 1> /dev/null 2>&1;then
+			echo "[$0] core dump exist"
+			exit 3
+		fi
+	fi
+}
+
 __chk_cma_free()
 {
 	local f
@@ -13,6 +23,8 @@ __chk_cma_free()
 		echo "[$0] free cma error"
 		exit 2
 	fi
+
+	check_coredump
 }
 
 dump_log(){
@@ -31,6 +43,12 @@ fi
 killall nginx || echo "Not found nginx"
 sleep 10
 counter=0
+__dump_path=$(cat /proc/sys/kernel/core_pattern)
+if [ -d "$(dirname $__dump_path)" ];then
+	__has_coredump=1
+	# clean coredump, before test
+	rm -rf $(dirname $__dump_path)/core*
+fi
 while [ $counter -lt 10000 ]
 do
     rkipc_pid=$(ps |grep rkipc|grep -v grep |awk '{print $1}')
@@ -56,6 +74,9 @@ do
 	echo "$0 counter [$counter]"
 	if [ -n "$has_sdcard" ];then
 		log1_dir=$has_sdcard/kill_pid/log1_$counter
+		dump_log $log1_dir $counter
+	else
+		log1_dir=/tmp/kill_pid/log1_$counter
 		dump_log $log1_dir $counter
 	fi
 	echo "----------------------------------------"
@@ -91,6 +112,9 @@ do
 	if [ -n "$has_sdcard" ];then
 		log2_dir=$has_sdcard/kill_pid/log2_$counter
 		dump_log $log2_dir $counter
+	else
+		log1_dir=/tmp/kill_pid/log1_$counter
+		dump_log $log1_dir $counter
 	fi
 	echo "----------------------------------------"
 	echo ""

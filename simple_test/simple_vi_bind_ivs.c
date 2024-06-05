@@ -70,6 +70,9 @@ static void *GetMediaBuffer0(void *arg) {
 				}
 				if (1000 * stResults.pstResults->stMdInfo.u32Square / info->u32Width / info->u32Height > u32SquarePct[info->u32Sensitivity])
 					printf("Detect movement!\n");
+
+				if (stResults.pstResults->stOdInfo.u32Flag)
+					printf("Detect occlusion!\n");
 			}
 			RK_MPI_IVS_ReleaseResults(0, &stResults);
 		} else {
@@ -188,7 +191,7 @@ static RK_S32 create_ivs(int width, int height, RK_U32 u32AreaEn, RK_U32 u32Sens
 		goto __FAILED;
 	}
 
-#ifdef RV1106_RV1103
+#if defined(RV1106_RV1103) || defined(RV1103B)
 	IVS_MD_ATTR_S stMdAttr;
 	memset(&stMdAttr, 0, sizeof(stMdAttr));
 	s32Ret = RK_MPI_IVS_GetMdAttr(0, &stMdAttr);

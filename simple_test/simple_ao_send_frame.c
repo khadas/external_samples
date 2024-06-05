@@ -163,6 +163,8 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-r: device rate, Default:16000\n");
 	printf("\t-R: input rate, Default:16000\n");
 	printf("\t-i: input path, Default:\"/tmp/16000.pcm\"\n");
+	printf("\t-v: vqe enable, range [0, 2], Default:1. "
+	       "0:disable, 1:only agc, 2: vqe all\n");
 }
 
 int main(int argc, char *argv[]) {

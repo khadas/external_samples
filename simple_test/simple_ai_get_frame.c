@@ -235,6 +235,7 @@ RK_S32 open_device_ai(RK_S32 deviceSampleRate, RK_S32 outputSampleRate, RK_S32 u
 		goto __FAILED;
 	}
 
+#if defined(RV1106)
 	//这是RV1106 回采设置，适用于左mic，右回采
 	// RV1126设置无效，可以不设置，RV1126需要配置asound.conf文件或者内核驱动配置软件回采
 	result =
@@ -244,6 +245,30 @@ RK_S32 open_device_ai(RK_S32 deviceSampleRate, RK_S32 outputSampleRate, RK_S32 u
 		goto __FAILED;
 	}
 
+#elif defined(RV1103B)
+	result = RK_MPI_AMIX_SetControl(aiDevId, "SAI SDI0 Loopback Src Select",
+	                                (char *)"From SDO0");
+	if (result != RK_SUCCESS) {
+		RK_LOGE("ai set SAI SDI0 Loopback Src Select, reason = %x", result);
+		goto __FAILED;
+	}
+
+	result = RK_MPI_AMIX_SetControl(aiDevId, "SAI SDI0 Loopback I2S LR Switch",
+	                                (char *)"Enable");
+	if (result != RK_SUCCESS) {
+		RK_LOGE("ai set SAI SAI SDI0 Loopback I2S LR Switch, reason = %x", result);
+		return RK_FAILURE;
+	}
+
+	result = RK_MPI_AMIX_SetControl(aiDevId, "SAI SDI0 Loopback Switch",
+	                               (char *)"Enable");
+	if (result != RK_SUCCESS) {
+		RK_LOGE("ai set SAI SDI0 Loopback Switch, reason = %x", result);
+		goto __FAILED;
+	}
+#endif
+
+#if defined(RV1106) || defined(RV1103B)
 	//这是RV1106 ALC设置，而RV1126设置无效，可以不设置
 	result = RK_MPI_AMIX_SetControl(aiDevId, "ADC ALC Left Volume", (char *)"22");
 	if (result != RK_SUCCESS) {
@@ -256,6 +281,7 @@ RK_S32 open_device_ai(RK_S32 deviceSampleRate, RK_S32 outputSampleRate, RK_S32 u
 		RK_LOGE("ai set alc right voulme fail, reason = %x", result);
 		goto __FAILED;
 	}
+#endif
 
 	//双声道，左声道为MIC拾⾳数据，右声道为播放的右声道的回采数据
 	RK_MPI_AI_SetTrackMode(aiDevId, AUDIO_TRACK_FRONT_LEFT);
@@ -316,7 +342,8 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-r: device sample rate, Default:16000\n");
 	printf("\t-R: output sample rate, Default:16000\n");
 	printf("\t-o: output path, Default:\"/tmp/ai.pcm\"\n");
-	printf("\t-v: vqe enable, Default:1\n");
+	printf("\t-v: vqe enable, range [0, 1], Default:1\n");
+	printf("\t-b: sed enable, range [0, 1], Default:1\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -398,13 +425,24 @@ int main(int argc, char *argv[]) {
 	if (vqeEnable) {
 		RK_MPI_AI_DisableVqe(0, 0);
 
+#if defined(RV1106)
 		//这是RV1106 回采设置关闭，而RV1126设置无效，可以不配置
 		ret =
 		    RK_MPI_AMIX_SetControl(0, "I2STDM Digital Loopback Mode", (char *)"Disabled");
 		if (ret != RK_SUCCESS) {
 			RK_LOGE("ai set I2STDM Digital Loopback Mode fail, reason = %x", ret);
-			return -1;
 		}
+#elif defined(RV1103B)
+		ret = RK_MPI_AMIX_SetControl(0, "SAI SDI0 Loopback I2S LR Switch", (char *)"Disable");
+		if (ret != RK_SUCCESS) {
+			RK_LOGE("ai set SAI SAI SDI0 Loopback I2S LR Switch, reason = %x", ret);
+		}
+
+		ret = RK_MPI_AMIX_SetControl(0, "SAI SDI0 Loopback Switch", (char *)"Disable");
+		if (ret != RK_SUCCESS) {
+			RK_LOGE("ai set SAI SDI0 Loopback Switch, reason = %x", ret);
+		}
+#endif
 	}
 
 	RK_MPI_AI_DisableChn(0, 0);

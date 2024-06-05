@@ -185,5 +185,5 @@ int wstr_get_actual_advance_x(const wchar_t *wstr) {
 		pen_.y += slot_->advance.y;
 	}
 	pthread_mutex_unlock(&g_font_mutex);
-	return pen_.x;
+	return pen_.x / 64; // 26.6 Cartesian pixels, 64 = 2^6
 }

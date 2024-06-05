@@ -15,11 +15,12 @@ echo "    HDR: enable HDR switch test, default: on"
 echo "    FRAMERATE: enable fps switch from 1 to 25 test, default: on"
 echo "    RESOLUTION : enable resolution switch test, default: on"
 echo "    ENCODE_TYPE: enable switch encode type between h264 and h265 test, default: on"
-echo "    SMART_P: enable smart p switch test, default: off"
-echo "    MOTION: enable md switch test, default: off"
+echo "    SMART_P: enable smart p switch test, default: on"
+echo "    MOTION: enable md switch test, default: on"
 echo "    SVC: enable svc switch test, default: off"
 echo "    RESTART: enable all pipe restart test, default: on"
 echo "    ROTATION: enable switch rotation degree test, default: on"
+echo "    IDR: venc force idr test, default: on"
 echo "    DETACH_ATTACH: enable rgn detach attach test, default: on"
 exit 0
 fi
@@ -36,7 +37,7 @@ TEST_FRAME=50
 fi
 
 #test result path
-test_result_path=/tmp/rk3576_test_result.log
+test_result_path=/tmp/$(basename $0).log
 
 #set environment variables
 if [ -z $PN_MODE ]; then
@@ -47,9 +48,6 @@ if [ -z $HDR ]; then
 fi
 if [ -z $FRAMERATE ]; then
     FRAMERATE=on
-fi
-if [ -z $LDCH ]; then
-    LDCH=off
 fi
 if [ -z $RESOLUTION ]; then
     RESOLUTION=on
@@ -64,13 +62,13 @@ if [ -z $ENCODE_TYPE ]; then
     ENCODE_TYPE=on
 fi
 if [ -z $SMART_P ]; then
-    SMART_P=off
+    SMART_P=on
 fi
 if [ -z $SVC ]; then
     SVC=off
 fi
 if [ -z $MOTION ]; then
-    MOTION=off
+    MOTION=on
 fi
 if [ -z $IDR ]; then
     IDR=on
@@ -127,13 +125,13 @@ test_cmd()
 	fi
 	__echo_test_cmd_msg "TEST    [$*]"
 	eval $*
-	__chk_cma_free
 	if [ $? -eq 0 ]; then
 		__echo_test_cmd_msg "SUCCESS [$*]"
 	else
 		__echo_test_cmd_msg "FAILURE [$*]"
 		exit 1
 	fi
+	__chk_cma_free
 }
 
 isp_stresstest()
@@ -281,16 +279,16 @@ vpss_stresstest()
     echo "-----------------enter vpss stresstest-----------------" >> $test_result_path
 
     #1. vpss_deinit_ubind_test
-    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a IQ_PATH --mode_test_type 1 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
+    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a $IQ_PATH --mode_test_type 1 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
 
     #2. vpss_resolution_test
-    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a IQ_PATH --mode_test_type 2 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
+    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a $IQ_PATH --mode_test_type 2 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
 
     #3. hardware vpss_deinit_ubind_test
-    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a IQ_PATH --mode_test_type 3 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
+    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a $IQ_PATH --mode_test_type 3 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
 
     #4. hardware vpss_resolution_test
-    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a IQ_PATH --mode_test_type 4 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
+    test_cmd sample_vpss_stresstest --vi_size 2560x1440 --vpss_size 2560x1440 -a $IQ_PATH --mode_test_type 4 --mode_test_loop $TEST_LOOP --test_frame_count $TEST_FRAME
 
     echo "-----------------exit vpss stresstest-----------------" >> $test_result_path
 }

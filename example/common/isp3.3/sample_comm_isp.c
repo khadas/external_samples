@@ -141,8 +141,66 @@ static int isp_get_ldch_mesh_size(uint16_t *meshdata) {
 
 XCamReturn SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(int CamGrpId, uint8_t SetLdchMode,
                                                   uint16_t **LdchMesh) {
-	printf("no support\n");
-	return XCAM_RETURN_NO_ERROR;
+	XCamReturn ret = XCAM_RETURN_NO_ERROR;
+	rk_aiq_sys_ctx_t *aiq_ctx = NULL;
+	rk_aiq_camgroup_camInfos_t camInfos;
+	rk_aiq_ldch_v21_attrib_t ldchAttr;
+	memset(&camInfos, 0, sizeof(camInfos));
+	if (SetLdchMode != RK_GET_LDCH_BY_FILE && SetLdchMode != RK_GET_LDCH_BY_BUFF) {
+		printf("this Ldch mode:%d, if want to set ldch, 1: read file set ldch, 2: read "
+		       "buff set ldch\n",
+		       SetLdchMode);
+		return -1;
+	}
+	if (rk_aiq_uapi2_camgroup_getCamInfos(g_aiq_camgroup_ctx[CamGrpId], &camInfos) ==
+	    XCAM_RETURN_NO_ERROR) {
+		for (int i = 0; i < camInfos.valid_sns_num; i++) {
+			aiq_ctx = rk_aiq_uapi2_camgroup_getAiqCtxBySnsNm(g_aiq_camgroup_ctx[CamGrpId],
+			                                                 camInfos.sns_ent_nm[i]);
+			if (!aiq_ctx) {
+				printf("rk_aiq_uapi2_camgroup_getAiqCtxBySnsNm return aiq_ctx is Null\n");
+				return -1;
+			}
+			printf("aiq_ctx sns name: %s, camPhyId %d\n", camInfos.sns_ent_nm[i],
+			       camInfos.sns_camPhyId[i]);
+			memset(&ldchAttr, 0, sizeof(rk_aiq_ldch_v21_attrib_t));
+
+			ret = rk_aiq_user_api2_aldch_v21_GetAttrib(aiq_ctx, &ldchAttr);
+			if (ret == XCAM_RETURN_NO_ERROR) {
+				if (SetLdchMode == RK_GET_LDCH_BY_BUFF) {
+					ldchAttr.update_lut_mode =
+					    RK_AIQ_LDCH_UPDATE_LUT_FROM_EXTERNAL_BUFFER;
+					ldchAttr.en = true;
+					ldchAttr.lut.update_flag = true;
+					ldchAttr.lut.u.buffer.addr = LdchMesh[i];
+					ldchAttr.lut.u.buffer.size = isp_get_ldch_mesh_size(LdchMesh[i]);
+				} else {
+					char *pLastWord = NULL;
+					pLastWord = strrchr((char *)LdchMesh[i], '/');
+					if (!pLastWord) {
+						printf("---- error !!! the: %s path isn't to be parsed!!!!\n",
+						       (char *)LdchMesh[i]);
+						return -1;
+					}
+					ldchAttr.en = true;
+					ldchAttr.lut.update_flag = true;
+					ldchAttr.update_lut_mode = RK_AIQ_LDCH_UPDATE_LUT_FROM_EXTERNAL_FILE;
+					memcpy(ldchAttr.lut.u.file.config_file_dir, (char *)LdchMesh[i],
+					       (pLastWord - (char *)LdchMesh[i]) + 1);
+					sprintf(ldchAttr.lut.u.file.mesh_file_name, "%s", (pLastWord + 1));
+					printf("lut file_dir: %s, mesh_file: %s\n",
+					       ldchAttr.lut.u.file.config_file_dir,
+					       ldchAttr.lut.u.file.mesh_file_name);
+				}
+				ret = rk_aiq_user_api2_aldch_v21_SetAttrib(aiq_ctx, &ldchAttr);
+				if (ret != XCAM_RETURN_NO_ERROR) {
+					printf("Failed to set ldch attrib : %d\n", ret);
+					return ret;
+				}
+			}
+		}
+	}
+	return ret;
 }
 
 RK_S32 SAMPLE_COMM_ISP_CamGroup_Init(RK_S32 CamGroupId, rk_aiq_working_mode_t WDRMode,
@@ -267,10 +325,13 @@ RK_S32 SAMPLE_COMM_ISP_SetFrameRate(RK_S32 CamId, RK_U32 uFps) {
 		return -1;
 	}
 	int ret;
-	frameRateInfo_t info;
-	info.mode = OP_MANUAL;
-	info.fps  = uFps;
-	ret = rk_aiq_uapi2_setFrameRate(g_aiq_ctx[CamId], info);
+	ae_api_expSwAttr_t expSwAttr;
+	ret = rk_aiq_user_api2_ae_getExpSwAttr(g_aiq_ctx[CamId], &expSwAttr);
+	if (ret != 0)
+		printf("%s : Cam %d get framerate failed %#X!\n", __func__, CamId, ret);
+	expSwAttr.commCtrl.frmRate.sw_aeT_frmRate_mode = ae_frmRate_fix_mode;
+	expSwAttr.commCtrl.frmRate.sw_aeT_frmRate_val = uFps;
+	ret = rk_aiq_user_api2_ae_setExpSwAttr(g_aiq_ctx[CamId], expSwAttr);
 	if (ret != 0)
 		printf("%s : Cam %d set framerate %d failed %#X!\n", __func__, CamId, uFps, ret);
 	else
@@ -284,10 +345,13 @@ RK_S32 SAMPLE_COMM_ISP_CamGroup_SetFrameRate(RK_S32 CamId, RK_U32 uFps) {
 		return -1;
 	}
 	int ret;
-	frameRateInfo_t info;
-	info.mode = OP_MANUAL;
-	info.fps  = uFps;
-	ret = rk_aiq_uapi2_setFrameRate((rk_aiq_sys_ctx_t *)g_aiq_camgroup_ctx[CamId], info);
+	ae_api_expSwAttr_t expSwAttr;
+	ret = rk_aiq_user_api2_ae_getExpSwAttr((rk_aiq_sys_ctx_t *)g_aiq_camgroup_ctx[CamId],
+	                                       &expSwAttr);
+	expSwAttr.commCtrl.frmRate.sw_aeT_frmRate_mode = ae_frmRate_fix_mode;
+	expSwAttr.commCtrl.frmRate.sw_aeT_frmRate_val = uFps;
+	ret = rk_aiq_user_api2_ae_setExpSwAttr((rk_aiq_sys_ctx_t *)g_aiq_camgroup_ctx[CamId],
+	                                       expSwAttr);
 	if (ret != 0)
 		printf("%s : Cam Group %d set framerate %d failed %#X!\n", __func__, CamId, uFps, ret);
 	else
@@ -313,14 +377,54 @@ RK_S32 SAMPLE_comm_ISP_SWITCH_SCENE(int CamId, const char *main_scene,
 }
 
 XCamReturn SAMPLE_COMM_ISP_SetLDCH(RK_U32 CamId, RK_U32 u32Level, RK_BOOL bIfEnable) {
-	printf("no support\n");
+	RK_S32 s32Ret = RK_FAILURE;
+	rk_aiq_ldch_v21_attrib_t ldchAttr;
+	memset(&ldchAttr, 0, sizeof(rk_aiq_ldch_v21_attrib_t));
+	if (CamId >= MAX_AIQ_CTX || !g_aiq_ctx[CamId]) {
+		printf("%s : CamId is over %d or not init\n", __FUNCTION__, MAX_AIQ_CTX);
+		return RK_FAILURE;
+	}
+	s32Ret = rk_aiq_user_api2_aldch_v21_GetAttrib(g_aiq_ctx[CamId], &ldchAttr);
+	if (s32Ret != XCAM_RETURN_NO_ERROR && s32Ret != XCAM_RETURN_BYPASS) {
+		RK_LOGE("rk_aiq_user_api2_aldch_v21_GetAttrib FAILURE:%X", s32Ret);
+		return s32Ret;
+	}
+	ldchAttr.en = bIfEnable;
+	ldchAttr.correct_level = u32Level;
+	s32Ret = rk_aiq_user_api2_aldch_v21_SetAttrib(g_aiq_ctx[CamId], &ldchAttr);
+	if (s32Ret != XCAM_RETURN_NO_ERROR && s32Ret != XCAM_RETURN_BYPASS) {
+		RK_LOGE("rk_aiq_user_api2_aldch_v21_SetAttrib FAILURE:%X", s32Ret);
+		return s32Ret;
+	}
+
 	return XCAM_RETURN_NO_ERROR;
 }
 
 RK_S32 SAMPLE_COMM_ISP_CamGroup_SetLDCH(RK_U32 CamId, RK_U32 u32Level,
                                         RK_BOOL bIfEnable) {
-	printf("no support\n");
-	return XCAM_RETURN_NO_ERROR;
+	RK_S32 s32Ret = RK_FAILURE;
+	rk_aiq_ldch_v21_attrib_t ldchAttr;
+	memset(&ldchAttr, 0, sizeof(rk_aiq_ldch_v21_attrib_t));
+	if (CamId >= MAX_AIQ_CTX || !g_aiq_camgroup_ctx[CamId]) {
+		printf("%s : CamId is over %d or not init\n", __FUNCTION__, MAX_AIQ_CTX);
+		return RK_FAILURE;
+	}
+	s32Ret = rk_aiq_user_api2_aldch_v21_GetAttrib(
+	    (rk_aiq_sys_ctx_t *)g_aiq_camgroup_ctx[CamId], &ldchAttr);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("rk_aiq_user_api2_aldch_v21_GetAttrib FAILURE:%X", s32Ret);
+		return s32Ret;
+	}
+	ldchAttr.en = bIfEnable;
+	ldchAttr.correct_level = u32Level;
+	s32Ret = rk_aiq_user_api2_aldch_v21_SetAttrib(
+	    (rk_aiq_sys_ctx_t *)g_aiq_camgroup_ctx[CamId], &ldchAttr);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("rk_aiq_user_api2_aldch_v21_SetAttrib FAILURE:%X", s32Ret);
+		return s32Ret;
+	}
+
+	return RK_SUCCESS;
 }
 
 RK_S32 SAMPLE_COMM_ISP_GetAINrParams(RK_S32 CamId, rk_ainr_param *param) {

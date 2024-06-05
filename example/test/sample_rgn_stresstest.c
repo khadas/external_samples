@@ -258,7 +258,7 @@ static RK_S32 rgn_init(void) {
 	RK_S32 s32Ret = RK_FAILURE;
 	RK_U32 u32Width = 0;
 	RK_U32 u32Height = 0;
-#if defined(RV1106)
+#if defined(RV1106) || defined(RV1103B)
 	/* cover for vi*/
 	ctx->rgn[0].rgnHandle = 0;
 	ctx->rgn[0].stRgnAttr.enType = COVER_RGN;
@@ -797,16 +797,14 @@ int main(int argc, char *argv[]) {
 	}
 
 	/* Init VPSS */
+#if defined(RK3576)
 	ctx->vpss.s32GrpId = 0;
 	ctx->vpss.s32ChnId = 0;
-#if defined(RK3576)
 	if (gModeTest->s32ModuleTestType == 2)
 		ctx->vpss.enVProcDevType = VIDEO_PROC_DEV_VPSS;
 	else
 		ctx->vpss.enVProcDevType = VIDEO_PROC_DEV_RGA;
-#else
 	ctx->vpss.enVProcDevType = VIDEO_PROC_DEV_RGA;
-#endif
 	ctx->vpss.stGrpVpssAttr.enPixelFormat = RK_FMT_YUV420SP;
 	ctx->vpss.stGrpVpssAttr.enCompressMode = COMPRESS_MODE_NONE; // no compress
 	ctx->vpss.s32ChnRotation[0] = ROTATION_0;
@@ -825,6 +823,7 @@ int main(int argc, char *argv[]) {
 		RK_LOGE("SAMPLE_COMM_VPSS_CreateChn group 0 failed %#X\n", s32Ret);
 		goto __FAILED;
 	}
+#endif
 
 	/* Init VENC */
 	ctx->venc.s32ChnId = 0;
@@ -854,7 +853,8 @@ int main(int argc, char *argv[]) {
 	ctx->venc.stChnAttr.stGopAttr.enGopMode = VENC_GOPMODE_NORMALP;
 	SAMPLE_COMM_VENC_CreateChn(&ctx->venc);
 
-	/* VI bind VENC */
+#if defined (RK3576)
+	/* VI bind VPSS bind VENC */
 	stSrcChn.enModId = RK_ID_VI;
 	stSrcChn.s32DevId = ctx->vi.s32DevId;
 	stSrcChn.s32ChnId = ctx->vi.s32ChnId;
@@ -878,6 +878,20 @@ int main(int argc, char *argv[]) {
 		RK_LOGE("VPSS and VENC bind failure:%X", s32Ret);
 		program_handle_error(__func__, __LINE__);
 	}
+#else
+	/* VI bind VENC */
+	stSrcChn.enModId = RK_ID_VI;
+	stSrcChn.s32DevId = ctx->vi.s32DevId;
+	stSrcChn.s32ChnId = ctx->vi.s32ChnId;
+	stDestChn.enModId = RK_ID_VENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = ctx->venc.s32ChnId;
+	s32Ret = SAMPLE_COMM_Bind(&stSrcChn, &stDestChn);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("VPSS and VENC bind failure:%X", s32Ret);
+		program_handle_error(__func__, __LINE__);
+	}
+#endif
 
 	/* Rgn Init*/
 	rgn_init();
@@ -911,6 +925,7 @@ int main(int argc, char *argv[]) {
 	gModeTest->bIfVencThreadQuit = RK_TRUE;
 	pthread_join(ctx->venc.getStreamThread, NULL);
 
+#if defined (RK3576)
 	/* VPSS unbind VENC */
 	stSrcChn.enModId = RK_ID_VPSS;
 	stSrcChn.s32DevId = ctx->vpss.s32GrpId;
@@ -935,11 +950,26 @@ int main(int argc, char *argv[]) {
 		RK_LOGE("VI and VENC bind failure:%X", s32Ret);
 		g_exit_result = RK_FAILURE;
 	}
+#else
+	stSrcChn.enModId = RK_ID_VI;
+	stSrcChn.s32DevId = ctx->vi.s32DevId;
+	stSrcChn.s32ChnId = ctx->vi.s32ChnId;
+	stDestChn.enModId = RK_ID_VENC;
+	stDestChn.s32DevId = 0;
+	stDestChn.s32ChnId = ctx->venc.s32ChnId;
+	s32Ret = SAMPLE_COMM_UnBind(&stSrcChn, &stDestChn);
+	if (s32Ret != RK_SUCCESS) {
+		RK_LOGE("VPSS and VENC bind failure:%X", s32Ret);
+		program_handle_error(__func__, __LINE__);
+	}
+#endif
 	/* destroy venc */
 	SAMPLE_COMM_VENC_DestroyChn(&ctx->venc);
 
+#if defined(RK3576)
 	/* destroy venc */
 	SAMPLE_COMM_VPSS_DestroyChn(&ctx->vpss);
+#endif
 	/* rtsp deinit */
 	rtsp_deinit();
 

@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
 			} else if (!strcmp(optarg, "yuyv")) {
 				PixelFormat = RK_FMT_YUV422_YUYV;
 			}
-#if defined(RV1106)
+#if defined(RV1106) || defined(RV1103B)
 			else if (!strcmp(optarg, "rgb565")) {
 				PixelFormat = RK_FMT_RGB565;
 				s32ChnId = 1;

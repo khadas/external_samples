@@ -217,6 +217,7 @@ RK_S32 SAMPLE_COMM_VPSS_GetChnFrame(SAMPLE_VPSS_CTX_S *ctx, void **pdata) {
 	    RK_MPI_VPSS_GetChnFrame(ctx->s32GrpId, ctx->s32ChnId, &ctx->stChnFrameInfos, -1);
 	if (s32Ret != RK_SUCCESS) {
 		RK_LOGE("RK_MPI_VPSS_GetChnFrame fail %x", s32Ret);
+		abort();
 	}
 
 	stPicBufAttr.u32Width = ctx->stChnFrameInfos.stVFrame.u32VirWidth;
@@ -291,7 +292,7 @@ RK_S32 SAMPLE_COMM_VPSS_DestroyChn(SAMPLE_VPSS_CTX_S *ctx) {
 		return s32Ret;
 	}
 
-#if defined(RV1106)
+#if defined(RV1106) || defined(RV1103B)
 	RK_MPI_SYS_WaitFreeMB();
 #endif
 	return RK_SUCCESS;

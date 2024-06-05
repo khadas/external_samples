@@ -258,28 +258,34 @@ static void hdr_mode_switch_test(RK_S32 test_loop) {
 	RK_S32 s32Ret = RK_FAILURE;
 
 	while (!gModeTest->bModuleTestThreadQuit) {
-#if defined(RV1106) || defined(RK3576)
+#if defined(RV1106) || defined(RV1103B) || defined(RK3576)
 
 		RK_MPI_VI_PauseChn(ctx->vi.u32PipeId, ctx->vi.s32ChnId);
 		SAMPLE_COMM_ISP_Stop(gModeTest->s32CamId);
-
-		if (gModeTest->eHdrMode == RK_AIQ_WORKING_MODE_NORMAL) {
+		if (gModeTest->eHdrMode != RK_AIQ_WORKING_MODE_ISP_HDR2)
 			gModeTest->eHdrMode = RK_AIQ_WORKING_MODE_ISP_HDR2;
-		} else if (gModeTest->eHdrMode == RK_AIQ_WORKING_MODE_ISP_HDR2) {
+		else
 			gModeTest->eHdrMode = RK_AIQ_WORKING_MODE_NORMAL;
-		} else {
-			gModeTest->eHdrMode = RK_AIQ_WORKING_MODE_NORMAL;
-		}
 		s32Ret = SAMPLE_COMM_ISP_Init(gModeTest->s32CamId, gModeTest->eHdrMode,
 		                              gModeTest->bMultictx, gModeTest->pIqFileDir);
-		s32Ret |= SAMPLE_COMM_ISP_Run(gModeTest->s32CamId);
 		if (s32Ret != RK_SUCCESS) {
 			RK_LOGE("ISP init failure\n");
 			program_handle_error(__func__, __LINE__);
 			break;
 		}
+		s32Ret = SAMPLE_COMM_ISP_Run(gModeTest->s32CamId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("ISP run failure\n");
+			program_handle_error(__func__, __LINE__);
+			break;
+		}
 
-		RK_MPI_VI_ResumeChn(ctx->vi.u32PipeId, ctx->vi.s32ChnId);
+		s32Ret = RK_MPI_VI_ResumeChn(ctx->vi.u32PipeId, ctx->vi.s32ChnId);
+		if (s32Ret != RK_SUCCESS) {
+			RK_LOGE("vi resume failure\n");
+			program_handle_error(__func__, __LINE__);
+			break;
+		}
 
 #elif defined(RV1126)
 		if (gModeTest->eHdrMode == RK_AIQ_WORKING_MODE_NORMAL) {
@@ -720,7 +726,7 @@ int main(int argc, char *argv[]) {
 			} else if (!strcmp(optarg, "uyvy")) {
 				ePixelFormat = RK_FMT_YUV422_UYVY;
 			}
-#if defined(RV1106)
+#if defined(RV1106) || defined(RV1103B)
 			else if (!strcmp(optarg, "rgb565")) {
 				ePixelFormat = RK_FMT_RGB565;
 				s32ChnId = 1;

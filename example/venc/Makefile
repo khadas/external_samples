@@ -1,11 +1,6 @@
 # Rockchip sample Makefile
 LD_FLAGS += -L$(COMM_DIR)/lib -lsample_comm
 LD_FLAGS += $(RK_MEDIA_OPTS) -L$(RK_MEDIA_OUTPUT)/lib -lrockchip_mpp -lrkaiq -lrtsp
-ifeq ($(RK_MEDIA_CHIP), rv1106)
-LD_FLAGS += -lrockit_full
-else
-LD_FLAGS += -lrockit
-endif
 
 all:
 	$(CMD_DBG)$(SAMPLE_CC) $(SAMPLE_CFLAGS) sample_vi_vpss_osd_venc.c -o sample_vi_vpss_osd_venc $(LD_FLAGS)
