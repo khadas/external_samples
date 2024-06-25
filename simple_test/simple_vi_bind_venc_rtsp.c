@@ -48,6 +48,7 @@ static atomic_bool g_should_quit = false;
 
 static RK_S32 g_s32FrameCnt = -1;
 static RK_U32 g_u32Bitrate = 10 * 1024;
+static RK_U32 g_u32SliceSplit = 0;
 static bool quit = false;
 
 rtsp_demo_handle g_rtsplive = NULL;
@@ -139,6 +140,15 @@ static RK_S32 test_venc_init(int chnId, int width, int height, RK_CODEC_ID_E enT
 	stAttr.stVencAttr.enMirror = MIRROR_NONE;
 
 	RK_MPI_VENC_CreateChn(chnId, &stAttr);
+
+	if (g_u32SliceSplit) {
+		VENC_SLICE_SPLIT_S stSliceSplit;
+		RK_MPI_VENC_GetSliceSplit(chnId, &stSliceSplit);
+		stSliceSplit.bSplitEnable = RK_TRUE;
+		stSliceSplit.u32SplitMode = 3;
+		stSliceSplit.u32SplitSize = 120;
+		RK_MPI_VENC_SetSliceSplit(chnId, &stSliceSplit);
+	}
 
 	memset(&stRecvParam, 0, sizeof(VENC_RECV_PIC_PARAM_S));
 	stRecvParam.s32RecvPicNum = -1;
@@ -339,7 +349,7 @@ RK_S32 SIMPLE_COMM_ISP_Stop(RK_S32 CamId) {
 	return 0;
 }
 
-static RK_CHAR optstr[] = "?::a::w:h:c:I:e:b:";
+static RK_CHAR optstr[] = "?::a::w:h:c:I:e:b:s:";
 static void print_usage(const RK_CHAR *name) {
 	printf("Usage example:\n");
 	printf("\t%s -I 0 -w 1920 -h 1080 (rtsp://ip/live/0)\n", name);
@@ -351,6 +361,7 @@ static void print_usage(const RK_CHAR *name) {
 	       "0:rkisp_mainpath,1:rkisp_selfpath,2:rkisp_bypasspath\n");
 	printf("\t-e | --encode: encode type, Default:h264, Value:h264, h265\n");
 	printf("\t-b | --bitrate: set bitrate (Kbps), Default: 10Mbps\n");
+	printf("\t-s | --slice_split: set slice split (0, 1), Default: 0\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -397,6 +408,9 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'b':
 			g_u32Bitrate = atoi(optarg);
+			break;
+		case 's':
+			g_u32SliceSplit = atoi(optarg);
 			break;
 		case '?':
 		default:
