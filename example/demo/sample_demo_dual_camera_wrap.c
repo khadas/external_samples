@@ -36,6 +36,7 @@ typedef struct _rkMpiCtx {
 	SAMPLE_VI_CTX_S vi[4]; // camera 0: 0,1; camera 1: 2,3
 	SAMPLE_VENC_CTX_S venc[4];
 } SAMPLE_MPI_CTX_S;
+static int g_wrap_line = 1080;
 
 static bool quit = false;
 static void sigterm_handler(int sig) {
@@ -46,7 +47,7 @@ static void sigterm_handler(int sig) {
 static int max_width = 1920;
 static int max_height = 1080;
 
-static RK_CHAR optstr[] = "?::r:f:W:H:w:h:s:n:b:S:x:y:";
+static RK_CHAR optstr[] = "?::r:f:W:H:w:h:s:n:b:S:x:y:l:";
 static const struct option long_options[] = {
     {"hdr", required_argument, NULL, 'r'},
     {"fps", required_argument, NULL, 'f'},
@@ -60,6 +61,7 @@ static const struct option long_options[] = {
     {"switch_res", required_argument, NULL, 'S'},
     {"max_width", required_argument, NULL, 'x'},
     {"max_height", required_argument, NULL, 'y'},
+    {"wrap_line", required_argument, NULL, 'l'},
     {"help", optional_argument, NULL, '?'},
     {NULL, 0, NULL, 0},
 };
@@ -546,7 +548,7 @@ static void *rkipc_get_vi_to_npu(void *arg) {
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s -s 0 -W init_width -H init_height -w 720 -h 576 -f 30 -r 0 -s 1 -W init_width -H init_height -w "
-	       "720 -h 576 -f 30 -r 0 -n 1 -S 0 -x max_width -y max_height\n",
+	       "720 -h 576 -f 30 -r 0 -n 1 -S 0 -x max_width -y max_height -l wrap_line\n",
 	       name);
 	printf("\trtsp://xx.xx.xx.xx/live/0, sensor 0 main-stream, Default OPEN\n");
 	printf("\trtsp://xx.xx.xx.xx/live/1, sensor 0 sub-stream, Default OPEN\n");
@@ -564,6 +566,7 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-S | --switch_res: switch resolution, Default 0\n");
 	printf("\t-x | --max_width: max width, Default 1920\n");
 	printf("\t-y | --max_height: max height, Default 1080\n");
+	printf("\t-l | --wrap_line: wrap line, Default 1080\n");
 }
 /******************************************************************************
  * function    : main()
@@ -682,6 +685,9 @@ int main(int argc, char *argv[]) {
         case 'y':
             max_height = atoi(optarg);
             break;
+        case 'l':
+            g_wrap_line = atoi(optarg);
+            break;
 		case '?':
 		default:
 			print_usage(argv[0]);
@@ -692,11 +698,6 @@ int main(int argc, char *argv[]) {
 	       cam_0_video_1_width, cam_0_video_1_height);
 	printf("sensor 1: main:%d*%d, sub:%d*%d\n", cam_1_video_0_width, cam_1_video_0_height,
 	       cam_1_video_1_width, cam_1_video_1_height);
-	if (cam_0_video_0_width <= 0 || cam_1_video_0_width <= 0 ||
-	    cam_0_video_0_height <= 0 || cam_1_video_0_height <= 0) {
-		printf("invalid main stream width/height,please check!\n");
-		return -1;
-	}
 	printf("#CodecName:%s\n", pCodecName);
 	printf("#IQ Path: %s\n", iq_file_dir);
 	if (iq_file_dir) {
@@ -743,11 +744,19 @@ int main(int argc, char *argv[]) {
 
 	// Init VI and VENC 0~4
 	for (i = 0; i < s32CamNum; i++) {
+		if (i == 0 && (cam_0_video_0_width <= 0 || cam_0_video_0_height <= 0))
+			continue;
+		if (i == 1 && (cam_0_video_1_width <= 0 || cam_0_video_1_height <= 0))
+			continue;
+		if (i == 2 && (cam_1_video_0_width <= 0 || cam_1_video_0_height <= 0))
+			continue;
+		if (i == 3 && (cam_1_video_1_width <= 0 || cam_1_video_1_height <= 0))
+			continue;
 		if (i == 0) {
 			ctx->vi[i].u32Width = cam_0_video_0_width;
 			ctx->vi[i].u32Height = cam_0_video_0_height;
 			ctx->vi[i].bWrapIfEnable = RK_TRUE;
-			ctx->vi[i].u32BufferLine = ctx->vi[i].u32Height;
+			ctx->vi[i].u32BufferLine = g_wrap_line;
 		}
 		if (i == 1) {
 			ctx->vi[i].u32Width = cam_0_video_1_width;
@@ -757,7 +766,7 @@ int main(int argc, char *argv[]) {
 			ctx->vi[i].u32Width = cam_1_video_0_width;
 			ctx->vi[i].u32Height = cam_1_video_0_height;
 			ctx->vi[i].bWrapIfEnable = RK_TRUE;
-			ctx->vi[i].u32BufferLine = ctx->vi[i].u32Height;
+			ctx->vi[i].u32BufferLine = g_wrap_line;
 		}
 		if (i == 3) {
 			ctx->vi[i].u32Width = cam_1_video_1_width;
@@ -771,6 +780,12 @@ int main(int argc, char *argv[]) {
 			ctx->vi[i].s32DevId = 1;
 			ctx->vi[i].u32PipeId = 1;
 			ctx->vi[i].s32ChnId = i - 2;
+		}
+		if (i == 2) {
+			ctx->vi[i].stChnAttr.enAllocBufType = VI_ALLOC_BUF_TYPE_CHN_SHARE;
+			ctx->vi[i].stChnAttr.stShareBufChn.enModId = RK_ID_VI;
+			ctx->vi[i].stChnAttr.stShareBufChn.s32DevId = 0;
+			ctx->vi[i].stChnAttr.stShareBufChn.s32ChnId = 0;
 		}
 		ctx->vi[i].stChnAttr.stIspOpt.stMaxSize.u32Width = max_width;//ctx->vi[i].u32Width;//初始化分辨率，按照最大
 		ctx->vi[i].stChnAttr.stIspOpt.stMaxSize.u32Height = max_height;//ctx->vi[i].u32Height;//初始化分辨率，按照最大
@@ -852,10 +867,14 @@ int main(int argc, char *argv[]) {
 		venc_chn[i].s32DevId = 0;
 		venc_chn[i].s32ChnId = ctx->venc[i].s32ChnId;
 	}
-	SAMPLE_COMM_Bind(&vi_chn[0], &venc_chn[0]);
-	SAMPLE_COMM_Bind(&vi_chn[1], &venc_chn[1]);
-	SAMPLE_COMM_Bind(&vi_chn[2], &venc_chn[2]);
-	SAMPLE_COMM_Bind(&vi_chn[3], &venc_chn[3]);
+	if (cam_0_video_0_width > 0 && cam_0_video_0_height > 0)
+		SAMPLE_COMM_Bind(&vi_chn[0], &venc_chn[0]);
+	if (cam_0_video_1_width > 0 && cam_0_video_1_height > 0)
+		SAMPLE_COMM_Bind(&vi_chn[1], &venc_chn[1]);
+	if (cam_1_video_0_width > 0 && cam_1_video_0_height > 0)
+		SAMPLE_COMM_Bind(&vi_chn[2], &venc_chn[2]);
+	if (cam_1_video_1_width > 0 && cam_1_video_1_height > 0)
+		SAMPLE_COMM_Bind(&vi_chn[3], &venc_chn[3]);
 
 	pthread_t tsw;
 	if (switch_res)
@@ -878,18 +897,31 @@ int main(int argc, char *argv[]) {
 	}
 	if (enable_npu)
 		rockiva_deinit();
-	pthread_join(get_vi_to_npu_thread, NULL);
+	if (cam_0_video_1_width > 0 && cam_0_video_1_height > 0 && enable_npu)
+		pthread_join(get_vi_to_npu_thread, NULL);
 
 	if (g_rtsplive)
 		rtsp_del_demo(g_rtsplive);
 
-	SAMPLE_COMM_UnBind(&vi_chn[0], &venc_chn[0]);
-	SAMPLE_COMM_UnBind(&vi_chn[1], &venc_chn[1]);
-	SAMPLE_COMM_UnBind(&vi_chn[2], &venc_chn[2]);
-	SAMPLE_COMM_UnBind(&vi_chn[3], &venc_chn[3]);
+	if (cam_0_video_0_width > 0 && cam_0_video_0_height > 0)
+		SAMPLE_COMM_UnBind(&vi_chn[0], &venc_chn[0]);
+	if (cam_0_video_1_width > 0 && cam_0_video_1_height > 0)
+		SAMPLE_COMM_UnBind(&vi_chn[1], &venc_chn[1]);
+	if (cam_1_video_0_width > 0 && cam_1_video_0_height > 0)
+		SAMPLE_COMM_UnBind(&vi_chn[2], &venc_chn[2]);
+	if (cam_1_video_1_width > 0 && cam_1_video_1_height > 0)
+		SAMPLE_COMM_UnBind(&vi_chn[3], &venc_chn[3]);
 
 	// Destroy VI[0]
 	for (i = 0; i < s32CamNum; i++) {
+		if (i == 0 && (cam_0_video_0_width <= 0 || cam_0_video_0_height <= 0))
+			continue;
+		if (i == 1 && (cam_0_video_1_width <= 0 || cam_0_video_1_height <= 0))
+			continue;
+		if (i == 2 && (cam_1_video_0_width <= 0 || cam_1_video_0_height <= 0))
+			continue;
+		if (i == 3 && (cam_1_video_1_width <= 0 || cam_1_video_1_height <= 0))
+			continue;
 		SAMPLE_COMM_VENC_DestroyChn(&ctx->venc[i]);
 		SAMPLE_COMM_VI_DestroyChn(&ctx->vi[i]);
 	}
