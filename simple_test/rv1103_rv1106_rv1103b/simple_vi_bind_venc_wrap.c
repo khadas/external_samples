@@ -143,8 +143,8 @@ static int vi_chn_init(int channelId, int width, int height, int maxWidth,
 	// set wrap mode attr
 	memset(&g_stViWrap, 0, sizeof(VI_CHN_BUF_WRAP_S));
 	if (g_bWrapEn) {
-		if (g_u32WrapLine < 128 || g_u32WrapLine > height) {
-			printf("wrap mode buffer line must between [128, H]\n");
+		if (g_u32WrapLine < 64 || g_u32WrapLine > height) {
+			printf("wrap mode buffer line must between [64, H]\n");
 			return -1;
 		}
 		g_stViWrap.bEnable = RK_TRUE;

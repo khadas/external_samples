@@ -80,8 +80,8 @@ RK_S32 SAMPLE_COMM_VI_CreateChn(SAMPLE_VI_CTX_S *ctx) {
 
 	if (ctx->bWrapIfEnable) {
 		memset(&stViWrap, 0, sizeof(VI_CHN_BUF_WRAP_S));
-		if (ctx->u32BufferLine < 128 || ctx->u32BufferLine > ctx->u32Height) {
-			RK_LOGE("wrap mode buffer line must between [128, %d]", ctx->u32Height);
+		if (ctx->u32BufferLine < 64 || ctx->u32BufferLine > ctx->u32Height) {
+			RK_LOGE("wrap mode buffer line must between [64, %d]", ctx->u32Height);
 			return RK_FAILURE;
 		}
 		stViWrap.bEnable = RK_TRUE;
