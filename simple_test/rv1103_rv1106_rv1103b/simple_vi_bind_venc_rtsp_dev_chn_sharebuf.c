@@ -542,6 +542,10 @@ int main(int argc, char *argv[]) {
 		RK_LOGE("RK_MPI_VDEC_DestroyChn fail %x", s32Ret);
 	}
 
+	s32Ret = RK_MPI_VI_StopPipe(0);
+	RK_LOGI("RK_MPI_VI_StopPipe %x", s32Ret);
+	s32Ret = RK_MPI_VI_DestroyPipe(0);
+	RK_LOGI("RK_MPI_VI_DestroyPipe %x", s32Ret);
 	s32Ret = RK_MPI_VI_DisableDev(0);
 	RK_LOGE("RK_MPI_VI_DisableDev %x", s32Ret);
 	ret = 0;
