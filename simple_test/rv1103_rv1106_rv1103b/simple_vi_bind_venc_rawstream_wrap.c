@@ -45,7 +45,7 @@
 #define RK_ARRAY_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
 typedef struct {
-	RK_U32 u32DevId;
+	RK_U32 u32PipeId;
 	RK_U32 u32ChnId;
 	RK_U32 u32InWidth;
 	RK_U32 u32InHeight;
@@ -56,6 +56,7 @@ typedef struct {
 	RK_BOOL bEnableWrap;
 	RK_U32 u32WrapLine;
 	RK_U32 u32Framerate;
+	RK_U32 u32DstFramerate;
 	VI_RAW_MEMORY_TYPE_E enMemMode;
 	RK_U32 u32BufCnt;
 	RK_U32 u32PipeMbCnt;
@@ -122,9 +123,9 @@ static int vi_pipe_init(TEST_VI_CFG_S *pViCfg) {
 	stPipeAttr.u32MaxH = pViCfg->u32InHeight;
 	stPipeAttr.enPixFmt = RK_FMT_RGB_BAYER_SBGGR_10BPP;
 	stPipeAttr.enMemMode = pViCfg->enMemMode;
-	ret = RK_MPI_VI_CreatePipe(pViCfg->u32DevId, &stPipeAttr);
+	ret = RK_MPI_VI_CreatePipe(pViCfg->u32PipeId, &stPipeAttr);
 	if (ret != RK_SUCCESS) {
-		printf("RK_MPI_VI_CreatePipe[%d] failed: %x\n", pViCfg->u32DevId, ret);
+		printf("RK_MPI_VI_CreatePipe[%d] failed: %x\n", pViCfg->u32PipeId, ret);
 		return -1;
 	}
 
@@ -186,7 +187,7 @@ static int vi_chn_init(TEST_VI_CFG_S *pViCfg) {
 	VI_CHN_ATTR_S stViChnAttr;
 	VI_CHN_BUF_WRAP_S stViWrap;
 
-	printf("enter vi_chn_init[%d, %d]\n", pViCfg->u32DevId, pViCfg->u32ChnId);
+	printf("enter vi_chn_init[%d, %d]\n", pViCfg->u32PipeId, pViCfg->u32ChnId);
 
 	memset(&stViChnAttr, 0, sizeof(VI_CHN_ATTR_S));
 	stViChnAttr.stIspOpt.u32BufCount = pViCfg->u32BufCnt;
@@ -194,8 +195,8 @@ static int vi_chn_init(TEST_VI_CFG_S *pViCfg) {
 	stViChnAttr.stSize.u32Width = pViCfg->u32OutWidth;
 	stViChnAttr.stSize.u32Height = pViCfg->u32OutHeight;
 	stViChnAttr.enPixelFormat = RK_FMT_YUV420SP;
-	stViChnAttr.stFrameRate.s32SrcFrameRate = -1;
-	stViChnAttr.stFrameRate.s32DstFrameRate = -1;
+	stViChnAttr.stFrameRate.s32SrcFrameRate = pViCfg->u32Framerate;
+	stViChnAttr.stFrameRate.s32DstFrameRate = pViCfg->u32DstFramerate;
 	stViChnAttr.bMirror = pViCfg->bMirror;
 	stViChnAttr.bFlip = pViCfg->bFlip;
 
@@ -205,15 +206,15 @@ static int vi_chn_init(TEST_VI_CFG_S *pViCfg) {
 
 	if (stTestCtx.u32CamNum > 1 && pViCfg->bEnableWrap) {
 		stViChnAttr.stShareBufChn.enModId = RK_ID_VI;
-		stViChnAttr.stShareBufChn.s32DevId = stTestCtx.stViCtx[0].u32DevId;
+		stViChnAttr.stShareBufChn.s32DevId = stTestCtx.stViCtx[0].u32PipeId;
 		stViChnAttr.stShareBufChn.s32ChnId = stTestCtx.stViCtx[0].u32ChnId;
-		stViChnAttr.enAllocBufType = pViCfg->u32DevId? VI_ALLOC_BUF_TYPE_CHN_SHARE : VI_ALLOC_BUF_TYPE_INTERNAL;
+		stViChnAttr.enAllocBufType = pViCfg->u32PipeId? VI_ALLOC_BUF_TYPE_CHN_SHARE : VI_ALLOC_BUF_TYPE_INTERNAL;
 	}
 
 	printf("vi[%d, %d] enAllocBufType: %d, stShareBufChn.s32ChnId: %d\n",
-					pViCfg->u32DevId, pViCfg->u32ChnId, stViChnAttr.enAllocBufType, stViChnAttr.stShareBufChn.s32ChnId);
+					pViCfg->u32PipeId, pViCfg->u32ChnId, stViChnAttr.enAllocBufType, stViChnAttr.stShareBufChn.s32ChnId);
 
-	ret = RK_MPI_VI_SetChnAttr(pViCfg->u32DevId, pViCfg->u32ChnId, &stViChnAttr);
+	ret = RK_MPI_VI_SetChnAttr(pViCfg->u32PipeId, pViCfg->u32ChnId, &stViChnAttr);
 	if (ret) {
 		printf("ERROR: VI set channel attribute fail, ret=%d\n", ret);
 		return ret;
@@ -231,20 +232,20 @@ static int vi_chn_init(TEST_VI_CFG_S *pViCfg) {
 		stViWrap.u32BufLine = pViCfg->u32WrapLine;
 		stViWrap.u32WrapBufferSize = stViWrap.u32BufLine * pViCfg->u32OutWidth * 3 / 2; // nv12 (w * wrapLine *3 / 2)
 		printf("set channel: %d wrap line: %d, wrapBuffSize = %d\n", pViCfg->u32ChnId, pViCfg->u32WrapLine, stViWrap.u32WrapBufferSize);
-		ret = RK_MPI_VI_SetChnWrapBufAttr(pViCfg->u32DevId, pViCfg->u32ChnId, &stViWrap);
+		ret = RK_MPI_VI_SetChnWrapBufAttr(pViCfg->u32PipeId, pViCfg->u32ChnId, &stViWrap);
 		if (ret) {
 			printf("ERROR: RK_MPI_VI_SetChnWrapBufAttr failed: %x\n", ret);
 			return ret;
 		}
 	}
 
-	ret = RK_MPI_VI_EnableChn(pViCfg->u32DevId, pViCfg->u32ChnId);
+	ret = RK_MPI_VI_EnableChn(pViCfg->u32PipeId, pViCfg->u32ChnId);
 	if (ret) {
 		printf("ERROR: RK_MPI_VI_EnableChn failed: %x\n", ret);
 		return ret;
 	}
 
-	printf("vi dev:%d channle:%d enable success\n", pViCfg->u32DevId, pViCfg->u32ChnId);
+	printf("vi dev:%d channle:%d enable success\n", pViCfg->u32PipeId, pViCfg->u32ChnId);
 	return ret;
 }
 
@@ -339,7 +340,10 @@ static void *send_raw_frame(void *arg) {
 	MB_POOL mbPool = MB_INVALID_POOLID;
 	TEST_VI_CFG_S *pstViCfg = (TEST_VI_CFG_S *)arg;
 	RK_U64 timeInterval = 0;
-	timeInterval = 1000000 / pstViCfg->u32Framerate;
+	if (pstViCfg->u32Framerate != -1)
+		timeInterval = 1000000 / pstViCfg->u32Framerate;
+	else
+		timeInterval = 0;
 	memset(&stViFrame, 0, sizeof(VIDEO_FRAME_INFO_S));
 	memset(&pstBufAttr, 0, sizeof(PIC_BUF_ATTR_S));
 	memset(&pstPicCal, 0, sizeof(MB_PIC_CAL_S));
@@ -351,7 +355,7 @@ static void *send_raw_frame(void *arg) {
 	pstBufAttr.enPixelFormat = RK_FMT_RGB_BAYER_SBGGR_10BPP;
 	ret = RK_MPI_CAL_COMM_GetPicBufferSize(&pstBufAttr, &pstPicCal);
 	if (ret != RK_SUCCESS) {
-		printf("RK_MPI_CAL_TDE_GetPicBufferSize[%d, %d] failure: %x\n", pstViCfg->u32DevId, pstViCfg->u32ChnId, ret);
+		printf("RK_MPI_CAL_TDE_GetPicBufferSize[%d, %d] failure: %x\n", pstViCfg->u32PipeId, pstViCfg->u32ChnId, ret);
 		return RK_NULL;
 	}
 
@@ -362,7 +366,7 @@ static void *send_raw_frame(void *arg) {
 	stMbPoolCfg.bPreAlloc = RK_TRUE;
 	mbPool = RK_MPI_MB_CreatePool(&stMbPoolCfg);
 	if (mbPool == MB_INVALID_POOLID)
-		printf("RK_MPI_MB_CreatePool[%d, %d] failure\n", pstViCfg->u32DevId, pstViCfg->u32ChnId);
+		printf("RK_MPI_MB_CreatePool[%d, %d] failure\n", pstViCfg->u32PipeId, pstViCfg->u32ChnId);
 
 	while (!quit) {
 		stViFrame.stVFrame.pMbBlk = RK_MPI_MB_GetMB(mbPool, pstPicCal.u32MBSize, RK_TRUE);
@@ -393,19 +397,21 @@ static void *send_raw_frame(void *arg) {
 		}
 
 		RK_MPI_SYS_MmzFlushCache(stViFrame.stVFrame.pMbBlk, RK_FALSE);
-		ret = RK_MPI_VI_PipeSendFrame(pstViCfg->u32DevId, &stViFrame, waitTime);
+		ret = RK_MPI_VI_PipeSendFrame(pstViCfg->u32PipeId, &stViFrame, waitTime);
 		if (ret != RK_SUCCESS)
-			printf("RK_MPI_VI_PipeSendFrame[%d, %d] failure:%x\n", pstViCfg->u32DevId, pstViCfg->u32ChnId, ret);
+			printf("RK_MPI_VI_PipeSendFrame[%d, %d] failure:%x\n", pstViCfg->u32PipeId, pstViCfg->u32ChnId, ret);
 		else
-			printf("+++ %d: send pipe success[%d, %d], pts: %lld\n", loopCount, pstViCfg->u32DevId, pstViCfg->u32ChnId, stViFrame.stVFrame.u64PTS);
+			printf("+++ %d: send pipe success[%d, %d], pts: %lld\n", loopCount, pstViCfg->u32PipeId, pstViCfg->u32ChnId, stViFrame.stVFrame.u64PTS);
 
 		loopCount++;
 		RK_MPI_MB_ReleaseMB(stViFrame.stVFrame.pMbBlk);
 		stViFrame.stVFrame.pMbBlk = RK_NULL;
+		if (timeInterval)
+			usleep(timeInterval / 2);
 	}
 
 	RK_MPI_MB_DestroyPool(mbPool);
-	printf("Exit send raw frame thread[%d, %d]\n", pstViCfg->u32DevId, pstViCfg->u32ChnId);
+	printf("Exit send raw frame thread[%d, %d]\n", pstViCfg->u32PipeId, pstViCfg->u32ChnId);
 	return NULL;
 }
 
@@ -456,23 +462,23 @@ static void *get_venc_stream(void *arg) {
 	return NULL;
 }
 
-static RK_CHAR optstr[] = "?::d:n:c:I:o:w:l:d:m:b:f:s:v:";
+static RK_CHAR optstr[] = "?::d:n:c:I:o:w:l:d:m:b:f:s:v:F:r:R:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\tNOTE: Only RV1106 and RV1103 support this demo.\n");
 	printf("\t%s -I 0 --in_width 1920 --in_height 1080 --out_width 1920 --out_height 1080 -d /data -w 1 -l 540\n", name);
 	printf("\t-a | --aiq: iq file path, Default: /etc/iqfiles\n");
 	printf("\t-n | --camera_num: camera number, Default:1\n");
-	printf("\t--in_width: first sensor vi input width, Default:1920\n");
-	printf("\t--in_height: first sensor vi input height, Default:1080\n");
-	printf("\t--out_width: first sensor vi output width, Default:1920\n");
-	printf("\t--out_height: first sensor vi output height, Default:1080\n");
+	printf("\t--iw: first sensor vi input width, Default:1920\n");
+	printf("\t--ih: first sensor vi input height, Default:1080\n");
+	printf("\t--ow: first sensor vi output width, Default:1920\n");
+	printf("\t--oh: first sensor vi output height, Default:1080\n");
 	printf("\t--buf_size: venc buffer size, Default:out_width * out_height\n");
-	printf("\t--in_width_second: second sensor vi input width, Default:1920\n");
-	printf("\t--in_height_second: second sensor vi input height, Default:1080\n");
-	printf("\t--out_width_second: second sensor vi output width, Default:1920\n");
-	printf("\t--out_height_second: second sensor vi output height, Default:1080\n");
-	printf("\t--buf_size_second: second sensor venc buffer size, Default:out_width_second * out_height_second\n");
+	printf("\t--iw1: second sensor vi input width, Default:1920\n");
+	printf("\t--ih1: second sensor vi input height, Default:1080\n");
+	printf("\t--ow1: second sensor vi output width, Default:1920\n");
+	printf("\t--oh2: second sensor vi output height, Default:1080\n");
+	printf("\t--buf_size1: second sensor venc buffer size, Default:out_width_second * out_height_second\n");
 	printf("\t--buf_cnt: Vi buf_cnt, Default:2\n");
 	printf("\t--pipe_mb_cnt: Vi pipe mediabuffer cnt, Default:1\n");
 	printf("\t--frame_cnt: frame number of output, Default:-1\n");
@@ -483,13 +489,16 @@ static void print_usage(const RK_CHAR *name) {
 	printf("\t-d | --dir: input/output file directory, Default: /data\n");
 	printf("\t-w | --wrap: first sensor enable wrap mode, Default: 1\n");
 	printf("\t-l | --wrap_line: config wrap line, Default: 540\n");
-	printf("\t--wrap_second: second sensor enable wrap mode, Default: 1\n");
-	printf("\t--wrap_line_second: config second sensor wrap line, Default: 540\n");
+	printf("\t-W | --wrap1: second sensor enable wrap mode, Default: 1\n");
+	printf("\t-L | --wrap_line1: config second sensor wrap line, Default: 540\n");
 	printf("\t-c | --codec: encode type, Default: 8 (h264), Value: 8 (h264), 12 (h265), 9 (mjpeg)\n");
 	printf("\t-m | --mode: first sensor test mode, Default: 0(offline), Value: 0(offline), 1(online)\n");
-	printf("\t--mode_second: second sensor test mode, Default: 0(offline), Value: 0(offline), 1(online)\n");
+	printf("\t-M | --mode1: second sensor test mode, Default: 0(offline), Value: 0(offline), 1(online)\n");
 	printf("\t-b | --bitrate, unit kbps, Default: 10*1024 kbps\n");
 	printf("\t-f | --framerate, Default: 30\n");
+	printf("\t-F | --framerate1, Default: 30\n");
+	printf("\t-r | --Dstframerate, Default: 30\n");
+	printf("\t-R | --Dstframerate1, Default: 30\n");
 	printf("\t-s | --save, whether to save the output file, Default: save file\n");
 	printf("\t--mirror, enable vi mirror\n");
 	printf("\t--flip, enable vi flip\n");
@@ -498,16 +507,16 @@ static void print_usage(const RK_CHAR *name) {
 static const struct option long_options[] = {
 	{"aiq", optional_argument, NULL, 'a'},
 	{"camera_num", required_argument, NULL, 'n'},
-	{"in_width", required_argument, NULL, 'i' + 'w'},
-	{"in_height", required_argument, NULL, 'i' + 'h'},
-	{"out_width", required_argument, NULL, 'o' + 'w'},
-	{"out_height", required_argument, NULL, 'o' + 'h'},
+	{"iw", required_argument, NULL, 'i' + 'w'},
+	{"ih", required_argument, NULL, 'i' + 'h'},
+	{"ow", required_argument, NULL, 'o' + 'w'},
+	{"oh", required_argument, NULL, 'o' + 'h'},
 	{"buf_size", required_argument, NULL, 'b' + 's'},
-	{"in_width_second", required_argument, NULL, 'i' + 'w' + 's'},
-	{"in_height_second", required_argument, NULL, 'i' + 'h' + 's'},
-	{"out_width_second", required_argument, NULL, 'o' + 'w' + 's'},
-	{"out_height_second", required_argument, NULL, 'o' + 'h' + 's'},
-	{"buf_size_second", required_argument, NULL, 'b' + 's' + 's'},
+	{"iw1", required_argument, NULL, 'i' + 'w' + 's'},
+	{"ih1", required_argument, NULL, 'i' + 'h' + 's'},
+	{"ow1", required_argument, NULL, 'o' + 'w' + 's'},
+	{"oh1", required_argument, NULL, 'o' + 'h' + 's'},
+	{"buf_size1", required_argument, NULL, 'b' + 's' + 's'},
 	{"frame_cnt", required_argument, NULL, 'f' + 'c'},
 	{"chnId", required_argument, NULL, 'I'},
 	{"devId", required_argument, NULL, 'd' + 'i'},
@@ -515,13 +524,16 @@ static const struct option long_options[] = {
 	{"dir", required_argument, NULL, 'd'},
 	{"wrap", required_argument, NULL, 'w'},
 	{"wrap_line", required_argument, NULL, 'l'},
-	{"wrap_second", required_argument, NULL, 'w' + 's'},
-	{"wrap_line_second", required_argument, NULL, 'l' + 's'},
+	{"wrap1", required_argument, NULL, 'W'},
+	{"wrap_line1", required_argument, NULL, 'L'},
 	{"codec", required_argument, NULL, 'c'},
 	{"mode", required_argument, NULL, 'm'},
-	{"mode_second", required_argument, NULL, 't' + 'm' + 's'},
+	{"mode1", required_argument, NULL, 'M'},
 	{"bitrate", required_argument, NULL, 'b'},
 	{"framerate", required_argument, NULL, 'f'},
+	{"framerate1", required_argument, NULL, 'F'},
+	{"Dstframerate", required_argument, NULL, 'r'},
+	{"Dstframerate1", required_argument, NULL, 'R'},
 	{"save", required_argument, NULL, 's'},
 	{"pipe_mem_mode", required_argument, NULL, 'p' + 'm'},
 	{"buf_cnt", required_argument, NULL, 'b' + 'c'},
@@ -665,7 +677,7 @@ static void init_ctx_cfg() {
 	stTestCtx.u32CamNum = 1;
 	stTestCtx.firstMode = TEST_OFFLINE_MODE;
 	stTestCtx.secondMode = TEST_OFFLINE_MODE;
-	pViCfg->u32DevId = 0;
+	pViCfg->u32PipeId = 0;
 	pViCfg->u32ChnId = 0;
 	pViCfg->u32InWidth = 1920;
 	pViCfg->u32InHeight = 1080;
@@ -676,6 +688,7 @@ static void init_ctx_cfg() {
 	pViCfg->bEnableWrap = RK_TRUE;
 	pViCfg->u32WrapLine = 540;
 	pViCfg->u32Framerate = 30;
+	pViCfg->u32DstFramerate = 30;
 	pViCfg->enMemMode = VI_RAW_MEM_WORD_LOW_ALIGN;
 	pViCfg->u32BufCnt = 2;
 	pViCfg->u32PipeMbCnt = 1;
@@ -693,7 +706,7 @@ static void init_ctx_cfg() {
 	memcpy(pViCfg1, pViCfg, sizeof(TEST_VI_CFG_S));
 	memcpy(pVencCfg1, pVencCfg, sizeof(TEST_VENC_CFG_S));
 
-	pViCfg1->u32DevId = 1;
+	pViCfg1->u32PipeId = 1;
 	pVencCfg1->u32ChnId = 1;
 }
 
@@ -769,7 +782,7 @@ static void close_file(RK_U32 u32CamNum) {
 	TEST_VENC_CFG_S *pVencCfg1 = &stTestCtx.stVencCtx[1];
 
 	if (pViCfg->fp) {
-		printf("close vi[%d, %d] input file\n", pViCfg->u32DevId, pViCfg->u32ChnId);
+		printf("close vi[%d, %d] input file\n", pViCfg->u32PipeId, pViCfg->u32ChnId);
 		fclose(pViCfg->fp);
 	}
 
@@ -780,7 +793,7 @@ static void close_file(RK_U32 u32CamNum) {
 
 	if (u32CamNum == 2) {
 		if (pViCfg1->fp) {
-		printf("close vi[%d, %d] input file\n", pViCfg1->u32DevId, pViCfg1->u32ChnId);
+		printf("close vi[%d, %d] input file\n", pViCfg1->u32PipeId, pViCfg1->u32ChnId);
 			fclose(pViCfg1->fp);
 		}
 
@@ -797,69 +810,69 @@ static int init_all_vi_wrap(RK_U32 u32CamNum) {
 	TEST_VI_CFG_S *pViCfg1 = &stTestCtx.stViCtx[1];
 
 	if (stTestCtx.firstMode == TEST_ONLINE_MODE) {
-		ret = vi_dev_init(pViCfg->u32DevId);
+		ret = vi_dev_init(pViCfg->u32PipeId);
 		if (ret) {
-			printf("vi_dev_init[%d] failed[%x]", pViCfg->u32DevId, ret);
+			printf("vi_dev_init[%d] failed[%x]", pViCfg->u32PipeId, ret);
 			return -1;
 		}
 	} else {
 		ret = vi_pipe_init(pViCfg);
 		if (ret) {
-			printf("vi_pipe_init[%d] failed[%x]", pViCfg->u32DevId, ret);
+			printf("vi_pipe_init[%d] failed[%x]", pViCfg->u32PipeId, ret);
 			return -1;
 		}
 	}
-	printf("%d: pipe or dev init ok\n", pViCfg->u32DevId);
+	printf("%d: pipe or dev init ok\n", pViCfg->u32PipeId);
 
 	if (u32CamNum > 1) {
 		if (stTestCtx.secondMode == TEST_ONLINE_MODE) {
-			ret = vi_dev_init(pViCfg1->u32DevId);
+			ret = vi_dev_init(pViCfg1->u32PipeId);
 			if (ret) {
-				printf("vi_dev_init[%d] failed[%x]", pViCfg1->u32DevId, ret);
+				printf("vi_dev_init[%d] failed[%x]", pViCfg1->u32PipeId, ret);
 				return -1;
 			}
 		} else {
 			ret = vi_pipe_init(pViCfg1);
 			if (ret) {
-				printf("vi_pipe_init[%d] failed[%x]", pViCfg1->u32DevId, ret);
+				printf("vi_pipe_init[%d] failed[%x]", pViCfg1->u32PipeId, ret);
 				return -1;
 			}
 		}
-		printf("%d: pipe or dev init ok\n", pViCfg1->u32DevId);
+		printf("%d: pipe or dev init ok\n", pViCfg1->u32PipeId);
 	}
 
 	if (stTestCtx.firstMode == TEST_OFFLINE_MODE) {
-		ret = RK_MPI_VI_StartPipe(pViCfg->u32DevId);
+		ret = RK_MPI_VI_StartPipe(pViCfg->u32PipeId);
 		if (ret != RK_SUCCESS) {
-			printf("RK_MPI_VI_StartPipe[%d] failed: %x\n", pViCfg->u32DevId, ret);
+			printf("RK_MPI_VI_StartPipe[%d] failed: %x\n", pViCfg->u32PipeId, ret);
 			return -1;
 		}
-		printf("%d: start pipe ok\n", pViCfg->u32DevId);
+		printf("%d: start pipe ok\n", pViCfg->u32PipeId);
 	}
 
 	if (u32CamNum > 1 && stTestCtx.secondMode == TEST_OFFLINE_MODE) {
-		ret = RK_MPI_VI_StartPipe(pViCfg1->u32DevId);
+		ret = RK_MPI_VI_StartPipe(pViCfg1->u32PipeId);
 		if (ret != RK_SUCCESS) {
-			printf("RK_MPI_VI_StartPipe[%d] failed: %x\n", pViCfg1->u32DevId, ret);
+			printf("RK_MPI_VI_StartPipe[%d] failed: %x\n", pViCfg1->u32PipeId, ret);
 			return -1;
 		}
-		printf("%d: start pipe ok\n", pViCfg1->u32DevId);
+		printf("%d: start pipe ok\n", pViCfg1->u32PipeId);
 	}
 
 	ret = vi_chn_init(pViCfg);
 	if (ret) {
-		printf("vi_chn_init[%d, %d] failed[%x]", pViCfg->u32DevId, pViCfg->u32ChnId, ret);
+		printf("vi_chn_init[%d, %d] failed[%x]", pViCfg->u32PipeId, pViCfg->u32ChnId, ret);
 		return -1;
 	}
-	printf("vi chn[%d, %d] init ok\n", pViCfg->u32DevId, pViCfg->u32ChnId);
+	printf("vi chn[%d, %d] init ok\n", pViCfg->u32PipeId, pViCfg->u32ChnId);
 
 	if (u32CamNum > 1) {
 		ret = vi_chn_init(pViCfg1);
 		if (ret) {
-			printf("vi_chn_init[%d, %d] failed[%x]", pViCfg1->u32DevId, pViCfg1->u32ChnId, ret);
+			printf("vi_chn_init[%d, %d] failed[%x]", pViCfg1->u32PipeId, pViCfg1->u32ChnId, ret);
 			return -1;
 		}
-		printf("vi chn[%d, %d] init ok\n", pViCfg1->u32DevId, pViCfg1->u32ChnId);
+		printf("vi chn[%d, %d] init ok\n", pViCfg1->u32PipeId, pViCfg1->u32ChnId);
 	}
 
 	return 0;
@@ -870,21 +883,21 @@ static int deinit_all_vi_wrap(RK_U32 u32CamNum) {
 	TEST_VI_CFG_S *pViCfg = &stTestCtx.stViCtx[0];
 	TEST_VI_CFG_S *pViCfg1 = &stTestCtx.stViCtx[1];
 
-	ret = RK_MPI_VI_DisableChn(pViCfg->u32DevId, pViCfg->u32ChnId);
-	printf("RK_MPI_VI_DisableChn[%d, %d]: %x\n", pViCfg->u32DevId, pViCfg->u32ChnId, ret);
+	ret = RK_MPI_VI_DisableChn(pViCfg->u32PipeId, pViCfg->u32ChnId);
+	printf("RK_MPI_VI_DisableChn[%d, %d]: %x\n", pViCfg->u32PipeId, pViCfg->u32ChnId, ret);
 
 	if (u32CamNum > 1) {
-		ret = RK_MPI_VI_DisableChn(pViCfg1->u32DevId, pViCfg1->u32ChnId);
-		printf("RK_MPI_VI_DisableChn[%d, %d]: %x\n", pViCfg1->u32DevId, pViCfg1->u32ChnId, ret);
+		ret = RK_MPI_VI_DisableChn(pViCfg1->u32PipeId, pViCfg1->u32ChnId);
+		printf("RK_MPI_VI_DisableChn[%d, %d]: %x\n", pViCfg1->u32PipeId, pViCfg1->u32ChnId, ret);
 	}
 
 	if (stTestCtx.firstMode == TEST_ONLINE_MODE) {
 		ret = RK_MPI_VI_DisableDev(pViCfg->u32ChnId);
 		printf("RK_MPI_VI_DisableDev[%d]: %x\n", pViCfg->u32ChnId, ret);
 	} else {
-		ret = RK_MPI_VI_StopPipe(pViCfg->u32DevId);
+		ret = RK_MPI_VI_StopPipe(pViCfg->u32PipeId);
 		printf("RK_MPI_VI_StopPipe[%d]: %x\n", pViCfg->u32ChnId, ret);
-		ret = RK_MPI_VI_DestroyPipe(pViCfg->u32DevId);
+		ret = RK_MPI_VI_DestroyPipe(pViCfg->u32PipeId);
 		printf("RK_MPI_VI_DestroyPipe[%d]: %x\n", pViCfg->u32ChnId, ret);
 	}
 
@@ -893,9 +906,9 @@ static int deinit_all_vi_wrap(RK_U32 u32CamNum) {
 			ret = RK_MPI_VI_DisableDev(pViCfg1->u32ChnId);
 			printf("RK_MPI_VI_DisableDev[%d]: %x\n", pViCfg1->u32ChnId, ret);
 		} else {
-			ret = RK_MPI_VI_StopPipe(pViCfg1->u32DevId);
+			ret = RK_MPI_VI_StopPipe(pViCfg1->u32PipeId);
 			printf("RK_MPI_VI_StopPipe[%d]: %x\n", pViCfg1->u32ChnId, ret);
-			ret = RK_MPI_VI_DestroyPipe(pViCfg1->u32DevId);
+			ret = RK_MPI_VI_DestroyPipe(pViCfg1->u32PipeId);
 			printf("RK_MPI_VI_DestroyPipe[%d]: %x\n", pViCfg1->u32ChnId, ret);
 		}
 	}
@@ -923,7 +936,7 @@ static int init_venc_wrap(TEST_VI_CFG_S *pViCfg, TEST_VENC_CFG_S *pVencCfg, TEST
 
 	// bind vi to venc
 	stSrcChn.enModId = RK_ID_VI;
-	stSrcChn.s32DevId = pViCfg->u32DevId;
+	stSrcChn.s32DevId = pViCfg->u32PipeId;
 	stSrcChn.s32ChnId = pViCfg->u32ChnId;
 	stDestChn.enModId = RK_ID_VENC;
 	stDestChn.s32DevId = 0;
@@ -933,7 +946,7 @@ static int init_venc_wrap(TEST_VI_CFG_S *pViCfg, TEST_VENC_CFG_S *pVencCfg, TEST
 		printf("vi[%d] bind venc[%d] ch venc failed\n", stSrcChn.s32ChnId, stDestChn.s32ChnId);
 		goto _FAILED_1;
 	}
-	printf("vi[%d, %d] bind venc[%d] ok\n", pViCfg->u32DevId, pViCfg->u32ChnId, pVencCfg->u32ChnId);
+	printf("vi[%d, %d] bind venc[%d] ok\n", pViCfg->u32PipeId, pViCfg->u32ChnId, pVencCfg->u32ChnId);
 
 	if (mode == TEST_OFFLINE_MODE) {
 		ret = pthread_create(&pViCfg->tid, NULL, send_raw_frame, pViCfg);
@@ -998,7 +1011,7 @@ static int deinit_venc_wrap(TEST_VI_CFG_S *pViCfg, TEST_VENC_CFG_S *pVencCfg, TE
 	}
 
 	stSrcChn.enModId = RK_ID_VI;
-	stSrcChn.s32DevId = pViCfg->u32DevId;
+	stSrcChn.s32DevId = pViCfg->u32PipeId;
 	stSrcChn.s32ChnId = pViCfg->u32ChnId;
 	stDestChn.enModId = RK_ID_VENC;
 	stDestChn.s32DevId = 0;
@@ -1097,7 +1110,7 @@ int main(int argc, char *argv[]) {
 			pViCfg1->u32ChnId = pViCfg->u32ChnId;
 			break;
 		case 'd' + 'i':
-			pViCfg->u32DevId = atoi(optarg);
+			pViCfg->u32PipeId = atoi(optarg);
 			break;
 		case 'c': // codec
 			pVencCfg->enCodecType = atoi(optarg);
@@ -1118,7 +1131,7 @@ int main(int argc, char *argv[]) {
 			pViCfg->bEnableWrap = (RK_BOOL)atoi(optarg);
 			pVencCfg->bEnableWrap = pViCfg->bEnableWrap;
 			break;
-		case 'w' + 's':
+		case 'W':
 			pViCfg1->bEnableWrap = (RK_BOOL)atoi(optarg);
 			pVencCfg1->bEnableWrap = pViCfg1->bEnableWrap;
 			break;
@@ -1126,20 +1139,28 @@ int main(int argc, char *argv[]) {
 			pViCfg->u32WrapLine = atoi(optarg);
 			pVencCfg->u32WrapLine = pViCfg->u32WrapLine;
 			break;
-		case 'l' + 's':
+		case 'L':
 			pViCfg1->u32WrapLine = atoi(optarg);
 			pVencCfg1->u32WrapLine = pViCfg1->u32WrapLine;
 			break;
 		case 'f':
 			pViCfg->u32Framerate = atoi(optarg);
-			pViCfg1->u32Framerate = pViCfg->u32Framerate;
-			pVencCfg->u32Framerate = pViCfg->u32Framerate;
-			pVencCfg1->u32Framerate = pViCfg->u32Framerate;
+			break;
+		case 'F':
+			pViCfg1->u32Framerate =  atoi(optarg);
+			break;
+		case 'r':
+			pViCfg->u32DstFramerate = atoi(optarg);
+			pVencCfg->u32Framerate = pViCfg->u32DstFramerate;
+			break;
+		case 'R':
+			pViCfg1->u32DstFramerate =  atoi(optarg);
+			pVencCfg1->u32Framerate = pViCfg1->u32DstFramerate;
 			break;
 		case 'm':
 			stTestCtx.firstMode = (TEST_LINE_MODE)atoi(optarg);
 			break;
-		case 't' + 'm' + 's':
+		case 'M':
 			stTestCtx.secondMode = (TEST_LINE_MODE)atoi(optarg);
 			break;
 		case '?':
@@ -1165,7 +1186,7 @@ int main(int argc, char *argv[]) {
 		pViCfg->u32MaxHeight = pViCfg->u32OutHeight;
 	}
 
-	printf("#u32CamNum: %d, pViCfg->u32DevId: %d, pViCfg->u32ChnId: %d, pViCfg1->u32DevId: %d\n", stTestCtx.u32CamNum, pViCfg->u32DevId, pViCfg->u32ChnId, pViCfg1->u32DevId);
+	printf("#u32CamNum: %d, pViCfg->u32PipeId: %d, pViCfg->u32ChnId: %d, pViCfg1->u32PipeId: %d\n", stTestCtx.u32CamNum, pViCfg->u32PipeId, pViCfg->u32ChnId, pViCfg1->u32PipeId);
 	printf("#pVencCfg->u32ChnId: %d, pVencCfg1->u32ChnId: %d\n", pVencCfg->u32ChnId, pVencCfg1->u32ChnId);
 	printf("#enMemMode: %d, u32BufCnt: %d, u32PipeMbCnt: %d\n", pViCfg->enMemMode, pViCfg->u32BufCnt, pViCfg->u32PipeMbCnt);
 	printf("#u32MaxWidth: %d, u32MaxHeight: %d\n", pViCfg->u32MaxWidth, pViCfg->u32MaxHeight);
@@ -1189,13 +1210,13 @@ int main(int argc, char *argv[]) {
 
 		printf("ISP IQ file path: %s\n", pIqfilesPath);
 		if (stTestCtx.firstMode == TEST_ONLINE_MODE) {
-			SIMPLE_COMM_ISP_Init(pViCfg->u32DevId, RK_AIQ_WORKING_MODE_NORMAL, bMultiCam, pIqfilesPath);
-			SIMPLE_COMM_ISP_Run(pViCfg->u32DevId);
+			SIMPLE_COMM_ISP_Init(pViCfg->u32PipeId, RK_AIQ_WORKING_MODE_NORMAL, bMultiCam, pIqfilesPath);
+			SIMPLE_COMM_ISP_Run(pViCfg->u32PipeId);
 		}
 
 		if ((stTestCtx.secondMode == TEST_ONLINE_MODE) && (stTestCtx.u32CamNum == 2)) {
-			SIMPLE_COMM_ISP_Init(pViCfg1->u32DevId, RK_AIQ_WORKING_MODE_NORMAL, bMultiCam, pIqfilesPath);
-			SIMPLE_COMM_ISP_Run(pViCfg1->u32DevId);
+			SIMPLE_COMM_ISP_Init(pViCfg1->u32PipeId, RK_AIQ_WORKING_MODE_NORMAL, bMultiCam, pIqfilesPath);
+			SIMPLE_COMM_ISP_Run(pViCfg1->u32PipeId);
 		}
 #endif
 	}
@@ -1205,9 +1226,9 @@ int main(int argc, char *argv[]) {
 
 		if (pIqfilesPath) {
 			if (stTestCtx.firstMode == TEST_ONLINE_MODE)
-				SIMPLE_COMM_ISP_Stop(pViCfg->u32DevId);
+				SIMPLE_COMM_ISP_Stop(pViCfg->u32PipeId);
 			if ((stTestCtx.secondMode == TEST_ONLINE_MODE) && (stTestCtx.u32CamNum == 2))
-				SIMPLE_COMM_ISP_Stop(pViCfg1->u32DevId);
+				SIMPLE_COMM_ISP_Stop(pViCfg1->u32PipeId);
 		}
 
 		return -1;
@@ -1234,9 +1255,9 @@ int main(int argc, char *argv[]) {
 
 	if (pIqfilesPath) {
 		if (stTestCtx.firstMode == TEST_ONLINE_MODE)
-			SIMPLE_COMM_ISP_Stop(pViCfg->u32DevId);
+			SIMPLE_COMM_ISP_Stop(pViCfg->u32PipeId);
 		if ((stTestCtx.secondMode == TEST_ONLINE_MODE) && (stTestCtx.u32CamNum == 2))
-			SIMPLE_COMM_ISP_Stop(pViCfg1->u32DevId);
+			SIMPLE_COMM_ISP_Stop(pViCfg1->u32PipeId);
 	}
 
 	RK_MPI_SYS_Exit();
