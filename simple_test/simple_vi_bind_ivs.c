@@ -214,6 +214,7 @@ static RK_S32 create_ivs(int width, int height, RK_U32 u32AreaEn, RK_U32 u32Sens
 		stMdAttr.s32ThreshSad = 64;
 		stMdAttr.s32ThreshMove = 2;
 		stMdAttr.s32SwitchSad = 2;
+		break;
 	case 3:
 		stMdAttr.s32ThreshSad = 48;
 		stMdAttr.s32ThreshMove = 1;
