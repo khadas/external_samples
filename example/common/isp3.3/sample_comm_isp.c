@@ -144,7 +144,7 @@ XCamReturn SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(int CamGrpId, uint8_t SetLdchM
 	XCamReturn ret = XCAM_RETURN_NO_ERROR;
 	rk_aiq_sys_ctx_t *aiq_ctx = NULL;
 	rk_aiq_camgroup_camInfos_t camInfos;
-	rk_aiq_ldch_v21_attrib_t ldchAttr;
+	ldc_param_t ldchAttr;
 	memset(&camInfos, 0, sizeof(camInfos));
 	if (SetLdchMode != RK_GET_LDCH_BY_FILE && SetLdchMode != RK_GET_LDCH_BY_BUFF) {
 		printf("this Ldch mode:%d, if want to set ldch, 1: read file set ldch, 2: read "
@@ -163,36 +163,18 @@ XCamReturn SAMPLE_COMM_ISP_CamGroup_setMeshToLdch(int CamGrpId, uint8_t SetLdchM
 			}
 			printf("aiq_ctx sns name: %s, camPhyId %d\n", camInfos.sns_ent_nm[i],
 			       camInfos.sns_camPhyId[i]);
-			memset(&ldchAttr, 0, sizeof(rk_aiq_ldch_v21_attrib_t));
+			memset(&ldchAttr, 0, sizeof(ldc_param_t));
 
-			ret = rk_aiq_user_api2_aldch_v21_GetAttrib(aiq_ctx, &ldchAttr);
+			ret = rk_aiq_user_api2_ldc_GetManualAttrib(aiq_ctx, &ldchAttr);
 			if (ret == XCAM_RETURN_NO_ERROR) {
 				if (SetLdchMode == RK_GET_LDCH_BY_BUFF) {
-					ldchAttr.update_lut_mode =
-					    RK_AIQ_LDCH_UPDATE_LUT_FROM_EXTERNAL_BUFFER;
-					ldchAttr.en = true;
-					ldchAttr.lut.update_flag = true;
-					ldchAttr.lut.u.buffer.addr = LdchMesh[i];
-					ldchAttr.lut.u.buffer.size = isp_get_ldch_mesh_size(LdchMesh[i]);
+					ldchAttr.sta.ldchCfg.en = true;
+					ldchAttr.sta.ldchCfg.lutMapCfg.sw_ldcT_lutMapBuf_vaddr[0] = LdchMesh[i];
+					ldchAttr.sta.ldchCfg.lutMapCfg.sw_ldcT_lutMap_size = isp_get_ldch_mesh_size(LdchMesh[i]);
 				} else {
-					char *pLastWord = NULL;
-					pLastWord = strrchr((char *)LdchMesh[i], '/');
-					if (!pLastWord) {
-						printf("---- error !!! the: %s path isn't to be parsed!!!!\n",
-						       (char *)LdchMesh[i]);
-						return -1;
-					}
-					ldchAttr.en = true;
-					ldchAttr.lut.update_flag = true;
-					ldchAttr.update_lut_mode = RK_AIQ_LDCH_UPDATE_LUT_FROM_EXTERNAL_FILE;
-					memcpy(ldchAttr.lut.u.file.config_file_dir, (char *)LdchMesh[i],
-					       (pLastWord - (char *)LdchMesh[i]) + 1);
-					sprintf(ldchAttr.lut.u.file.mesh_file_name, "%s", (pLastWord + 1));
-					printf("lut file_dir: %s, mesh_file: %s\n",
-					       ldchAttr.lut.u.file.config_file_dir,
-					       ldchAttr.lut.u.file.mesh_file_name);
+					printf("no support\n");
 				}
-				ret = rk_aiq_user_api2_aldch_v21_SetAttrib(aiq_ctx, &ldchAttr);
+				ret = rk_aiq_user_api2_ldc_SetManualAttrib(aiq_ctx, &ldchAttr);
 				if (ret != XCAM_RETURN_NO_ERROR) {
 					printf("Failed to set ldch attrib : %d\n", ret);
 					return ret;
@@ -378,22 +360,16 @@ RK_S32 SAMPLE_comm_ISP_SWITCH_SCENE(int CamId, const char *main_scene,
 
 XCamReturn SAMPLE_COMM_ISP_SetLDCH(RK_U32 CamId, RK_U32 u32Level, RK_BOOL bIfEnable) {
 	RK_S32 s32Ret = RK_FAILURE;
-	rk_aiq_ldch_v21_attrib_t ldchAttr;
-	memset(&ldchAttr, 0, sizeof(rk_aiq_ldch_v21_attrib_t));
+	int sw_ldchT_correct_strg;
 	if (CamId >= MAX_AIQ_CTX || !g_aiq_ctx[CamId]) {
 		printf("%s : CamId is over %d or not init\n", __FUNCTION__, MAX_AIQ_CTX);
 		return RK_FAILURE;
 	}
-	s32Ret = rk_aiq_user_api2_aldch_v21_GetAttrib(g_aiq_ctx[CamId], &ldchAttr);
+	u32Level = u32Level < 0 ? 0 : u32Level;
+	sw_ldchT_correct_strg = (int)(u32Level * 2.53 + 2); // [0, 100] -> [2 , 255]
+	s32Ret = rk_aiq_uapi2_setLdchCorrectLevel(g_aiq_ctx[CamId], sw_ldchT_correct_strg);
 	if (s32Ret != XCAM_RETURN_NO_ERROR && s32Ret != XCAM_RETURN_BYPASS) {
-		RK_LOGE("rk_aiq_user_api2_aldch_v21_GetAttrib FAILURE:%X", s32Ret);
-		return s32Ret;
-	}
-	ldchAttr.en = bIfEnable;
-	ldchAttr.correct_level = u32Level;
-	s32Ret = rk_aiq_user_api2_aldch_v21_SetAttrib(g_aiq_ctx[CamId], &ldchAttr);
-	if (s32Ret != XCAM_RETURN_NO_ERROR && s32Ret != XCAM_RETURN_BYPASS) {
-		RK_LOGE("rk_aiq_user_api2_aldch_v21_SetAttrib FAILURE:%X", s32Ret);
+		RK_LOGE("rk_aiq_uapi2_setLdchCorrectLevel FAILURE:%X", s32Ret);
 		return s32Ret;
 	}
 
@@ -403,24 +379,16 @@ XCamReturn SAMPLE_COMM_ISP_SetLDCH(RK_U32 CamId, RK_U32 u32Level, RK_BOOL bIfEna
 RK_S32 SAMPLE_COMM_ISP_CamGroup_SetLDCH(RK_U32 CamId, RK_U32 u32Level,
                                         RK_BOOL bIfEnable) {
 	RK_S32 s32Ret = RK_FAILURE;
-	rk_aiq_ldch_v21_attrib_t ldchAttr;
-	memset(&ldchAttr, 0, sizeof(rk_aiq_ldch_v21_attrib_t));
+	int sw_ldchT_correct_strg;
 	if (CamId >= MAX_AIQ_CTX || !g_aiq_camgroup_ctx[CamId]) {
 		printf("%s : CamId is over %d or not init\n", __FUNCTION__, MAX_AIQ_CTX);
 		return RK_FAILURE;
 	}
-	s32Ret = rk_aiq_user_api2_aldch_v21_GetAttrib(
-	    (rk_aiq_sys_ctx_t *)g_aiq_camgroup_ctx[CamId], &ldchAttr);
-	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("rk_aiq_user_api2_aldch_v21_GetAttrib FAILURE:%X", s32Ret);
-		return s32Ret;
-	}
-	ldchAttr.en = bIfEnable;
-	ldchAttr.correct_level = u32Level;
-	s32Ret = rk_aiq_user_api2_aldch_v21_SetAttrib(
-	    (rk_aiq_sys_ctx_t *)g_aiq_camgroup_ctx[CamId], &ldchAttr);
-	if (s32Ret != RK_SUCCESS) {
-		RK_LOGE("rk_aiq_user_api2_aldch_v21_SetAttrib FAILURE:%X", s32Ret);
+	u32Level = u32Level < 0 ? 0 : u32Level;
+	sw_ldchT_correct_strg = (int)(u32Level * 2.53 + 2); // [0, 100] -> [2 , 255]
+	s32Ret = rk_aiq_uapi2_setLdchCorrectLevel(g_aiq_camgroup_ctx[CamId], sw_ldchT_correct_strg);
+	if (s32Ret != XCAM_RETURN_NO_ERROR && s32Ret != XCAM_RETURN_BYPASS) {
+		RK_LOGE("rk_aiq_uapi2_setLdchCorrectLevel FAILURE:%X", s32Ret);
 		return s32Ret;
 	}
 
