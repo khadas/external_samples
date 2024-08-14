@@ -205,11 +205,14 @@ static void *vi_get_stream(void *pArgs) {
 }
 
 static void wait_module_test_switch_success(void) {
-
+	if (gModeTest->u32TestFrameCount == 0)
+		return ;
 	pthread_mutex_lock(&g_frame_count_mutex);
 	gModeTest->u32ViGetFrameCount = 0;
+	gModeTest->bModuleTestIfopen = RK_TRUE;
 	pthread_mutex_unlock(&g_frame_count_mutex);
 	sem_wait(&g_sem_module_test);
+	gModeTest->bModuleTestIfopen = RK_FALSE;
 }
 
 static void pn_mode_switch(RK_S32 test_loop) {
@@ -244,7 +247,6 @@ static void pn_mode_switch(RK_S32 test_loop) {
 			RK_LOGE(
 			    "------------------PN test end(pass/success) count: %d-----------------",
 			    s32TestCount);
-			gModeTest->bModuleTestIfopen = RK_FALSE;
 			program_normal_exit(__func__, __LINE__);
 			break;
 		}
@@ -259,13 +261,15 @@ static void hdr_mode_switch_test(RK_S32 test_loop) {
 
 	while (!gModeTest->bModuleTestThreadQuit) {
 #if defined(RV1106) || defined(RV1103B) || defined(RK3576)
-
 		RK_MPI_VI_PauseChn(ctx->vi.u32PipeId, ctx->vi.s32ChnId);
 		SAMPLE_COMM_ISP_Stop(gModeTest->s32CamId);
-		if (gModeTest->eHdrMode != RK_AIQ_WORKING_MODE_ISP_HDR2)
+		if (gModeTest->eHdrMode != RK_AIQ_WORKING_MODE_ISP_HDR2) {
 			gModeTest->eHdrMode = RK_AIQ_WORKING_MODE_ISP_HDR2;
-		else
+			RK_LOGE("switch to hdr mode\n");
+		} else {
 			gModeTest->eHdrMode = RK_AIQ_WORKING_MODE_NORMAL;
+			RK_LOGE("switch to normal mode\n");
+		}
 		s32Ret = SAMPLE_COMM_ISP_Init(gModeTest->s32CamId, gModeTest->eHdrMode,
 		                              gModeTest->bMultictx, gModeTest->pIqFileDir);
 		if (s32Ret != RK_SUCCESS) {
@@ -286,7 +290,6 @@ static void hdr_mode_switch_test(RK_S32 test_loop) {
 			program_handle_error(__func__, __LINE__);
 			break;
 		}
-
 #elif defined(RV1126)
 		if (gModeTest->eHdrMode == RK_AIQ_WORKING_MODE_NORMAL) {
 			gModeTest->eHdrMode = RK_AIQ_WORKING_MODE_ISP_HDR2;
@@ -313,7 +316,6 @@ static void hdr_mode_switch_test(RK_S32 test_loop) {
 			RK_LOGE("------------------HDR Mode test end(pass/success) count: "
 			        "%d-----------------",
 			        s32TestCount);
-			gModeTest->bModuleTestIfopen = RK_FALSE;
 			program_normal_exit(__func__, __LINE__);
 			break;
 		}
@@ -358,7 +360,6 @@ static void frameRate_switch_test(RK_S32 test_loop) {
 			RK_LOGE("------------------Framerate switch end(pass/success) count: "
 			        "%d-----------------",
 			        s32TestCount);
-			gModeTest->bModuleTestIfopen = RK_FALSE;
 			program_normal_exit(__func__, __LINE__);
 			break;
 		}
@@ -398,7 +399,6 @@ static void ldch_mode_test(RK_S32 test_loop) {
 		        test_loop, test_count);
 		if (test_loop > 0 && test_count >= test_loop) {
 			RK_LOGE("--------------LDCH switch success test end total:%d", test_loop);
-			gModeTest->bModuleTestIfopen = RK_FALSE;
 			program_normal_exit(__func__, __LINE__);
 			break;
 		}
@@ -430,7 +430,6 @@ static void iqfile_switch_test(RK_S32 test_loop) {
 		    test_loop, test_count);
 		if (test_loop > 0 && test_count >= test_loop) {
 			RK_LOGE("--------------iqfile switch success test end total:%d", test_loop);
-			gModeTest->bModuleTestIfopen = RK_FALSE;
 			program_normal_exit(__func__, __LINE__);
 			break;
 		}
@@ -495,7 +494,6 @@ static void isp_deinit_init(RK_S32 test_loop) {
 		if (test_loop > 0 && test_count >= test_loop) {
 			RK_LOGE("--------------isp_deinit_init switch success test end total:%d",
 			        test_loop);
-			gModeTest->bModuleTestIfopen = RK_FALSE;
 			program_normal_exit(__func__, __LINE__);
 			break;
 		}
@@ -569,7 +567,6 @@ static void aiisp_deinit_init(RK_S32 test_loop) {
 		if (test_loop > 0 && test_count >= test_loop) {
 			RK_LOGE("--------------aiisp_deinit_init switch success test end total:%d",
 			        test_loop);
-			gModeTest->bModuleTestIfopen = RK_FALSE;
 			program_normal_exit(__func__, __LINE__);
 			break;
 		}
@@ -829,7 +826,11 @@ int main(int argc, char *argv[]) {
 	ctx->vi.s32DevId = s32CamId;
 	ctx->vi.u32PipeId = ctx->vi.s32DevId;
 	ctx->vi.s32ChnId = s32ChnId;
+#if defined(RK3576)
+	ctx->vi.stChnAttr.stIspOpt.u32BufCount = 6;
+#else
 	ctx->vi.stChnAttr.stIspOpt.u32BufCount = 2;
+#endif
 	ctx->vi.stChnAttr.stIspOpt.enMemoryType = VI_V4L2_MEMORY_TYPE_DMABUF;
 	ctx->vi.stChnAttr.u32Depth = 1;
 	ctx->vi.stChnAttr.enPixelFormat = ePixelFormat;
@@ -851,7 +852,6 @@ int main(int argc, char *argv[]) {
 	pthread_create(&gModeTest->vi_thread_id, 0, vi_get_stream, (void *)(&ctx->vi));
 
 	if (gModeTest->s32ModuleTestType) {
-		gModeTest->bModuleTestIfopen = RK_TRUE;
 		pthread_create(&modeTest_thread_id, 0, sample_isp_stress_test,
 		               (void *)(gModeTest));
 	}
