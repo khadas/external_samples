@@ -36,6 +36,12 @@ if [ "$rk_dbg_only" = "1" ];then
 	ordinary_stream_test_framecount=450
 fi
 
+if [ "$rk_dbg_only" -gt 1 ]; then
+    test_loop=$rk_dbg_only
+    vi_framerate_switch_loop=$rk_dbg_only
+    ordinary_stream_test_framecount=$((rk_dbg_only * 10))
+fi
+
 # get script path
 file_path=$(dirname $0)
 
