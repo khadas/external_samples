@@ -138,6 +138,9 @@ simple_vi_bind_venc_svc_rtsp: simple_vi_bind_venc_svc_rtsp.c
 simple_vi_bind_vpss_bind_venc: simple_vi_bind_vpss_bind_venc.c
 	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
+simple_vi_bind_avs_bind_venc: simple_vi_bind_avs_bind_venc.c
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_VO_LD_FLAGS)
+
 simple_vi_get_frame_rkaiq: simple_vi_get_frame_rkaiq.c
 	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq
 
