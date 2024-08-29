@@ -51,6 +51,18 @@ if [ -d "$(dirname $__dump_path)" ];then
 fi
 while [ $counter -lt 10000 ]
 do
+    counter=$(( counter + 1 ))
+	echo ""
+	echo ""
+	echo "----------------------------------------"
+	echo "$0 counter [$counter]"
+	if [ -n "$has_sdcard" ];then
+		logdir=$has_sdcard/kill_pid/log_$counter
+	else
+		logdir=/tmp/kill_pid/log_$counter
+	fi
+	echo "----------------------------------------"
+	echo ""
     rkipc_pid=$(ps |grep rkipc|grep -v grep |awk '{print $1}')
     kill -9 "$rkipc_pid"
     while true
@@ -58,6 +70,7 @@ do
         ps|grep rkipc |grep -v grep
         if [ $? -ne 0 ]; then
             echo "kill -9 rkipc exit, run once: count = $counter"
+			dump_log $logdir $counter
             break
         else
             sleep 1
@@ -67,20 +80,6 @@ do
 	__chk_cma_free
     rkipc -a /oem/usr/share/iqfiles &
     sleep 5
-    counter=$(( counter + 1 ))
-	echo ""
-	echo ""
-	echo "----------------------------------------"
-	echo "$0 counter [$counter]"
-	if [ -n "$has_sdcard" ];then
-		log1_dir=$has_sdcard/kill_pid/log1_$counter
-		dump_log $log1_dir $counter
-	else
-		log1_dir=/tmp/kill_pid/log1_$counter
-		dump_log $log1_dir $counter
-	fi
-	echo "----------------------------------------"
-	echo ""
 	echo ""
 done
 
@@ -89,12 +88,26 @@ sleep 10
 counter=0
 while [ $counter -lt 10000 ]
 do
+    counter=$(( counter + 1 ))
+	echo ""
+	echo ""
+	echo "----------------------------------------"
+	echo "$0 counter [$counter]"
+	if [ -n "$has_sdcard" ];then
+		logdir=$has_sdcard/kill_pid/log_$counter
+		dump_log $logdir $counter
+	else
+		logdir=/tmp/kill_pid/log_$counter
+	fi
+	echo "----------------------------------------"
+	echo ""
     killall rkipc
     while true
     do
         ps|grep rkipc |grep -v grep
         if [ $? -ne 0 ]; then
             echo "killall rkipc exit, run once: count = $counter"
+			dump_log $logdir $counter
             break
         else
             sleep 1
@@ -104,19 +117,5 @@ do
 	__chk_cma_free
     rkipc -a /oem/usr/share/iqfiles &
     sleep 5
-    counter=$(( counter + 1 ))
-	echo ""
-	echo ""
-	echo "----------------------------------------"
-	echo "$0 counter [$counter]"
-	if [ -n "$has_sdcard" ];then
-		log2_dir=$has_sdcard/kill_pid/log2_$counter
-		dump_log $log2_dir $counter
-	else
-		log1_dir=/tmp/kill_pid/log1_$counter
-		dump_log $log1_dir $counter
-	fi
-	echo "----------------------------------------"
-	echo ""
 	echo ""
 done
