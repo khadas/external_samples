@@ -249,7 +249,7 @@ rm /tmp/test*
 simple_vi_bind_venc_chn_sharebuf&
 sleep 1
 killall simple_vi_bind_venc_chn_sharebuf
-
+sleep 1
 simple_vi_bind_venc_chn_sharebuf -c 10 -o /tmp/venc.h264
 checkmd5sum /tmp/venc.h264
 
@@ -262,17 +262,17 @@ checkmd5sum /tmp/venc.h264
 simple_vi_bind_venc_rtsp_dev_chn_sharebuf -w 640 -h 480 -W 2304 -H 1760&
 sleep 5
 killall simple_vi_bind_venc_rtsp_dev_chn_sharebuf
-
+sleep 1
 # sample_demo_dual_camera_wrap -s 0 -W 1920 -H 1080 -w 640 -h 360 -f 15 -r 0 -s 1 -W 1920 -H 1080 -w 640 -h 360 -f 15 -r 0 -n 1 -S 0 -x 1920 -y 1080 -l 72
 
 simple_vi_bind_venc_rawstream_wrap&
 sleep 1
 killall simple_vi_bind_venc_rawstream_wrap
-
+sleep 1
 simple_vi_bind_venc_rawstream_wrap --pipe_mb_cnt 2&
 sleep 1
 killall simple_vi_bind_venc_rawstream_wrap
-
+sleep 1
 simple_vi_bind_venc_rawstream_wrap -c 8 --iw 1920 --ih 1080 --ow 1920 --oh 1080 -d /data -w 1 -l 64 --frame_cnt 10
 checkmd5sum /data/venc_chn0_1920x1080_64.h264
 simple_vi_bind_venc_rawstream_wrap -c 8 --iw 1920 --ih 1080 --ow 1920 --oh 1080 -d /data -w 1 -l 1080 --frame_cnt 10
