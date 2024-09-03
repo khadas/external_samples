@@ -2,6 +2,7 @@
 
 set -x
 
+bSetFastAEMaxFrame=${1:-true}
 echo "start to do-test.sh"
 # print rtt log
 make_meta --rtt-log
@@ -17,7 +18,9 @@ if [ -n "$f" ];then
 	cnt=$(( cnt + 1 ))
 	echo $cnt > /mnt/sdcard/test_tb_num
 	make_meta -d /dev/block/by-name/meta
-	make_meta --update --meta_path /dev/block/by-name/meta --rk_fastae_max_frame "$(( cnt % 20 + 3 ))"
+	if [ "$bSetFastAEMaxFrame" = true ]; then
+		make_meta --update --meta_path /dev/block/by-name/meta --rk_fastae_max_frame "$(( cnt % 20 + 3 ))"
+	fi
 	echo
 	echo "debug-test cnt [$cnt]"
 	log_dir="/mnt/sdcard/log_$cnt"
