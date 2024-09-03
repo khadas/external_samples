@@ -23,7 +23,11 @@ if [ -n "$f" ];then
 	fi
 	echo
 	echo "debug-test cnt [$cnt]"
-	log_dir="/mnt/sdcard/log_$cnt"
+	if [ "$bSetFastAEMaxFrame" = true ]; then
+		log_dir="/mnt/sdcard/SetFastAeMax_$cnt"
+	else
+		log_dir="/mnt/sdcard/NoSetFastAeMax_$cnt"
+	fi
 	mkdir -p $log_dir
 	make_meta --rtt-log &> $log_dir/rtt-fastae.log
 	cp /tmp/venc-test.bin $log_dir/venc-test-$cnt.bin
