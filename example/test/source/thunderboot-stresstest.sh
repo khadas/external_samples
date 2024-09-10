@@ -5,7 +5,7 @@ set -x
 bSetFastAEMaxFrame=${1:-true}
 echo "start to do-test.sh"
 # print rtt log
-make_meta --rtt-log
+cat /tmp/rtt-log.txt
 
 dmesg &> /tmp/dmesg.log
 f=$(ls /dev/mmcblk*p*)
@@ -29,7 +29,7 @@ if [ -n "$f" ];then
 		log_dir="/mnt/sdcard/NoSetFastAeMax_$cnt"
 	fi
 	mkdir -p $log_dir
-	make_meta --rtt-log &> $log_dir/rtt-fastae.log
+	cp /tmp/rtt-log.txt $log_dir/rtt-fastae.log
 	cp /tmp/venc-test.bin $log_dir/venc-test-$cnt.bin
 	cp /tmp/venc0.bin $log_dir/venc0-$cnt.bin
 	cp /tmp/venc1.bin $log_dir/venc1-$cnt.bin
@@ -47,9 +47,6 @@ if [ -n "$f" ];then
 	sync
 	umount /mnt/sdcard
 fi
-
-# clean rtt log
-make_meta --rtt-log-clean
 
 while true
 do
