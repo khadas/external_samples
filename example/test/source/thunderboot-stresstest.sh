@@ -37,7 +37,7 @@ if [ -n "$f" ];then
 	cat /proc/vcodec/enc/venc_info &> $log_dir/proc-vcodec-enc-venc_info-$cnt-1
 	cat /proc/vcodec/enc/venc_info &> $log_dir/proc-vcodec-enc-venc_info-$cnt-2
 	cp -fa /tmp/dmesg.log $log_dir/dmesg-$cnt.log
-	cp -fa /tmp/pts.txt $log_dir/
+	cp -fa /tmp/pts*.txt $log_dir/
 	if [ -f "/tmp/rkaiq0.log" ];then
 		cp /tmp/rkaiq0.log $log_dir
 	fi
