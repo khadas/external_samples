@@ -36,6 +36,14 @@ if [ -n "$f" ];then
 	(cat /dev/mpi/vlog; cat /dev/mpi/valloc; cat /dev/mpi/vmcu; cat /dev/mpi/vrgn; cat /dev/mpi/vsys; echo ==========================================; cat /dev/mpi/vlog; cat /dev/mpi/valloc; cat /dev/mpi/vmcu; cat /dev/mpi/vrgn; cat /dev/mpi/vsys;) |tee > $log_dir/dev-mpi-$cnt.log
 	cat /proc/vcodec/enc/venc_info &> $log_dir/proc-vcodec-enc-venc_info-$cnt-1
 	cat /proc/vcodec/enc/venc_info &> $log_dir/proc-vcodec-enc-venc_info-$cnt-2
+	cat /proc/rkisp-vir0 &> $log_dir/proc-rkisp-vir0-$cnt-1
+	cat /proc/rkisp-vir0 &> $log_dir/proc-rkisp-vir0-$cnt-2
+	cat /proc/rkisp-vir1 &> $log_dir/proc-rkisp-vir1-$cnt-1
+	cat /proc/rkisp-vir1 &> $log_dir/proc-rkisp-vir1-$cnt-2
+	cat /proc/rkcif-mipi-lvds &> $log_dir/proc-rkcif-mipi-lvds-$cnt-1
+	cat /proc/rkcif-mipi-lvds &> $log_dir/proc-rkcif-mipi-lvds-$cnt-2
+	cat /proc/rkcif-mipi-lvds1 &> $log_dir/proc-rkcif-mipi-lvds1-$cnt-1
+	cat /proc/rkcif-mipi-lvds1 &> $log_dir/proc-rkcif-mipi-lvds1-$cnt-2
 	cp -fa /tmp/dmesg.log $log_dir/dmesg-$cnt.log
 	cp -fa /tmp/pts*.txt $log_dir/
 	cp -fa /tmp/rkaiq*.log $log_dir
