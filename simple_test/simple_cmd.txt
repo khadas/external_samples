@@ -110,27 +110,27 @@ simple_vi_bind_ivs&
 sleep 1
 killall simple_vi_bind_ivs
 sleep 1
-simple_vi_bind_ivs -I 0 -w 1920 -h 1080 -A 0 -S 2&
+simple_vi_bind_ivs -I 1 -w 1920 -h 1080 -A 0 -S 2&
 sleep 1
 killall simple_vi_bind_ivs
 sleep 1
-simple_vi_bind_ivs -I 0 -w 1920 -h 1080 -A 1 -S 2&
+simple_vi_bind_ivs -I 1 -w 1920 -h 1080 -A 1 -S 2&
 sleep 1
 killall simple_vi_bind_ivs
 sleep 1
-simple_vi_bind_ivs -I 0 -w 1920 -h 1080 -A 1 -S 0&
+simple_vi_bind_ivs -I 1 -w 1920 -h 1080 -A 1 -S 0&
 sleep 1
 killall simple_vi_bind_ivs
 sleep 1
-simple_vi_bind_ivs -I 0 -w 1920 -h 1080 -A 1 -S 1&
+simple_vi_bind_ivs -I 1 -w 1920 -h 1080 -A 1 -S 1&
 sleep 1
 killall simple_vi_bind_ivs
 sleep 1
-simple_vi_bind_ivs -I 0 -w 1920 -h 1080 -A 1 -S 3&
+simple_vi_bind_ivs -I 1 -w 1920 -h 1080 -A 1 -S 3&
 sleep 1
 killall simple_vi_bind_ivs
 sleep 1
-simple_vi_bind_ivs -I 0 -w 1920 -h 1080 -A 1 -S 4&
+simple_vi_bind_ivs -I 1 -w 1920 -h 1080 -A 1 -S 4&
 sleep 1
 killall simple_vi_bind_ivs
 sleep 1

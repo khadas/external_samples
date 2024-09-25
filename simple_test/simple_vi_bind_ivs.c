@@ -29,6 +29,22 @@
 #include "rk_mpi_vo.h"
 #include "rk_mpi_vpss.h"
 
+#ifdef RV1126_RV1109
+#include <rk_aiq_user_api_camgroup.h>
+#include <rk_aiq_user_api_imgproc.h>
+#include <rk_aiq_user_api_sysctl.h>
+#else
+#include <rk_aiq_user_api2_camgroup.h>
+#include <rk_aiq_user_api2_imgproc.h>
+#include <rk_aiq_user_api2_sysctl.h>
+#endif
+#define MAX_AIQ_CTX 8
+static rk_aiq_sys_ctx_t *g_aiq_ctx[MAX_AIQ_CTX];
+rk_aiq_working_mode_t g_WDRMode[MAX_AIQ_CTX];
+#include <stdatomic.h>
+static atomic_int g_sof_cnt = 0;
+static atomic_bool g_should_quit = false;
+
 struct ivs_info {
 	RK_U32 u32Width;
 	RK_U32 u32Height;
@@ -40,6 +56,128 @@ static bool quit = false;
 static void sigterm_handler(int sig) {
 	fprintf(stderr, "signal %d\n", sig);
 	quit = true;
+}
+
+static XCamReturn SIMPLE_COMM_ISP_SofCb(rk_aiq_metas_t *meta) {
+	g_sof_cnt++;
+	if (g_sof_cnt <= 2)
+		printf("=== %u ===\n", meta->frame_id);
+	return XCAM_RETURN_NO_ERROR;
+}
+
+static XCamReturn SIMPLE_COMM_ISP_ErrCb(rk_aiq_err_msg_t *msg) {
+	if (msg->err_code == XCAM_RETURN_BYPASS)
+		g_should_quit = true;
+	return XCAM_RETURN_NO_ERROR;
+}
+
+RK_S32 SIMPLE_COMM_ISP_Init(RK_S32 CamId, rk_aiq_working_mode_t WDRMode, RK_BOOL MultiCam,
+                            const char *iq_file_dir) {
+	if (CamId >= MAX_AIQ_CTX) {
+		printf("%s : CamId is over 3\n", __FUNCTION__);
+		return -1;
+	}
+	// char *iq_file_dir = "iqfiles/";
+	setlinebuf(stdout);
+	if (iq_file_dir == NULL) {
+		printf("SIMPLE_COMM_ISP_Init : not start.\n");
+		g_aiq_ctx[CamId] = NULL;
+		return 0;
+	}
+
+	// must set HDR_MODE, before init
+	g_WDRMode[CamId] = WDRMode;
+	char hdr_str[16];
+	snprintf(hdr_str, sizeof(hdr_str), "%d", (int)WDRMode);
+	setenv("HDR_MODE", hdr_str, 1);
+
+	rk_aiq_sys_ctx_t *aiq_ctx;
+	rk_aiq_static_info_t aiq_static_info;
+#ifdef RV1126_RV1109
+	rk_aiq_uapi_sysctl_enumStaticMetas(CamId, &aiq_static_info);
+
+	printf("ID: %d, sensor_name is %s, iqfiles is %s\n", CamId,
+	       aiq_static_info.sensor_info.sensor_name, iq_file_dir);
+
+	aiq_ctx =
+	    rk_aiq_uapi_sysctl_init(aiq_static_info.sensor_info.sensor_name, iq_file_dir,
+	                             SIMPLE_COMM_ISP_ErrCb, SIMPLE_COMM_ISP_SofCb);
+
+	if (MultiCam)
+		rk_aiq_uapi_sysctl_setMulCamConc(aiq_ctx, true);
+#else
+	rk_aiq_uapi2_sysctl_enumStaticMetas(CamId, &aiq_static_info);
+
+	printf("ID: %d, sensor_name is %s, iqfiles is %s\n", CamId,
+	       aiq_static_info.sensor_info.sensor_name, iq_file_dir);
+
+	aiq_ctx =
+	    rk_aiq_uapi2_sysctl_init(aiq_static_info.sensor_info.sensor_name, iq_file_dir,
+	                             SIMPLE_COMM_ISP_ErrCb, SIMPLE_COMM_ISP_SofCb);
+
+	if (MultiCam)
+		rk_aiq_uapi2_sysctl_setMulCamConc(aiq_ctx, true);
+#endif
+
+	g_aiq_ctx[CamId] = aiq_ctx;
+	return 0;
+}
+
+RK_S32 SIMPLE_COMM_ISP_Run(RK_S32 CamId) {
+	if (CamId >= MAX_AIQ_CTX || !g_aiq_ctx[CamId]) {
+		printf("%s : CamId is over 3 or not init\n", __FUNCTION__);
+		return -1;
+	}
+#ifdef RV1126_RV1109
+	if (rk_aiq_uapi_sysctl_prepare(g_aiq_ctx[CamId], 0, 0, g_WDRMode[CamId])) {
+		printf("rkaiq engine prepare failed !\n");
+		g_aiq_ctx[CamId] = NULL;
+		return -1;
+	}
+	printf("rk_aiq_uapi_sysctl_init/prepare succeed\n");
+	if (rk_aiq_uapi_sysctl_start(g_aiq_ctx[CamId])) {
+		printf("rk_aiq_uapi_sysctl_start  failed\n");
+		return -1;
+	}
+	printf("rk_aiq_uapi_sysctl_start succeed\n");
+#else
+	if (rk_aiq_uapi2_sysctl_prepare(g_aiq_ctx[CamId], 0, 0, g_WDRMode[CamId])) {
+		printf("rkaiq engine prepare failed !\n");
+		g_aiq_ctx[CamId] = NULL;
+		return -1;
+	}
+	printf("rk_aiq_uapi2_sysctl_init/prepare succeed\n");
+	if (rk_aiq_uapi2_sysctl_start(g_aiq_ctx[CamId])) {
+		printf("rk_aiq_uapi2_sysctl_start  failed\n");
+		return -1;
+	}
+	printf("rk_aiq_uapi2_sysctl_start succeed\n");
+#endif
+	return 0;
+}
+
+RK_S32 SIMPLE_COMM_ISP_Stop(RK_S32 CamId) {
+	if (CamId >= MAX_AIQ_CTX || !g_aiq_ctx[CamId]) {
+		printf("%s : CamId is over 3 or not init g_aiq_ctx[%d] = %p\n", __FUNCTION__,
+		       CamId, g_aiq_ctx[CamId]);
+		return -1;
+	}
+#ifdef RV1126_RV1109
+	printf("rk_aiq_uapi_sysctl_stop enter\n");
+	rk_aiq_uapi_sysctl_stop(g_aiq_ctx[CamId], false);
+	printf("rk_aiq_uapi_sysctl_deinit enter\n");
+	rk_aiq_uapi_sysctl_deinit(g_aiq_ctx[CamId]);
+	printf("rk_aiq_uapi_sysctl_deinit exit\n");
+#else
+	printf("rk_aiq_uapi2_sysctl_stop enter\n");
+	rk_aiq_uapi2_sysctl_stop(g_aiq_ctx[CamId], false);
+	printf("rk_aiq_uapi2_sysctl_deinit enter\n");
+	rk_aiq_uapi2_sysctl_deinit(g_aiq_ctx[CamId]);
+	printf("rk_aiq_uapi2_sysctl_deinit exit\n");
+#endif
+
+	g_aiq_ctx[CamId] = NULL;
+	return 0;
 }
 
 static void *GetMediaBuffer0(void *arg) {
@@ -247,10 +385,11 @@ __FAILED:
 	return -1;
 }
 
-static RK_CHAR optstr[] = "?::w:h:I:A:S:";
+static RK_CHAR optstr[] = "?::a::w:h:I:A:S:";
 static void print_usage(const RK_CHAR *name) {
 	printf("usage example:\n");
 	printf("\t%s -I 0 -w 1920 -h 1080\n", name);
+	printf("\t-a | --aiq: iq file path, Default:/etc/iqfiles\n");
 	printf("\t-w | --width: VI width, Default:1920\n");
 	printf("\t-h | --heght: VI height, Default:1080\n");
 	printf("\t-I | --camid: camera ctx id, Default 0. "
@@ -267,11 +406,16 @@ int main(int argc, char *argv[]) {
 	RK_S32 s32chnlId = 0;
 	RK_U32 u32AreaEn = 0;
 	RK_U32 u32Sensitivity = 2;
+	char *iq_dir = "/etc/iqfiles";
 	int c;
 	int ret = -1;
 
 	while ((c = getopt(argc, argv, optstr)) != -1) {
 		switch (c) {
+		case 'a':
+			if (optarg)
+				iq_dir = optarg;
+			break;
 		case 'w':
 			u32Width = atoi(optarg);
 			break;
@@ -300,6 +444,14 @@ int main(int argc, char *argv[]) {
 	printf("#CameraIdx: %d\n\n", s32chnlId);
 
 	signal(SIGINT, sigterm_handler);
+
+	if (iq_dir) {
+#ifdef RKAIQ
+		printf("ISP IQ file path: %s\n\n", iq_dir);
+		SIMPLE_COMM_ISP_Init(0, RK_AIQ_WORKING_MODE_NORMAL, 0, iq_dir);
+		SIMPLE_COMM_ISP_Run(0);
+#endif
+	}
 
 	if (RK_MPI_SYS_Init() != RK_SUCCESS) {
 		RK_LOGE("rk mpi sys init fail!");
@@ -352,6 +504,10 @@ int main(int argc, char *argv[]) {
 __FAILED:
 	RK_LOGE("test running exit:%d", s32Ret);
 	RK_MPI_SYS_Exit();
+
+#ifdef RKAIQ
+	SIMPLE_COMM_ISP_Stop(0);
+#endif
 
 	return ret;
 }

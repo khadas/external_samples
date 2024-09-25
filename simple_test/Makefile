@@ -124,7 +124,7 @@ simple_vi_get_frame: simple_vi_get_frame.c
 	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
 
 simple_vi_bind_ivs: simple_vi_bind_ivs.c
-	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
+	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS) -lrkaiq
 
 simple_vi_bind_venc: simple_vi_bind_venc.c
 	$(CMD_DBG)$(SIMPLE_CC) $^ -o $@ $(SIMPLE_CFLAGS) $(SIMPLE_LD_FLAGS)
