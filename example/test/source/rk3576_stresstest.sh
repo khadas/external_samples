@@ -110,6 +110,7 @@ __chk_cma_free()
 		echo "[$0] not found /proc/rk_dma_heap/alloc_bitmap, ignore"
 		return
 	fi
+	sleep 3
 	f=`head  /proc/rk_dma_heap/alloc_bitmap |grep Used|awk '{print $2}'`
 	if [ $f -gt 12 ];then
 		echo "[$0] free cma error"
